@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="nft">
+
+    <sql id="Base_Column_List">
+        id, collectAddress, address, premetadata, imgPath, metaData, metaDataSource, isFinish,
+        owner, creator, supply, status, create_time, update_time, remark, hash, tokenIdDecmial,
+        tokenId, fileName, tempPath, serverPath, nonce
+    </sql>
+    <select id="selectByPrimaryKey">
+        select
+        <include refid="Base_Column_List" />
+        from nft
+        where id = ${id}
+    </select>
+    <select id="selectByTokenId">
+        select
+        <include refid="Base_Column_List" />
+        from nft
+        where tokenId = #{tokenId}
+    </select>
+    <delete id="deleteByPrimaryKey">
+        
+        delete from nft
+        where id = ${id}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+        
+        insert into nft (collectAddress, address, premetadata,
+        imgPath, metaData, metaDataSource,
+        isFinish, owner, creator,
+        supply, status, create_time,
+        update_time, remark, hash,
+        tokenIdDecmial, tokenId, fileName,
+        tempPath, serverPath, nonce
+        )
+        values (#{collectAddress}, #{address}, #{premetadata},
+        #{imgPath}, #{metaData}, #{metaDataSource},
+        ${isFinish}, #{owner}, #{creator},
+        ${supply}, ${status}, ${create_time},
+        ${update_time}, #{remark}, #{hash},
+        #{tokenIdDecmial}, #{tokenId}, #{fileName},
+        #{tempPath}, #{serverPath}, ${nonce}
+        )
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+        insert into nft
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="collectAddress != null">
+                collectAddress,
+            </if>
+            <if test="address != null">
+                address,
+            </if>
+            <if test="rebackUrl != null">
+                rebackUrl,
+            </if>
+            <if test="premetadata != null">
+                premetadata,
+            </if>
+            <if test="imgPath != null">
+                imgPath,
+            </if>
+            <if test="metaData != null">
+                metaData,
+            </if>
+            <if test="metaDataSource != null">
+                metaDataSource,
+            </if>
+            <if test="isFinish != null">
+                isFinish,
+            </if>
+            <if test="owner != null">
+                owner,
+            </if>
+            <if test="creator != null">
+                creator,
+            </if>
+            <if test="supply != null">
+                supply,
+            </if>
+            <if test="status != null">
+                status,
+            </if>
+            <if test="create_time != null">
+                create_time,
+            </if>
+            <if test="update_time != null">
+                update_time,
+            </if>
+            <if test="remark != null">
+                remark,
+            </if>
+            <if test="hash != null">
+                hash,
+            </if>
+            <if test="tokenIdDecmial != null">
+                tokenIdDecmial,
+            </if>
+            <if test="tokenId != null">
+                tokenId,
+            </if>
+            <if test="fileName != null">
+                fileName,
+            </if>
+            <if test="tempPath != null">
+                tempPath,
+            </if>
+            <if test="serverPath != null">
+                serverPath,
+            </if>
+            <if test="nonce != null">
+                nonce,
+            </if>
+            remark)
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="collectAddress != null">
+                #{collectAddress},
+            </if>
+            <if test="address != null">
+                #{address},
+            </if>
+            <if test="rebackUrl != null">
+                #{rebackUrl},
+            </if>
+            <if test="premetadata != null">
+                #{premetadata},
+            </if>
+            <if test="imgPath != null">
+                #{imgPath},
+            </if>
+            <if test="metaData != null">
+                #{metaData},
+            </if>
+            <if test="metaDataSource != null">
+                #{metaDataSource},
+            </if>
+            <if test="isFinish != null">
+                ${isFinish},
+            </if>
+            <if test="owner != null">
+                #{owner},
+            </if>
+            <if test="creator != null">
+                #{creator},
+            </if>
+            <if test="supply != null">
+                ${supply},
+            </if>
+            <if test="status != null">
+                ${status},
+            </if>
+            <if test="create_time != null">
+                ${create_time},
+            </if>
+            <if test="update_time != null">
+                ${update_time},
+            </if>
+            <if test="remark != null">
+                #{remark},
+            </if>
+            <if test="hash != null">
+                #{hash},
+            </if>
+            <if test="tokenIdDecmial != null">
+                #{tokenIdDecmial},
+            </if>
+            <if test="tokenId != null">
+                #{tokenId},
+            </if>
+            <if test="fileName != null">
+                #{fileName},
+            </if>
+            <if test="tempPath != null">
+                #{tempPath},
+            </if>
+            <if test="serverPath != null">
+                ${serverPath},
+            </if>
+            <if test="nonce != null">
+                #{nonce},
+            </if>
+        </trim>
+        "")
+    </insert>
+    <update id="updateByPrimaryKeySelective">
+        update nft
+        <set>
+            <if test="collectAddress != null">
+                collectAddress = #{collectAddress},
+            </if>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="premetadata != null">
+                premetadata = #{premetadata},
+            </if>
+            <if test="imgPath != null">
+                imgPath = #{imgPath},
+            </if>
+            <if test="metaData != null">
+                metaData = #{metaData},
+            </if>
+            <if test="metaDataSource != null">
+                metaDataSource = #{metaDataSource},
+            </if>
+            <if test="isFinish != null">
+                isFinish = ${isFinish},
+            </if>
+            <if test="owner != null">
+                owner = #{owner},
+            </if>
+            <if test="creator != null">
+                creator = #{creator},
+            </if>
+            <if test="supply != null">
+                supply = ${supply},
+            </if>
+            <if test="status != null">
+                status = ${status},
+            </if>
+            <if test="create_time != null">
+                create_time = ${create_time},
+            </if>
+            <if test="update_time != null">
+                update_time = ${update_time},
+            </if>
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
+            <if test="hash != null">
+                hash = #{hash},
+            </if>
+            <if test="tokenIdDecmial != null">
+                tokenIdDecmial = #{tokenIdDecmial},
+            </if>
+            <if test="tokenId != null">
+                tokenId = #{tokenId},
+            </if>
+            <if test="fileName != null">
+                fileName = #{fileName},
+            </if>
+            <if test="tempPath != null">
+                tempPath = #{tempPath},
+            </if>
+            <if test="serverPath != null">
+                serverPath = #{serverPath},
+            </if>
+            <if test="nonce != null">
+                nonce = ${nonce},
+            </if>
+        </set>
+        where id = ${id}
+    </update>
+    <update id="updateByPrimaryKey">
+        
+        update nft
+        set collectAddress = #{collectAddress},
+        address = #{address},
+        premetadata = #{premetadata},
+        imgPath = #{imgPath},
+        metaData = #{metaData},
+        metaDataSource = #{metaDataSource},
+        isFinish = ${isFinish},
+        owner = #{owner},
+        creator = #{creator},
+        supply = ${supply},
+        status = ${status},
+        create_time = ${create_time},
+        update_time = ${update_time},
+        remark = #{remark},
+        hash = #{hash},
+        tokenIdDecmial = #{tokenIdDecmial},
+        tokenId = #{tokenId},
+        fileName = #{fileName},
+        tempPath = #{tempPath},
+        serverPath = #{serverPath},
+        nonce = ${nonce}
+        where id = ${id}
+    </update>
+</mapper>

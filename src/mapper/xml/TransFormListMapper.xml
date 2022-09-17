@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="trans_form_list">
+    <resultMap id="BaseResultMap" type="cn.qianyi.model.TransFormList">
+        <id column="id" jdbcType="INTEGER" property="id" />
+        <result column="t_from" jdbcType="VARCHAR" property="t_from" />
+        <result column="t_to" jdbcType="VARCHAR" property="t_to" />
+        <result column="amount" jdbcType="VARCHAR" property="amount" />
+        <result column="reback_url" jdbcType="VARCHAR" property="reback_url" />
+        <result column="token_id" jdbcType="VARCHAR" property="token_id" />
+        <result column="type" jdbcType="INTEGER" property="type" />
+        <result column="collectAddress" jdbcType="VARCHAR" property="collectAddress" />
+        <result column="t_status" jdbcType="INTEGER" property="t_status" />
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, t_from, t_to, amount, reback_url, token_id, orderId, hash, type, collectAddress, t_status, update_time, hash
+    </sql>
+    <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from trans_form_list
+        where t_status = #{t_status}
+    </select>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from trans_form_list
+        where id = #{id}
+    </select>
+    <select id="selectByFormAndTokenId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        *,
+        SUM(amount) sumAmount
+        from trans_form_list
+        where t_from = #{t_from}
+        and token_id = #{token_id}
+    </select>
+    <select id="selectByToAndTokenId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        *,
+        SUM(amount) sumAmount
+        from trans_form_list
+        where t_to = #{t_to}
+        and token_id = #{token_id}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from trans_form_list
+        where id = #{id}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="cn.qianyi.model.TransFormList" useGeneratedKeys="true">
+        insert into trans_form_list (t_from, t_to, amount,
+        reback_url, token_id, type,
+        collectAddress, t_status)
+        values (#{t_from}, #{t_to}, #{amount},
+        #{reback_url}, #{token_id}, #{type},
+        #{collectAddress}, #{t_status})
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="cn.qianyi.model.TransFormList" useGeneratedKeys="true">
+        insert into trans_form_list
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="t_from != null">
+                t_from,
+            </if>
+            <if test="t_to != null">
+                t_to,
+            </if>
+            <if test="hash != null">
+                hash,
+            </if>
+            <if test="orderId != null">
+                orderId,
+            </if>
+            <if test="amount != null">
+                amount,
+            </if>
+            <if test="reback_url != null">
+                reback_url,
+            </if>
+            <if test="token_id != null">
+                token_id,
+            </if>
+            <if test="type != null">
+                type,
+            </if>
+            <if test="collectAddress != null">
+                collectAddress,
+            </if>
+            <if test="t_status != null">
+                t_status)
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="t_from != null">
+                #{t_from},
+            </if>
+            <if test="t_to != null">
+                #{t_to},
+            </if>
+            <if test="hash != null">
+                #{hash},
+            </if>
+            <if test="orderId != null">
+                #{orderId},
+            </if>
+            <if test="amount != null">
+                #{amount},
+            </if>
+            <if test="reback_url != null">
+                #{reback_url},
+            </if>
+            <if test="token_id != null">
+                #{token_id},
+            </if>
+            <if test="type != null">
+                #{type},
+            </if>
+            <if test="collectAddress != null">
+                #{collectAddress},
+            </if>
+            <if test="t_status != null">
+                #{t_status})
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="cn.qianyi.model.TransFormList">
+        update trans_form_list
+        <set>
+            <if test="t_from != null">
+                t_from = #{t_from},
+            </if>
+            <if test="t_to != null">
+                t_to = #{t_to},
+            </if>
+            <if test="hash != null">
+                hash = #{hash},
+            </if>
+            <if test="amount != null">
+                amount = #{amount},
+            </if>
+            <if test="reback_url != null">
+                reback_url = #{reback_url},
+            </if>
+            <if test="token_id != null">
+                token_id = #{token_id},
+            </if>
+            <if test="type != null">
+                type = #{type},
+            </if>
+            <if test="collectAddress != null">
+                collectAddress = #{collectAddress},
+            </if>
+            <if test="t_status != null">
+                t_status = #{t_status},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="cn.qianyi.model.TransFormList">
+        update trans_form_list
+        set t_from = #{t_from},
+        t_to = #{t_to},
+        amount = #{amount},
+        reback_url = #{reback_url},
+        token_id = #{token_id},
+        type = #{type},
+        collectAddress = #{collectAddress},
+        t_status = #{t_status}
+        where id = #{id}
+    </update>
+</mapper>

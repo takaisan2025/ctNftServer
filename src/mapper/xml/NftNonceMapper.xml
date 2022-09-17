@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="NftNonceMapper">
+    <resultMap id="BaseResultMap" type="cn.qianyi.model.NftNonce">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="address" jdbcType="VARCHAR" property="address"/>
+        <result column="nonce" jdbcType="INTEGER" property="nonce"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, address, nonce,create_time, update_time
+    </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from nft_nonce
+        where id = #{id}
+    </select>
+    <select id="selectByAddress" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from nft_nonce
+        where address = #{address}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from nft_nonce
+        where id = #{id}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="cn.qianyi.model.NftNonce"
+            useGeneratedKeys="true">
+        insert into nft_nonce (address, nonce)
+        values (#{address}, #{nonce})
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="cn.qianyi.model.NftNonce"
+            useGeneratedKeys="true">
+        insert into nft_nonce
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="address != null">
+                address,
+            </if>
+            nonce)
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="address != null">
+                #{address},
+            </if>
+            ${nonce})
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="cn.qianyi.model.NftNonce">
+        update nft_nonce
+        <set>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="nonce != null">
+                nonce = #{nonce},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateByAddressSelective" parameterType="cn.qianyi.model.NftNonce">
+        update nft_nonce
+        <set>
+            <if test="nonce != null">
+                nonce = #{nonce},
+            </if>
+        </set>
+        where address = #{address}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="cn.qianyi.model.NftNonce">
+        update nft_nonce
+        set address = #{address},
+        nonce = #{nonce}
+        where id = #{id}
+    </update>
+</mapper>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="NftChargeListMapper">
+    <resultMap id="BaseResultMap" type="xx.NftChargeList">
+        
+        <!--@Table nft_charge_list -->
+        <!-- generated on Sat Aug 20 00:10:46 CST 2022 -->
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="order_id" jdbcType="VARCHAR" property="order_id"/>
+        <result column="wx_order_id" jdbcType="VARCHAR" property="wx_order_id"/>
+        <result column="t_to" jdbcType="VARCHAR" property="t_to"/>
+        <result column="pay_amount" jdbcType="VARCHAR" property="pay_amount"/>
+        <result column="pay_time" jdbcType="TIMESTAMP" property="pay_time"/>
+        <result column="is_pay" jdbcType="INTEGER" property="is_pay"/>
+        <result column="hash" jdbcType="VARCHAR" property="hash"/>
+        <result column="t_status" jdbcType="VARCHAR" property="t_status"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="create_time"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="update_time"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+        <result column="rate" jdbcType="DECIMAL" property="rate"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        
+        id, order_id, wx_order_id, t_to, pay_amount, pay_time, is_pay, hash, t_status, create_time,
+        update_time, remark, rate
+    </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        
+        select
+        <include refid="Base_Column_List"/>
+        from nft_charge_list
+        where id = #{id}
+    </select>
+    <select id="selectByStatusAndPay" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        
+        select
+        <include refid="Base_Column_List"/>
+        from nft_charge_list
+        where is_pay = #{is_pay}
+        and t_status = #{t_status}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        
+        delete from nft_charge_list
+        where id = #{id}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="xx.NftChargeList" useGeneratedKeys="true">
+        
+        insert into nft_charge_list (order_id, wx_order_id, t_to,
+        pay_amount, pay_time, is_pay,
+        hash, t_status, create_time,
+        update_time, remark, rate
+        )
+        values (#{order_id}, #{wx_order_id}, #{t_to},
+        #{pay_amount}, #{pay_time}, #{is_pay},
+        #{hash}, #{t_status}, #{create_time},
+        #{update_time}, #{remark}, #{rate}
+        )
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="xx.NftChargeList"
+            useGeneratedKeys="true">
+        
+        insert into nft_charge_list
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="order_id != null">
+                order_id,
+            </if>
+            <if test="wx_order_id != null">
+                wx_order_id,
+            </if>
+            <if test="t_to != null">
+                t_to,
+            </if>
+            <if test="pay_amount != null">
+                pay_amount,
+            </if>
+            <if test="pay_time != null">
+                pay_time,
+            </if>
+            <if test="is_pay != null">
+                is_pay,
+            </if>
+            <if test="hash != null">
+                hash,
+            </if>
+            <if test="t_status != null">
+                t_status,
+            </if>
+            <if test="create_time != null">
+                create_time,
+            </if>
+            <if test="update_time != null">
+                update_time,
+            </if>
+            <if test="remark != null">
+                remark,
+            </if>
+            <if test="rate != null">
+                rate,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="order_id != null">
+                #{order_id},
+            </if>
+            <if test="wx_order_id != null">
+                #{wx_order_id},
+            </if>
+            <if test="t_to != null">
+                #{t_to},
+            </if>
+            <if test="pay_amount != null">
+                #{pay_amount},
+            </if>
+            <if test="pay_time != null">
+                #{pay_time},
+            </if>
+            <if test="is_pay != null">
+                #{is_pay},
+            </if>
+            <if test="hash != null">
+                #{hash},
+            </if>
+            <if test="t_status != null">
+                #{t_status},
+            </if>
+            <if test="create_time != null">
+                #{create_time},
+            </if>
+            <if test="update_time != null">
+                #{update_time},
+            </if>
+            <if test="remark != null">
+                #{remark},
+            </if>
+            <if test="rate != null">
+                #{rate},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="xx.NftChargeList">
+        
+        update nft_charge_list
+        <set>
+            <if test="order_id != null">
+                order_id = #{order_id},
+            </if>
+            <if test="wx_order_id != null">
+                wx_order_id = #{wx_order_id},
+            </if>
+            <if test="t_to != null">
+                t_to = #{t_to},
+            </if>
+            <if test="pay_amount != null">
+                pay_amount = #{pay_amount},
+            </if>
+            <if test="pay_time != null">
+                pay_time = #{pay_time},
+            </if>
+            <if test="is_pay != null">
+                is_pay = #{is_pay},
+            </if>
+            <if test="hash != null">
+                hash = #{hash},
+            </if>
+            <if test="t_status != null">
+                t_status = #{t_status},
+            </if>
+            <if test="create_time != null">
+                create_time = #{create_time},
+            </if>
+            <if test="update_time != null">
+                update_time = #{update_time},
+            </if>
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
+            <if test="rate != null">
+                rate = #{rate},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="xx.NftChargeList">
+        
+        update nft_charge_list
+        set order_id = #{order_id},
+        wx_order_id = #{wx_order_id},
+        t_to = #{t_to},
+        pay_amount = #{pay_amount},
+        pay_time = #{pay_time},
+        is_pay = #{is_pay},
+        hash = #{hash},
+        t_status = #{t_status},
+        create_time = #{create_time},
+        update_time = #{update_time},
+        remark = #{remark},
+        rate = #{rate}
+        where id = #{id}
+    </update>
+</mapper>

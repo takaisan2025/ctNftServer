@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AppUserMapper">
+  <resultMap id="BaseResultMap" type="AppUser">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="real_name" jdbcType="VARCHAR" property="real_name" />
+    <result column="nickname" jdbcType="VARCHAR" property="nickname" />
+    <result column="head" jdbcType="VARCHAR" property="head" />
+    <result column="tel" jdbcType="VARCHAR" property="tel" />
+    <result column="id_number" jdbcType="VARCHAR" property="id_number" />
+    <result column="address" jdbcType="VARCHAR" property="address" />
+    <result column="id_key" jdbcType="VARCHAR" property="id_key" />
+    <result column="time" jdbcType="VARCHAR" property="time" />
+    <result column="openid" jdbcType="VARCHAR" property="openid" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="jifen_balance" jdbcType="BIGINT" property="jifen_balance" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, real_name, nickname, head, tel, id_number, address, id_key, time,
+    openid, remark, jifen_balance
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from app_user
+    where id = #{id}
+  </select>
+  <select id="selectByAddress" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from app_user
+    where address = #{address}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from app_user
+    where id = #{id}
+  </delete>
+  <insert id="insert" keyColumn="id" keyProperty="id" parameterType="AppUser" useGeneratedKeys="true">
+    insert into app_user (real_name, nickname, head, 
+      tel, id_number, address, 
+      id_key, time,
+      openid, remark, jifen_balance
+      )
+    values (#{real_name}, #{nickname}, #{head}, 
+      #{tel}, #{id_number}, #{address}, 
+      #{id_key}, #{time},
+      #{openid}, #{remark}, #{jifen_balance}
+      )
+  </insert>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="AppUser" useGeneratedKeys="true">
+    insert into app_user
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="real_name != null">
+        real_name,
+      </if>
+      <if test="nickname != null">
+        nickname,
+      </if>
+      <if test="head != null">
+        head,
+      </if>
+      <if test="tel != null">
+        tel,
+      </if>
+      <if test="id_number != null">
+        id_number,
+      </if>
+      <if test="address != null">
+        address,
+      </if>
+      <if test="id_key != null">
+        id_key,
+      </if>
+      <if test="time != null">
+        time,
+      </if>
+      <if test="openid != null">
+        openid,
+      </if>
+      <if test="remark != null">
+        remark,
+      </if>
+      <if test="jifen_balance != null">
+        jifen_balance,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="real_name != null">
+        #{real_name},
+      </if>
+      <if test="nickname != null">
+        #{nickname},
+      </if>
+      <if test="head != null">
+        #{head},
+      </if>
+      <if test="tel != null">
+        #{tel},
+      </if>
+      <if test="id_number != null">
+        #{id_number},
+      </if>
+      <if test="address != null">
+        #{address},
+      </if>
+      <if test="id_key != null">
+        #{id_key},
+      </if>
+      <if test="time != null">
+        #{time},
+      </if>
+      <if test="openid != null">
+        #{openid},
+      </if>
+      <if test="remark != null">
+        #{remark},
+      </if>
+      <if test="jifen_balance != null">
+        #{jifen_balance},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="AppUser">
+    update app_user
+    <set>
+      <if test="real_name != null">
+        real_name = #{real_name},
+      </if>
+      <if test="nickname != null">
+        nickname = #{nickname},
+      </if>
+      <if test="head != null">
+        head = #{head},
+      </if>
+      <if test="tel != null">
+        tel = #{tel},
+      </if>
+      <if test="id_number != null">
+        id_number = #{id_number},
+      </if>
+      <if test="address != null">
+        address = #{address},
+      </if>
+      <if test="id_key != null">
+        id_key = #{id_key},
+      </if>
+      <if test="time != null">
+        time = #{time},
+      </if>
+      <if test="openid != null">
+        openid = #{openid},
+      </if>
+      <if test="remark != null">
+        remark = #{remark},
+      </if>
+      <if test="jifen_balance != null">
+        jifen_balance = #{jifen_balance},
+      </if>
+    </set>
+    where id = #{id}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="AppUser">
+    update app_user
+    set real_name = #{real_name},
+      nickname = #{nickname},
+      head = #{head},
+      tel = #{tel},
+      id_number = #{id_number},
+      address = #{address},
+      id_key = #{id_key},
+      time = #{time},
+      openid = #{openid},
+      remark = #{remark},
+      jifen_balance = #{jifen_balance}
+    where id = #{id}
+  </update>
+</mapper>

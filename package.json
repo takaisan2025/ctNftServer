@@ -1,0 +1,38 @@
+{
+  "name": "publickeyserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=dev nodemon ./bin/www.js",
+    "prd": "cross-env NODE_ENV=production nodemon ./bin/www.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "crypto-js": "^3.1.9-1",
+    "dotenv": "^16.0.0",
+    "ecdh": "^0.1.1",
+    "eth-crypto": "^1.3.3",
+    "express": "^4.16.4",
+    "forever": "^1.0.0",
+    "mybatis-mapper": "^0.6.8",
+    "mybatis-node": "^1.0.2",
+    "randombytes": "^2.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "ethers": "^5.6.6",
+    "form-data": "^4.0.0",
+    "formidable": "^2.0.1",
+    "ipfs-api": "^26.1.2",
+    "ipfs-http-client": "^58.0.0",
+    "mysql": "^2.18.1",
+    "node-fetch": "^2.6.1",
+    "nodemon": "^2.0.16",
+    "path": "^0.12.7",
+    "web3": "^1.7.3",
+    "xss": "^1.0.11"
+  }
+}

@@ -725,28 +725,54 @@ async function betchHashQuery() {
     for (let retKey in transList) {
         console.log(transList[retKey]);
         let {tokenId, update_time, hash, rebackUrl} = transList[retKey];
-        if(!hash || hash == "" || hash == null) {
+        if (!hash || hash == "" || hash == null) {
             continue;
         }
-        let recept = await customHttpProvider.getTransactionReceipt(hash);
+        // let recept = await customHttpProvider.getTransactionReceipt(hash);
+        let req_url = "https://ctblock.cn/graphiql";
+        let recept = await fetch(req_url, {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: "POST",
+            body: JSON.stringify({
+                "query": `{transaction(hash: \"${hash}\") \n  \n  \n  { hash, error, status, blockNumber, value, gasUsed }}`,
+                "variables": null,
+                "operationName": null
+            })
+        })
+            .then((response) => {
+                return response.json();
+            })
+            .then((response) => {
+                return response;
+            })
+            .catch((err) => {
+                console.log("Call Faild  reCall:", err);
+                return err.type;
+            });
         console.log(recept);
+        // console.log(recept);
 
         // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
         // save db
         let t_statusStorage;
-        if (recept == null) {
+        if (recept.data.transaction == null) {
             // t_statusStorage = 7;
             formatTime(new Date());
             console.log("查询hash结果为空,", hash);
             continue;
         } else {
-            if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                console.log({message: "Transaction Reverted"});
+            if (recept.data.transaction.status == "ERROR") {
+                console.log({message: recept.data.transaction});
             }
-            if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
+            if (recept.data.transaction.status == "OK") {
+                t_statusStorage = 7;
+            } else if (recept.data.transaction.status == "ERROR") {
+                console.log("hash出错:", recept.data.transaction)
                 t_statusStorage = 8;
             } else {
-                t_statusStorage = 7;
+                continue;
             }
         }
 

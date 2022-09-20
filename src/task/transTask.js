@@ -140,7 +140,7 @@ async function betchTransfer() {
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                 // let etherString = ethers.utils.formatEther(balance);
                 console.log("Balance: ", balance);
-                if (Number(balance) < Number("1000000000000000000")) {
+                if (Number(balance) < Number("100000000000000000")) {
                     // let {err, hash} = await transfer(neceliby.toString(), t_from);
                     let {err, hash} = await transfer("10000000000000000000", t_from);
                     if (err != null) {
@@ -219,7 +219,7 @@ async function betchTransfer() {
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                 // let etherString = ethers.utils.formatEther(balance);
                 console.log("Balance: ", balance);
-                if (Number(balance) < Number("1000000000000000000")) {
+                if (Number(balance) < Number("100000000000000000")) {
                     // let {err, hash} = await transfer(neceliby.toString(), t_from);
                     let {err, hash} = await transfer("10000000000000000000", t_from);
                     if (err != null) {
@@ -349,7 +349,7 @@ async function betchTransfer() {
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                 // let etherString = ethers.utils.formatEther(balance);
                 console.log("Balance: ", balance);
-                if (Number(balance) < Number("1000000000000000000")) {
+                if (Number(balance) < Number("100000000000000000")) {
                     // if (false) {
                     //     let {err, hash} = await transfer(neceliby.toString(), t_from);
                     let {err, hash} = await transfer("10000000000000000000", t_from);
@@ -432,7 +432,7 @@ async function betchTransfer() {
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                 // let etherString = ethers.utils.formatEther(balance);
                 console.log("Balance: ", balance);
-                if (Number(balance) < Number("1000000000000000000")) {
+                if (Number(balance) < Number("100000000000000000")) {
                     // if (false) {
                     //     let {err, hash} = await transfer(neceliby.toString(), t_from);
                     let {err, hash} = await transfer("10000000000000000000", t_from);

@@ -117,4 +117,7 @@ async function trabackTest() {
         });
 }
 
-transactionQuery();
+function main() {
+    console.log(typeof String(1))
+}
+main();

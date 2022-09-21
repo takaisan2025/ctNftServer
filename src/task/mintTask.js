@@ -289,6 +289,8 @@ async function betchMint() {
                     await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
                 } else if ("replacement fee too low" == gasLimitRet.err) {
                     await updateNonce(address, transactionCount1Mint + 1);
+                }else {
+                    await delNonce(address);
                 }
                 continue;
             } else {
@@ -299,8 +301,8 @@ async function betchMint() {
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                 let etherString = ethers.utils.formatEther(balance);
                 console.log("Balance: ", etherString);
-                if (Number(balance) < Number("1000000000000000000")) {
-                    console.log("合约持有者余额不足, 请进行充值!");
+                if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
+                    console.log("合约持有者余额不足, 请进行充值!", address);
                     await delNonce(address);
                     continue;
                 } else {
@@ -439,6 +441,8 @@ async function betchMint() {
                     await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
                 } else if ("replacement fee too low" == gasLimitRet.err) {
                     await updateNonce(address, transactionCount1Mint + 1);
+                } else {
+                    await delNonce(address);
                 }
                 continue;
             } else {
@@ -448,11 +452,11 @@ async function betchMint() {
                 console.log("gasPrice*:", gasPrice * gasLimit);
                 let balance = await wallet.provider.getBalance(address);
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                // let etherString = ethers.utils.formatEther(balance);
-                console.log("Balance: ", balance);
-                if (Number(balance) < Number("1000000000000000000")) {
+                let etherString = ethers.utils.formatEther(balance);
+                console.log("Balance: ", etherString);
+                if (Number(etherString) < Number("10")) {
                     //    赠送手续费 20
-                    let neceliby1 = ethers.utils.parseEther(20 + '');
+                    let neceliby1 = ethers.utils.parseEther(String(20));
 
                     let {err, hash} = await transfer(neceliby1 + "", address);
                     if (err != null) {

@@ -120,4 +120,5 @@ async function trabackTest() {
 function main() {
     console.log(typeof String(1))
 }
-main();
+console.log(checkURL("https://chaonft.cn/index.php?a=NftChainTransReturn"))
+console.log(checkURL("http://gdu.com"))

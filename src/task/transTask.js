@@ -163,8 +163,8 @@ async function betchTransfer() {
                     continue;
                 } else {
                     console.log("gasLimit:", gasLimit.toString());
-                    let neceliby = gasPrice * gasLimit;
-                    console.log("gasPrice*:", gasPrice * gasLimit);
+                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+                    console.log("gasPrice*:", neceliby);
                     let balance = await wallet.provider.getBalance(t_from);
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
@@ -305,14 +305,13 @@ async function betchTransfer() {
                     continue;
                 } else {
                     console.log("gasLimit:", gasLimit.toString());
-                    let neceliby = gasPrice * gasLimit;
-                    console.log("gasPrice*:", gasPrice * gasLimit);
+                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+                    console.log("gasPrice*:", neceliby);
                     let balance = await wallet.provider.getBalance(t_from);
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
                     if (Number(etherString) < Number(String(1))) {
-                        // let {err, hash} = await transfer(neceliby.toString(), t_from);
                         let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
                         if (err != null) {
                             //
@@ -448,15 +447,13 @@ async function betchTransfer() {
                 if (gasLimit == null) {
                     continue;
                 } else {
-                    let neceliby = gasPrice * gasLimit;
-                    console.log("gasPrice*:", gasPrice * gasLimit);
+                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+                    console.log("gasPrice*:", neceliby);
                     let balance = await wallet.provider.getBalance(t_from);
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
                     if (Number(etherString) < Number(String(1))) {
-                        // if (false) {
-                        //     let {err, hash} = await transfer(neceliby.toString(), t_from);
                         let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
                         if (err != null) {
                             //
@@ -531,15 +528,13 @@ async function betchTransfer() {
                 if (gasLimit == null) {
                     continue;
                 } else {
-                    let neceliby = gasPrice * gasLimit;
-                    console.log("gasPrice*:", gasPrice * gasLimit);
+                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+                    console.log("gasPrice*:", neceliby);
                     let balance = await wallet.provider.getBalance(t_from);
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
                     if (Number(etherString) < Number(String(1))) {
-                        // if (false) {
-                        //     let {err, hash} = await transfer(neceliby.toString(), t_from);
                         let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
                         if (err != null) {
                             //
@@ -839,7 +834,7 @@ async function betchCallFund() {
                 return {data: response};
             })
             .catch((err) => {
-                console.log("回调错误:", err, ",tokenId", orderId);
+                console.log("回调错误:", err, ",orderId", orderId);
                 return {data: null, err: err};
             });
         //处理响应结果
@@ -906,3 +901,4 @@ betchCallFund();
 module.exports = {
     betchTransfer
 };
+// node src\task\transTask.js

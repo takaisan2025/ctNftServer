@@ -126,8 +126,8 @@ async function betchTransfer() {
                     return "";
                 });
             console.log("gasLimit:", gasLimit.toString());
-            let neceliby = gasPrice * gasLimit;
-            console.log("gasPrice*:", gasPrice * gasLimit);
+            let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+            console.log("gasPrice*:", neceliby);
             let balance = await wallet.provider.getBalance(t_from);
             // 余额是 BigNumber (in wei); 格式化为 ether 字符串
             // let etherString = ethers.utils.formatEther(balance);

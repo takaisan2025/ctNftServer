@@ -1830,11 +1830,8 @@ const handleUserRouter = async (req, res) => {
         let collectAddress;
         try {
 
-            // if (address.toLowerCase() == to.toLowerCase()) {
-            //     throw {message: "transfer is owner!"}
-            // }
-            let wallet;
 
+            let wallet;
             //  判断参数是否满足规范
             let {err, flag} = validateAddress(address);
             if (!flag) {
@@ -1848,9 +1845,9 @@ const handleUserRouter = async (req, res) => {
             if (!flag1) {
                 throw {message: err1}
             }
-            if (address.toLowerCase() == to.toLowerCase()) {
-                throw {message: "transfer is owner!"}
-            }
+            // if (address.toLowerCase() == to.toLowerCase()) {
+            //     throw {message: "transfer is owner!"}
+            // }
 
             let ret = await accountSelectSelective(address)
                 .then((ret) => {

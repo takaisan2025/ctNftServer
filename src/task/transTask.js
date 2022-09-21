@@ -4,11 +4,14 @@ mybatisMapper.createMapper([
     "src/mapper/xml/nft.xml",
     "src/mapper/xml/TransFormListMapper.xml"
 ]);
-
+const {
+    graphiqlHashQuery
+} = require("../broapi/broapi");
 const {
     queryNonce,
     insertNonce,
-    updateNonce
+    updateNonce,
+    delNonce
 } = require("../mapper/NftNonceMapper");
 
 
@@ -575,48 +578,61 @@ async function betchHashQuery() {
             update_time,
             hash
         } = transList[retKey];
-        let recept = await customHttpProvider.getTransactionReceipt(hash);
-        console.log(recept);
-
-        // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-        // save db
-        let t_statusStorage;
+        let receptRet = await graphiqlHashQuery(hash);
+        let recept = receptRet.data;
         if (recept == null) {
-            // t_statusStorage = 7;
-            formatTime(new Date());
-            console.log("查询hash结果为空,", hash);
+            console.log(recept.err);
             continue;
         } else {
-            if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                console.log({message: "Transaction Reverted"});
-            }
-            if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                t_statusStorage = 7;
+            // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+            // save db
+            let t_statusStorage;
+            if (recept.data.transaction == null) {
+                // t_statusStorage = 7;
+                formatTime(new Date());
+                console.log("查询hash结果为空,", hash);
+                continue;
             } else {
-                 t_statusStorage = 6;
+
+                if (recept.data.transaction.status == "ERROR") {
+                    console.log("hash出错:", recept.data.transaction);
+                    if ("dropped/replaced" == recept.data.transaction.error) {
+                        t_statusStorage = 1;
+                    } else {
+                        t_statusStorage = 7;
+                    }
+
+                } else if (recept.data.transaction.status == "OK") {
+                    t_statusStorage = 6;
+                } else {
+                    continue;
+                }
             }
+
+            let trans_from_obj = {
+                t_status: t_statusStorage, // 6 成功,7 失败
+                id: id
+            };
+            console.log("nftUpdateSelective:", trans_from_obj);
+
+            var paramsUp = trans_from_obj;
+            var sqlUp = mybatisMapper.getStatement(
+                "trans_form_list",
+                "updateByPrimaryKeySelective",
+                paramsUp,
+                format
+            );
+            let result = await execSql(sqlUp)
+                .then((ret) => {
+                    return ret;
+                })
+                .catch((err) => {
+                    console.error(responseFun(500, err, ""), id);
+                });
+
+
         }
 
-        let trans_from_obj = {
-            t_status: t_statusStorage, // 6 成功,7 失败
-            id: id
-        };
-        console.log("nftUpdateSelective:", trans_from_obj);
-
-        var paramsUp = trans_from_obj;
-        var sqlUp = mybatisMapper.getStatement(
-            "trans_form_list",
-            "updateByPrimaryKeySelective",
-            paramsUp,
-            format
-        );
-        let result = await execSql(sqlUp)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                console.error(responseFun(500, err, ""), id);
-            });
     }
     console.log("betchHashQuery All Done!");
     setTimeout(() => {
@@ -698,19 +714,25 @@ async function betchCallFund() {
             redirect: "follow",
         };
 
-        let response = await fetch(reback_url, requestOptions)
+        let responseRet = await fetch(reback_url, requestOptions)
             .then((response) => {
+                console.log("回调返回原始内容status:", response.status);
+                console.log("回调返回原始内容statusText:", response.statusText);
                 return response.json();
             })
             .then((response) => {
-                return response;
+                console.log("回调返回处理结果:", response);
+                return {data: response};
             })
             .catch((err) => {
-                console.log("Call Faild  reCall:", err);
+                console.log("回调错误:", err, ",tokenId", tokenId);
+                return {data: null, err: err};
             });
         //处理响应结果
+        let response = responseRet.data
+        //处理响应结果
         console.log(response);
-        if (response == undefined) {
+        if (response == null) {
             continue;
         }
         if (response.status == 1) {

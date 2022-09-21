@@ -49,6 +49,7 @@ async function transactionQuery() {
             return err.type;
         });
     console.log(recept.data.transaction.status);
+    console.log(recept.data.transaction);
 
 }
 
@@ -116,4 +117,4 @@ async function trabackTest() {
         });
 }
 
-trabackTest();
+transactionQuery();

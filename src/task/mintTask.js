@@ -18,7 +18,9 @@ const ipfsNode = ipfsAPI({
     port: GlobalConfig.IPFS[1].PORT,
     protocol: GlobalConfig.IPFS[1].PROTOCOL,
 });
-
+const {
+    graphiqlHashQuery
+} = require("../broapi/broapi");
 const FormData = require("form-data");
 const web3 = require("web3");
 const fetch = require("node-fetch");
@@ -735,60 +737,42 @@ async function betchHashQuery() {
         }
         // let recept = await customHttpProvider.getTransactionReceipt(hash);
         let req_url = "https://ctblock.cn/graphiql";
-        let recept = await fetch(req_url, {
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            method: "POST",
-            body: JSON.stringify({
-                "query": `{transaction(hash: \"${hash}\") \n  \n  \n  { hash, error, status, blockNumber, value, gasUsed }}`,
-                "variables": null,
-                "operationName": null
-            })
-        })
-            .then((response) => {
-                return response.json();
-            })
-            .then((response) => {
-                return response;
-            })
-            .catch((err) => {
-                console.log("查询hash失败:", err);
-                return err.type;
-            });
-        console.log(recept);
-        // console.log(recept);
-
-        // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-        // save db
-        let t_statusStorage;
-        if (recept.data.transaction == null) {
-            // t_statusStorage = 7;
-            formatTime(new Date());
-            console.log("查询hash结果为空,", hash);
+        let receptRet = await graphiqlHashQuery(hash);
+        let recept = receptRet.data;
+        if (recept == null) {
+            console.log(recept.err);
             continue;
         } else {
-            if (recept.data.transaction.status == "ERROR") {
-                console.log({message: recept.data.transaction});
-            }
-            if (recept.data.transaction.status == "OK") {
-                t_statusStorage = 7;
-            } else if (recept.data.transaction.status == "ERROR") {
-                console.log("hash出错:", recept.data.transaction)
-                t_statusStorage = 8;
-            } else {
+            console.log(recept);
+            // console.log(recept);
+
+            // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+            // save db
+            let t_statusStorage;
+            if (recept.data.transaction == null) {
+                // t_statusStorage = 7;
+                formatTime(new Date());
+                console.log("查询hash结果为空,", hash);
                 continue;
+            } else {
+                if (recept.data.transaction.status == "ERROR") {
+                    console.log("hash出错:", recept.data.transaction);
+                    if ("dropped/replaced" == recept.data.transaction.error) {
+                        t_statusStorage = 6;
+                    } else {
+                        t_statusStorage = 8;
+                    }
+
+                } else if (recept.data.transaction.status == "OK") {
+                    t_statusStorage = 7;
+                } else {
+                    continue;
+                }
             }
+
+            await nftUpdateSelectiveStatus(t_statusStorage, tokenId);
         }
 
-
-        await nftUpdateSelectiveStatus(t_statusStorage, tokenId)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                console.error(responseFun(500, err, ""), tokenId);
-            }); // 设置为回调成功状态
     }
     console.log("betchHashQuery All Done!");
     setTimeout(() => {

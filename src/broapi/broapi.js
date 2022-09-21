@@ -1,0 +1,29 @@
+async function graphiqlHashQuery(hash) {
+    let req_url = "https://ctblock.cn/graphiql";
+    let receptRet = await fetch(req_url, {
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        method: "POST",
+        body: JSON.stringify({
+            "query": `{transaction(hash: \"${hash}\") \n  \n  \n  { hash, error, status, blockNumber, value, gasUsed }}`,
+            "variables": null,
+            "operationName": null
+        })
+    })
+        .then((response) => {
+            return response.json();
+        })
+        .then((response) => {
+            return {err: null, data: response};
+        })
+        .catch((err) => {
+            console.log("查询hash失败:", err);
+            return {err: err, data: null};
+        });
+    return receptRet;
+}
+
+module.exports = {
+    graphiqlHashQuery
+};

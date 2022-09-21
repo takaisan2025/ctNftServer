@@ -33,6 +33,14 @@ function updateNonce(address, nonce) {
     });
 }
 
+function delNonce(address) {
+    var sql = mybatisMapper.getStatement("NftNonceMapper", "deleteByAddress",
+        {address: address}, format);
+    return exec(sql).then((rows) => {
+        return rows || null;
+    });
+}
+
 async function main() {
     // let reesult = await insertNonce("0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E52", 0);
     // let reesult = await updateNonce("0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D", 1);
@@ -46,4 +54,5 @@ module.exports = {
     queryNonce,
     insertNonce,
     updateNonce,
+    delNonce,
 };

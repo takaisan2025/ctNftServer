@@ -212,6 +212,16 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/checkAccount") {
         const {address} = req.body;
         //
+        try {
+            //  判断参数是否满足规范
+            let {err, flag} = validateAddress(address);
+            if (!flag) {
+                throw err
+            }
+
+        } catch (e) {
+            return responseFun(500, {message: e}, {});
+        }
         const result = accountSelectSelective(address);
         return result
             .then((ret) => {
@@ -618,7 +628,7 @@ const handleUserRouter = async (req, res) => {
                 params,
                 format
             );
-            console.log(sql);
+
             let collectRet = await execSql(sql)
                 .then((ret) => {
                     return ret;
@@ -788,7 +798,7 @@ const handleUserRouter = async (req, res) => {
                 params,
                 format
             );
-            console.log(sql);
+
             let collectRet = await execSql(sql)
                 .then((ret) => {
                     return ret;
@@ -1042,7 +1052,6 @@ const handleUserRouter = async (req, res) => {
                     format
                 );
 
-                console.log(sql);
 
                 let collectRet = await execSql(sql)
                     .then((ret) => {
@@ -1228,7 +1237,7 @@ const handleUserRouter = async (req, res) => {
                 params,
                 format
             );
-            console.log(sql);
+
             let collectRet = await execSql(sql)
                 .then((ret) => {
                     return ret;

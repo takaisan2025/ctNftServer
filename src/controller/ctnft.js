@@ -125,7 +125,7 @@ const nftInsertSelective = (nft) => {
  '${xss(nft.tokenId)}',
  '${xss(nft.nonce)}',
  '${xss(nft.creator)}'  )`;
-    // console.log(sql);
+
     return exec(sql).then((rows) => {
         return rows[0] || null;
     });
@@ -139,7 +139,7 @@ imgPath =  '${xss(nft.imgPath)}', metaData =   '${xss(nft.metaData)}',
     metaDataSource = '${xss(nft.metaDataSource)}',  
     hash =  '${xss(nft.hash)}' where 
     tokenId =  '${xss(nft.tokenId)}' and  status != ${nft.status} `;
-        // console.log(sql);
+
         return exec(sql).then((rows) => {
             return rows[0] || null;
         });
@@ -147,7 +147,7 @@ imgPath =  '${xss(nft.imgPath)}', metaData =   '${xss(nft.metaData)}',
         // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
         const sql = `update nft set isFinish = ${nft.isFinish} ,imgPath =  '${xss(nft.imgPath)}', metaData =   '${xss(nft.metaData)}',
     metaDataSource = '${xss(nft.metaDataSource)}',  hash =  '${xss(nft.hash)}' where tokenId =  '${xss(nft.tokenId)}' `;
-        // console.log(sql);
+
         return exec(sql).then((rows) => {
             return rows[0] || null;
         });
@@ -157,7 +157,7 @@ imgPath =  '${xss(nft.imgPath)}', metaData =   '${xss(nft.metaData)}',
 const nftUpdateSelectiveStatus = (status, tokenId) => {
     // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
     const sql = `update nft set status =  ${status} where tokenId =  '${xss(tokenId)}' `;
-    // console.log(sql);
+
     return exec(sql).then((rows) => {
         return rows[0] || null;
     });
@@ -165,7 +165,7 @@ const nftUpdateSelectiveStatus = (status, tokenId) => {
 const nftUpdateSelectiveIsFinish = (isFinish, tokenId) => {
     // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
     const sql = `update nft set isFinish =  ${isFinish} where tokenId =  '${xss(tokenId)}' `;
-    // console.log(sql);
+
     return exec(sql).then((rows) => {
         return rows[0] || null;
     });
@@ -208,7 +208,7 @@ ${xss(JSON.stringify(nft.serverPath))},
  ${xss(JSON.stringify(nft.tempPath))},
  ${xss(nft.rebackUrl)},
  '${xss(nft.creator)}'  )`;
-    // console.log(sql);
+
     return exec(sql).then((rows) => {
         return rows[0] || null;
     });

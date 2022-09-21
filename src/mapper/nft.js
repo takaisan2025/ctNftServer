@@ -17,6 +17,6 @@ var sql = mybatisMapper.getStatement("nft", "insertSelective", param, format);
 // var sql1 = mybatisMapper.getStatement('nft', 'selectByPrimaryKey', {id:10}, format);
 // var sql2 = mybatisMapper.getStatement('nft', 'updateByPrimaryKeySelective', {id:10}, format);
 
-console.log(sql);
+
 // console.log(sql1)
 // console.log(sql2)

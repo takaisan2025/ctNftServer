@@ -25,6 +25,10 @@
         delete from nft_nonce
         where id = #{id}
     </delete>
+    <delete id="deleteByAddress" parameterType="java.lang.Integer">
+        delete from nft_nonce
+        where address = #{address}
+    </delete>
     <insert id="insert" keyColumn="id" keyProperty="id" parameterType="cn.qianyi.model.NftNonce"
             useGeneratedKeys="true">
         insert into nft_nonce (address, nonce)

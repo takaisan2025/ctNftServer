@@ -9,4 +9,4 @@ var param = {
 // Get SQL Statement
 var format = { language: "sql", indent: "" };
 var sql = mybatisMapper.getStatement("collect", "selectByPrimaryKey", param, format);
-console.log(sql);
+

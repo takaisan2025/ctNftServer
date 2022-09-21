@@ -1,5 +1,10 @@
 const web3 = require("web3");
-
+const {
+    isJson,
+    stripHexPrefix,
+    validateAddress,
+    checkURL
+} = require("../rules/rules");
 let web3o = new web3("http://ctblock.cn/blockChain");
 //
 // console.log(web3o.eth.accounts.wallet._accounts)
@@ -79,8 +84,20 @@ function calcContractAddress() {
     console.log(addr2);
 
 }
+function paramTest() {
+    let a = 10;
+    a = 20;
+    console.log(a);
+    let a1 = (() => {
+        let a = 30;
+        return a;
+    })()
 
-function stripHexPrefix(){
-    console.log(web3o.utils.stripHexPrefix("0x269153639cd53a0e41841801a149824c320f1d29"))
+    console.log(a1)
 }
+
+function main() {
+    console.log(isJson({}))
+}
+
 main();

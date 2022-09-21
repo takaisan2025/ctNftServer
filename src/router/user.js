@@ -21,7 +21,9 @@ const {
 } = require("./collect");
 const {
     isJson,
-    stripHexPrefix
+    stripHexPrefix,
+    validateAddress,
+    checkURL
 } = require("../rules/rules");
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
@@ -548,13 +550,36 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/createctNftAsyncDivTokenId") {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, tokenId, rebackUrl} = req.body;
-        if (typeof data !== "object") {
-            return responseFun(500, {message: "invalid paramter data"}, {});
-        }
-        if (JSON.stringify(data).indexOf("{") == -1) {
-            return responseFun(500, {message: "invalid paramter data"}, {});
-        }
+        try {
+            //  判断参数是否满足规范
+            let {err, flag} = validateAddress(address);
+            if (!flag) {
+                throw err
+            }
 
+            let {err1, flag1} = (() => {
+                let {err, flag} = validateAddress(collectAddress);
+                return {err1: err, flag1: flag}
+            })();
+            if (!flag1) {
+                throw err1
+            }
+
+            let {err2, flag2} = (() => {
+                let {err, flag} = isJson(data);
+                return {err2: err, flag2: flag}
+            })();
+            if (!flag2) {
+                throw err2
+            }
+            let checkURLRet = checkURL(rebackUrl);
+            if (!checkURLRet.flag) {
+                throw checkURLRet.err
+            }
+
+        } catch (e) {
+            return responseFun(500, {message: e}, {});
+        }
         //  判断参数是否满足规范
         let ret = await accountSelectSelective(address)
             .then((ret) => {
@@ -692,27 +717,42 @@ const handleUserRouter = async (req, res) => {
     }
     if (req.method === "POST" && req.path === "/api/account/createctNftAsync") {
         // 创建表单解析对象
-        const {address, password, collectAddress, file, data} = req.body;
-        let {rebackUrl} = req.body;
-
-        if (rebackUrl == '' || rebackUrl == undefined) {
-            rebackUrl = null;
-        }
+        const {address, password, collectAddress, file, data, rebackUrl} = req.body;
 
         try {
-            let isJSON = isJson(data);
-            if (!isJSON) {
-                throw "is not json"
-            }
-        } catch (e) {
-            return responseFun(500, {message: "invalid paramter data"}, {});
-        }
 
-        if (typeof data !== "object") {
-            return responseFun(500, {message: "invalid paramter data"}, {});
-        }
-        if (JSON.stringify(data).indexOf("{") == -1) {
-            return responseFun(500, {message: "invalid paramter data"}, {});
+            //  判断参数是否满足规范
+            let {err, flag} = validateAddress(address);
+            if (!flag) {
+                throw err
+            }
+
+            let {err1, flag1} = (() => {
+                let {err, flag} = validateAddress(collectAddress);
+                return {err1: err, flag1: flag}
+            })();
+            if (!flag1) {
+                throw err1
+            }
+            let {err2, flag2} = (() => {
+                let {err, flag} = isJson(data);
+                return {err2: err, flag2: flag}
+            })();
+            if (!flag2) {
+                throw err2
+            }
+            let checkURLRet = checkURL(rebackUrl);
+            if (!checkURLRet.flag) {
+                throw checkURLRet.err
+            }
+
+            let checkURLRet1 = checkURL(file);
+            if (!checkURLRet1.flag) {
+                throw checkURLRet1.err
+            }
+
+        } catch (e) {
+            return responseFun(500, {message: e}, {});
         }
 
         //  判断参数是否满足规范
@@ -872,20 +912,23 @@ const handleUserRouter = async (req, res) => {
             data,
             cMetadata,
         } = req.body;
-        if (typeof data !== "object") {
-            return responseFun(500, {message: "invalid paramter data"}, {});
-        }
+
         try {
-            let isJSON1 = isJson(data);
-            if (!isJSON1) {
-                throw "is not json"
+
+            let {err2, flag2} = (() => {
+                let {err, flag} = isJson(data);
+                return {err2: err, flag2: flag}
+            })();
+            let {err1, flag1} = (() => {
+                let {err, flag} = isJson(cMetadata);
+                return {err1: err, flag1: flag}
+            })();
+            if (!flag1 || !flag2) {
+                throw err2
             }
-            let isJSON = isJson(cMetadata);
-            if (!isJSON) {
-                throw "is not json"
-            }
+
         } catch (e) {
-            return responseFun(500, {message: "invalid paramter data or cMetadata"}, {});
+            return responseFun(500, {message: e}, {});
         }
         //  判断参数是否满足规范
         let ret = await accountSelectSelective(address)
@@ -1110,26 +1153,45 @@ const handleUserRouter = async (req, res) => {
         req.path === "/api/account/createctNft1155Async"
     ) {
         // 创建表单解析对象
-        const {address, password, collectAddress, file, data, supply} = req.body;
-        let {rebackUrl} = req.body;
+        const {address, password, collectAddress, file, data, supply, rebackUrl} = req.body;
+        let {} = req.body;
 
-        if (rebackUrl == '' || rebackUrl == undefined) {
-            rebackUrl = null;
-        }
         try {
-            let isJSON = isJson(data);
-            if (!isJSON) {
-                throw "is not json"
+            //  判断参数是否满足规范
+            let {err, flag} = validateAddress(address);
+            if (!flag) {
+                throw err
             }
+
+            let {err1, flag1} = (() => {
+                let {err, flag} = validateAddress(collectAddress);
+                return {err1: err, flag1: flag}
+            })();
+            if (!flag1) {
+                throw err1
+            }
+
+            let {err2, flag2} = (() => {
+                let {err, flag} = isJson(data);
+                return {err2: err, flag2: flag}
+            })();
+            if (!flag2) {
+                throw err2
+            }
+            let checkURLRet = checkURL(rebackUrl);
+            if (!checkURLRet.flag) {
+                throw checkURLRet.err
+            }
+
+            let checkURLRet1 = checkURL(file);
+            if (!checkURLRet1.flag) {
+                throw checkURLRet1.err
+            }
+
         } catch (e) {
-            return responseFun(500, {message: "invalid paramter data or cMetadata"}, {});
+            return responseFun(500, {message: e}, {});
         }
-        if (typeof data !== "object") {
-            return responseFun(500, {message: "invalid paramter data"}, {});
-        }
-        if (JSON.stringify(data).indexOf("{") == -1) {
-            return responseFun(500, {message: "invalid paramter data"}, {});
-        }
+
         if (supply >= 100000) {
             return responseFun(500, {message: "supply must less than 100000"}, {});
         }
@@ -1280,12 +1342,20 @@ const handleUserRouter = async (req, res) => {
             const {address, password, cMetadata, type} = req.body;
 
             try {
-                let isJSON = isJson(cMetadata);
-                if (!isJSON) {
-                    throw {message: "is not json"}
+                let {err, flag} = validateAddress(address);
+                if (!flag) {
+                    throw err
                 }
+                let {err2, flag2} = (() => {
+                    let {err, flag} = isJson(cMetadata);
+                    return {err2: err, flag2: flag}
+                })();
+                if (!flag2) {
+                    throw err2
+                }
+
             } catch (e) {
-                return responseFun(500, {message: "invalid paramter cMetadata"}, {});
+                return responseFun(500, {message: e}, {});
             }
             if (JSON.stringify(cMetadata).indexOf("{") == -1) {
                 return responseFun(500, {message: "invalid paramter data"}, {});
@@ -1755,44 +1825,47 @@ const handleUserRouter = async (req, res) => {
             //     throw {message: "transfer is owner!"}
             // }
             let wallet;
+
+            //  判断参数是否满足规范
+            let {err, flag} = validateAddress(address);
+            if (!flag) {
+                throw {message: err}
+            }
+
+            let {err1, flag1} = (() => {
+                let {err, flag} = validateAddress(to);
+                return {err1: err, flag1: flag}
+            })();
+            if (!flag1) {
+                throw {message: err1}
+            }
+            if (address.toLowerCase() == to.toLowerCase()) {
+                throw {message: "transfer is owner!"}
+            }
+
+            let ret = await accountSelectSelective(address)
+                .then((ret) => {
+                    return ret;
+                })
+                .catch((err) => {
+                    return responseFun(500, err, {});
+                });
+            console.log(ret);
+            if (ret == null) {
+                return responseFun(500, {message: "账户不存在!"}, {});
+            }
+
+            if (password != ret.psd) {
+                throw {message: "invalid password"};
+            }
+
+            let checkURLRet = checkURL(rebackUrl);
+            if (!checkURLRet.flag) {
+                throw checkURLRet.err
+            }
+
             try {
 
-                //  判断参数是否满足规范
-                if (!address) {
-                    throw {message: "address is miss!"}
-                }
-
-                if (!to) {
-                    throw {message: "to is miss!"}
-                }
-
-                if (address.toLowerCase() == to.toLowerCase()) {
-                    throw {message: "transfer is owner!"}
-                }
-
-                if (address.length != 42) {
-                    throw {message: "assress is error!"}
-                }
-                if (to.length != 42) {
-                    throw {message: "to is error!"}
-                }
-
-
-                let ret = await accountSelectSelective(address)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        return responseFun(500, err, {});
-                    });
-                console.log(ret);
-                if (ret == null) {
-                    return responseFun(500, {message: "账户不存在!"}, {});
-                }
-
-                if (password != ret.psd) {
-                    throw "invalid password";
-                }
                 //
                 // wallet = await ethers.Wallet.fromEncryptedJson(
                 //     ret.keystore,

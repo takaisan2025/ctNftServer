@@ -444,8 +444,6 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
     } catch (err) {
         return {err: err, hash: null};
     }
-
-
 }
 
 module.exports = {

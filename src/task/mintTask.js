@@ -638,51 +638,51 @@ async function betchCallFund() {
                 })
             })
                 .then((response) => {
+                    console.log("回调返回原始内容status:", response.status);
+                    console.log("回调返回原始内容statusText:", response.statusText);
                     return response.json();
                 })
                 .then((response) => {
-                    return response;
+                    console.log("回调返回处理结果:", response);
+                    return {data: response};
                 })
                 .catch((err) => {
-                    console.log("Call Faild  reCall:", err);
+                    console.log("回调错误:", err, ",tokenId", tokenId);
+                    return {data: null, err: err};
                 });
             //处理响应结果
             console.log(responseChanel1);
-            if (responseChanel1.code == 200) {
-                await nftUpdateSelectiveStatus(1, tokenId)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        console.error(responseFun(500, err, ""), tokenId);
-                    }); // 设置为回调成功状态
+            if (responseChanel1 == null) {
+                await nftUpdateSelectiveStatus(9, tokenId);
+                continue;
+            } else if (responseChanel1.code == 200) {
+                await nftUpdateSelectiveStatus(1, tokenId);              // 设置为回调成功状态
             } else {
-                await nftUpdateSelectiveStatus(9, tokenId)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        console.error(responseFun(500, err, ""), tokenId);
-                    }); // 设置为回调成功状态
+                await nftUpdateSelectiveStatus(9, tokenId);
+                continue;
             }
         } else {
-            let response = await fetch(rebackUrl, requestOptions)
+            let responseRet = await fetch(rebackUrl, requestOptions)
                 .then((response) => {
+                    console.log("回调返回原始内容status:", response.status);
+                    console.log("回调返回原始内容statusText:", response.statusText);
                     return response.json();
                 })
                 .then((response) => {
-                    return response;
+                    console.log("回调返回处理结果:", response);
+                    return {data: response};
                 })
                 .catch((err) => {
-                    console.log("Call Faild  reCall:", err);
-                    return "Call Faild  reCall";
+                    console.log("回调错误:", err, ",tokenId", tokenId);
+                    return {data: null, err: err};
                 });
             //处理响应结果
+            let response = responseRet.data
             console.log(response);
-            if (response == "Call Faild  reCall") {
+            if (response == null) {
+                await nftUpdateSelectiveStatus(9, tokenId);
                 continue;
-            }
-            if (response.status && response.status == 1) {
+            } else if (response.status && response.status == 1) {
                 await nftUpdateSelectiveStatus(1, tokenId)
                     .then((ret) => {
                         return ret;
@@ -691,13 +691,8 @@ async function betchCallFund() {
                         console.error(responseFun(500, err, ""), tokenId);
                     }); // 设置为回调成功状态
             } else {
-                await nftUpdateSelectiveStatus(9, tokenId)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        console.error(responseFun(500, err, ""), tokenId);
-                    }); // 设置为回调成功状态
+                await nftUpdateSelectiveStatus(9, tokenId);
+                continue;
             }
         }
     }
@@ -758,7 +753,7 @@ async function betchHashQuery() {
                 return response;
             })
             .catch((err) => {
-                console.log("Call Faild  reCall:", err);
+                console.log("查询hash失败:", err);
                 return err.type;
             });
         console.log(recept);

@@ -96,8 +96,24 @@ function paramTest() {
     console.log(a1)
 }
 
-function main() {
-    console.log(isJson({}))
+async function trabackTest() {
+    // let response = await fetch("http://testh5.yixwkj.cn/block/nfcorder/notify", {})
+    let response = await fetch("http://", {})
+        .then((response) => {
+            console.log("回调返回原始内容:", response.status);
+            console.log("回调返回原始内容:", response.statusText);
+            console.log("回调返回原始内容:", response);
+
+            return response.json();
+        })
+        .then((response) => {
+            console.log("回调返回处理结果:", response);
+            return response;
+        })
+        .catch((err) => {
+            console.log("回调错误:", err, ",tokenId");
+            return null;
+        });
 }
 
-main();
+trabackTest();

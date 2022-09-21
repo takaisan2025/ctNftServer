@@ -105,14 +105,14 @@ async function fileUploadIpfs() {
             .add(data)
             // .add(Buffer.from(data))
             .then((imgResponse) => {
-                return imgResponse;
+                // return imgResponse;
                 return {err: null, data: imgResponse}
             })
             .catch((err) => {
                 console.error(responseFunStr(500, err, {}));
                 return {err: err, data: null}
             });
-        if (imgResponseRet.err != null) {
+        if (imgResponseRet.err == null) {
             let imgResponse = imgResponseRet.data;
             console.log("imgResponse:", imgResponse);
             console.log("img:", imgResponse[0].path);

@@ -1,14 +1,3 @@
-const {
-    login,
-    accountSelectSelective,
-    accountInsertSelective,
-    nftSelectSelective,
-    nftSelectSelectiveCreator,
-    nftInsertSelective,
-    nftPreInsertSelective,
-    nftUpdateSelective,
-    responseFun,
-} = require("../controller/ctnft");
 const ethers = require("ethers");
 const fetch = require("node-fetch");
 const formidable = require("formidable");
@@ -228,15 +217,14 @@ async function createCollectV2Call(type, wallet) {
                 from: wallet.address,
             },
             (err, gaslimit) => {
-                console.log("err\n:" + err);
-                console.log("gas:\n" + gaslimit);
+                // console.log("err\n:" + err);
+                // console.log("gas:\n" + gaslimit);
                 resolve({err, gaslimit});
             }
         );
     }).then((ret) => {
         return ret;
     });
-    console.log({err, gaslimit});
     return {err, gaslimit};
 }
 
@@ -247,7 +235,8 @@ async function collectInit(
     contractUrl,
     type,
     collectAddress,
-    wallet
+    wallet,
+    gaslimitInit
 ) {
     if (type == 10) {
         try {
@@ -258,7 +247,7 @@ async function collectInit(
             );
             let contractWithSigner = contract.connect(wallet);
             let tx = await contractWithSigner
-                .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl)
+                .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {gasLimit: gaslimitInit})
                 .then((ret) => {
                     return ret;
                 })
@@ -274,7 +263,7 @@ async function collectInit(
                 .catch((err) => {
                     console.log("err:", err);
                 });
-            console.log(recept);
+            // console.log(recept);
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
                 throw {message: "Transaction Reverted"};
             }
@@ -292,7 +281,7 @@ async function collectInit(
             );
             let contractWithSigner = contract.connect(wallet);
             let tx = await contractWithSigner
-                .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl)
+                .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {gasLimit: gaslimitInit})
                 .then((ret) => {
                     return ret;
                 })
@@ -327,7 +316,7 @@ async function collectInit(
             );
             let contractWithSigner = contract.connect(wallet);
             let tx = await contractWithSigner
-                .__ERC721Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl)
+                .__ERC721Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {gasLimit: gaslimitInit})
                 .then((ret) => {
                     return ret;
                 })
@@ -363,35 +352,33 @@ async function collectInitCall(
     tokenUrlPrefix,
     contractUrl,
     type,
-    collectAddress,
-    wallet
+    collectAddressMap,
+    wallet,
 ) {
     if (type == 10) {
         let contract = new ethers.Contract(
-            collectAddress,
+            collectAddressMap['10'],
             ERC1155Ctnft.abi,
             customHttpProvider
         );
-        let contractWithSigner = contract.connect(wallet);
-        let {err, gaslimit} = await contractWithSigner.estimateGas
-            .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl)
+        let {err, gaslimit} = await contract.estimateGas
+            .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {from: "0x269153639cd53a0e41841801a149824c320f1d29"})
             .then((ret) => {
                 return {err: null, gaslimit: ret};
             })
             .catch((err) => {
-                console.log("err:", err);
+                // console.log("err:", err);
                 return {err: err, gaslimit: null};
             });
         return {err, gaslimit};
     } else if (type == 12) {
         let contract = new ethers.Contract(
-            collectAddress,
+            collectAddressMap['12'],
             ERC1155CtnftOwner.abi,
             customHttpProvider
         );
-        let contractWithSigner = contract.connect(wallet);
-        let {err, gaslimit} = await contractWithSigner.estimateGas
-            .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl)
+        let {err, gaslimit} = await contract.estimateGas
+            .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {from: "0x269153639cd53a0e41841801a149824c320f1d29"})
             .then((ret) => {
                 return {err: null, gaslimit: ret};
             })
@@ -403,13 +390,12 @@ async function collectInitCall(
     } else if (type == 9) {
         // 721
         let contract = new ethers.Contract(
-            collectAddress,
+            collectAddressMap['9'],
             ERC721Ctnft.abi,
             customHttpProvider
         );
-        let contractWithSigner = contract.connect(wallet);
-        let {err, gaslimit} = await contractWithSigner.estimateGas
-            .__ERC721Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl)
+        let {err, gaslimit} = await contract.estimateGas
+            .__ERC721Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {from: "0x269153639cd53a0e41841801a149824c320f1d29"})
             .then((ret) => {
                 return {err: null, gaslimit: ret};
             })

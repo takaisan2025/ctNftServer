@@ -176,6 +176,8 @@ const {
     updateNonce
 } = require("../mapper/NftNonceMapper");
 
+let gasPrice = "5000100000000";
+let isGasPrice = false;
 
 async function betchMint() {
     let nfts = nftSelectSelectiveStatus(6); // 资源未上链ipfs的条目
@@ -242,9 +244,10 @@ async function betchMint() {
         // console.log("发送交易总数1: " + transactionCount1Mint);
         console.log("nonce: " + nonce);
         let tokenURI = metaData;
-        let gasPrice = (await customHttpProvider.getGasPrice()).toString();
-        console.log("gasPrice:", gasPrice.toString());
-
+        if (!isGasPrice) {
+            gasPrice = (await customHttpProvider.getGasPrice()).toString();
+            isGasPrice = true;
+        }
         if (type == 10 || type == 12) {
             let contract = new ethers.Contract(
                 collectAddress,

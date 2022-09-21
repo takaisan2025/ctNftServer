@@ -15,6 +15,8 @@ let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
+let gasPrice = "5000100000000";
+let isGasPrice = false;
 
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
@@ -22,10 +24,10 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
 async function setSettleTask() {
 
     let wallet = new ethers.Wallet(privateKeyLottery, customHttpProvider);
-
-    let gasPrice = (await customHttpProvider.getGasPrice()).toString();
-    console.log("gasPrice:", gasPrice.toString());
-
+    if (!isGasPrice) {
+        gasPrice = (await customHttpProvider.getGasPrice()).toString();
+        isGasPrice = true;
+    }
     let contract = new ethers.Contract(
         collectAddress,
         Lottery.abi,
@@ -102,10 +104,10 @@ async function setSettleTask() {
 async function resetTask() {
 
     let wallet = new ethers.Wallet(privateKeyLottery, customHttpProvider);
-
-    let gasPrice = (await customHttpProvider.getGasPrice()).toString();
-    console.log("gasPrice:", gasPrice.toString());
-
+    if (!isGasPrice) {
+        gasPrice = (await customHttpProvider.getGasPrice()).toString();
+        isGasPrice = true;
+    }
     let contract = new ethers.Contract(
         collectAddress,
         Lottery.abi,

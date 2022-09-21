@@ -41,6 +41,8 @@ let typeMapper = {
     3: "购买藏品"
 
 }
+let gasPrice = "5000100000000";
+let isGasPrice = false;
 
 async function betchGive() {
     var format = {language: "sql", indent: "  "};
@@ -72,9 +74,10 @@ async function betchGive() {
         let wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
 
         // 使用Provider 连接合约，将只有对合约的可读权限
-        let gasPrice = (await customHttpProvider.getGasPrice()).toString();
-        console.log("gasPrice:", gasPrice.toString());
-
+        if (!isGasPrice) {
+            gasPrice = (await customHttpProvider.getGasPrice()).toString();
+            isGasPrice = true;
+        }
         let contract = new ethers.Contract(
             contract_address,
             ScoreToken.abi,

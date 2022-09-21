@@ -55,7 +55,7 @@ const getPostData = (req) => {
 
 const severHandle = (req, res) => {
     //日志打印
-    console.log("START!")
+    // console.log("START!")
     console.log("req.method", req.method);
 
     // 设置返回格式JSON
@@ -75,8 +75,8 @@ const severHandle = (req, res) => {
             return;
         }
         req.body = postData;
-        console.log("req.body:", req.body)
-        console.log("OVER!");
+        // console.log("req.body:", req.body)
+        // console.log("OVER!");
 
         const response = await handleUserRouter(req, res);
         if (response) {

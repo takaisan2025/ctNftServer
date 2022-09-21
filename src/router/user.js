@@ -8,17 +8,8 @@ const {
     nftSelectSelectiveCreator,
     nftInsertSelective,
     nftPreInsertSelective,
-    nftUpdateSelective,
-    nftUpdateSelectiveStatus,
-    nftUpdateSelectiveIsFinish,
     responseFun,
 } = require("../controller/ctnft");
-// const {
-//     fileUploadIpfs
-// } = require("../router/mintTask");
-// const {
-//     betchTransfer
-// } = require("../router/transTask");
 const {
     createCollectV1Erc1155,
     createCollectV1Erc1155Call,
@@ -28,6 +19,10 @@ const {
     collectInitCall,
     sendCTI,
 } = require("./collect");
+const {
+    isJson,
+    stripHexPrefix
+} = require("../rules/rules");
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
     REVERTED: 0,
@@ -68,6 +63,19 @@ mybatisMapper.createMapper([
     "src/mapper/xml/NftUserAddressListMapper.xml",
 ]);
 let result = null;
+// 非初始化合约地址设置
+const ERC721CtnftExample = "0x0F4b3B9EcfD11444cB139dB98DB9aB0Ec417705E";
+const ERC1155CtnftExample = "0xeB3AD009272D6C5f045f3d5EaD0ef0e47930877d";
+const ERC1155CtnftOwnerExample = "0xbE23EBD6fC9b07945251382A8db82C477ddd5683";
+let collectAddressExample = {
+    "9": ERC721CtnftExample,
+    "10": ERC1155CtnftExample,
+    "12": ERC1155CtnftOwnerExample
+}
+let gasPrice = "5000100000000";
+let isGasPrice = false;
+var util = require('ethereumjs-util');
+
 
 /**
  * 保存文件
@@ -124,6 +132,10 @@ function Mint721Data(tokenId, tokenURI, creators, royalties, signatures) {
 
 const handleUserRouter = async (req, res) => {
 
+    if (!isGasPrice) {
+        gasPrice = (await customHttpProvider.getGasPrice()).toString();
+        isGasPrice = true;
+    }
     // 权限验证
     // var token = req.headers.token;
     // if (!token) {
@@ -688,7 +700,7 @@ const handleUserRouter = async (req, res) => {
         }
 
         try {
-            let isJSON = isJsonFun(data);
+            let isJSON = isJson(data);
             if (!isJSON) {
                 throw "is not json"
             }
@@ -864,11 +876,11 @@ const handleUserRouter = async (req, res) => {
             return responseFun(500, {message: "invalid paramter data"}, {});
         }
         try {
-            let isJSON1 = isJsonFun(data);
+            let isJSON1 = isJson(data);
             if (!isJSON1) {
                 throw "is not json"
             }
-            let isJSON = isJsonFun(cMetadata);
+            let isJSON = isJson(cMetadata);
             if (!isJSON) {
                 throw "is not json"
             }
@@ -913,7 +925,6 @@ const handleUserRouter = async (req, res) => {
             if (gasCall.err != null) {
                 return responseFun(500, {message: gasCall.err}, "");
             } else {
-                let gasPrice = (await customHttpProvider.getGasPrice()).toString();
                 let neceGas = gasPrice * gasCall.gaslimit;
                 // 判断手续费是否足够
                 let balance = await wallet.provider.getBalance(address);
@@ -1106,7 +1117,7 @@ const handleUserRouter = async (req, res) => {
             rebackUrl = null;
         }
         try {
-            let isJSON = isJsonFun(data);
+            let isJSON = isJson(data);
             if (!isJSON) {
                 throw "is not json"
             }
@@ -1263,14 +1274,13 @@ const handleUserRouter = async (req, res) => {
     }
     //创建收藏夹
     if (req.method === "POST" && req.path === "/api/account/createctCollect") {
+
         // 创建表单解析对象
         try {
             const {address, password, cMetadata, type} = req.body;
-            if (typeof cMetadata !== "object") {
-                return responseFun(500, {message: "invalid paramter data"}, {});
-            }
+
             try {
-                let isJSON = isJsonFun(cMetadata);
+                let isJSON = isJson(cMetadata);
                 if (!isJSON) {
                     throw {message: "is not json"}
                 }
@@ -1289,7 +1299,6 @@ const handleUserRouter = async (req, res) => {
                 .catch((err) => {
                     return responseFun(500, err, {});
                 });
-            console.log(ret);
             if (ret == null) {
                 return responseFun(500, {message: "账户不存在!"}, {});
             }
@@ -1317,77 +1326,65 @@ const handleUserRouter = async (req, res) => {
                 }
             }
 
-
-            let gasPrice = (await customHttpProvider.getGasPrice()).toString();
-            console.log("gasPrice:", gasPrice.toString());
-
             // 创建收藏夹
             //    查询创建合约的手续费
             let {err, gaslimit} = await createCollectV2Call(type, wallet);
+
+            let initResult = await collectInitCall(cMetadata.name,
+                cMetadata.symbol,
+                cMetadata.tokenUrlPrefix,
+                cMetadata.contractUrl,
+                type,
+                collectAddressExample,
+                wallet);
+            let errInit, gaslimitInit;
+            errInit = initResult.err;
+            gaslimitInit = initResult.gaslimit;
             if (err != null) {
                 console.log("createCollectV2Call faild");
                 return responseFun(500, {message: err}, {});
             }
+            if (errInit != null) {
+                console.log("createCollectV2Call faild");
+                return responseFun(500, {message: errInit}, {});
+            }
             //    赠送合约手续费
-            let neceliby = gasPrice * gaslimit;
-            console.log("gasPrice*:", gasPrice * gaslimit);
+            let neceliby = ethers.utils.formatEther((gasPrice * gaslimit).toString());
+            let necelibyInit = ethers.utils.formatEther((gasPrice * gaslimitInit).toString());
+            console.log("neceliby*:", neceliby);
+            console.log("necelibyInit*:", necelibyInit);
+            let necelibyTotal = Number(neceliby) + Number(necelibyInit)
             let balance = await wallet.provider.getBalance(address);
             // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-            // let etherString = ethers.utils.formatEther(balance);
-            console.log("Balance: ", balance);
-
-            // if (balance < neceliby) {
-            if (true) {
-                let {err, hash} = await transfer(neceliby.toString(), address);
-                if (err != null) {
-                    console.log("txTransfer faild");
-                    return responseFun(500, {message: err}, {});
-                }
-                console.log("tx Hash:", hash);
+            let etherString = ethers.utils.formatEther(balance);
+            console.log("Balance: ", etherString);
+            // 计算初始化合约费用
+            console.log("余额是否充足:", Number(balance) < Number(necelibyTotal))
+            if (Number(etherString) < Number(necelibyTotal)) {
+                // if (true) {
+                //     let {err, hash} = await transfer(neceliby.toString(), address);
+                //     if (err != null) {
+                //         console.log("txTransfer faild");
+                //         return responseFun(500, {message: err}, {});
+                //     }
+                //     console.log("tx Hash:", hash);
+                return responseFun(500, {message: "账户余额不足!"}, {});
             }
-
+            let nonce =
+                await customHttpProvider.getTransactionCount(address, "latest");
             //    创建合约
             let collectAddress = await createCollectV2(
                 wallet,
                 gasPrice,
                 gaslimit,
                 type,
-                true
+                false
             );
-            if (collectAddress == null) {
-                return responseFun(500, {message: "创建合约失败"}, {});
-            }
-
-            //    初始化  送手续费  {err, gaslimit}
-            let resultGas = await collectInitCall(
-                cMetadata.name,
-                cMetadata.symbol,
-                cMetadata.tokenUrlPrefix,
-                cMetadata.contractUrl,
-                type,
-                collectAddress,
-                wallet
-            );
-            if (resultGas.err != null) {
-                console.log("createCollectV2Call faild");
-                return responseFun(500, {message: resultGas.err}, {});
-            }
-            //    赠送合约手续费
-            let neceliby1 = gasPrice * resultGas.gaslimit;
-            console.log("gasPrice*:", gasPrice * resultGas.gasLimit);
-            let balance1 = await wallet.provider.getBalance(address);
-            // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-            // let etherString = ethers.utils.formatEther(balance);
-            console.log("Balance: ", balance1);
-            if (balance1 < neceliby1) {
-                let {err, hash} = await transfer(neceliby.toString(), address);
-                if (err != null) {
-                    console.log("txTransfer faild");
-                    return responseFun(500, {message: err}, {});
-                }
-                console.log("tx Hash:", hash);
-            }
-
+            // if (collectAddress == null) {
+            //     return responseFun(500, {message: "创建合约失败"}, {});
+            // }
+            // 这里前面已经可以算出合约地址, 这里为了方便,直接计算得出, 不使用返回值.
+            collectAddress = util.generateAddress(Buffer.from(stripHexPrefix(wallet.address), "hex"), nonce).toString("hex");
             //    初始化{err, hash}
             let result1 = await collectInit(
                 cMetadata.name,
@@ -1396,7 +1393,8 @@ const handleUserRouter = async (req, res) => {
                 cMetadata.contractUrl,
                 type,
                 collectAddress,
-                wallet
+                wallet,
+                gaslimitInit
             );
             if (result1.err != null) {
                 console.log("txTransfer faild");
@@ -1433,8 +1431,6 @@ const handleUserRouter = async (req, res) => {
                 collect,
                 format
             );
-
-            console.log(sql);
 
             return await execSql(sql)
                 .then((ret) => {
@@ -2118,11 +2114,6 @@ const handleUserRouter = async (req, res) => {
 
 function callback(progress) {
     console.log("Encrypting: " + parseInt(progress * 100) + "% complete");
-}
-
-function isJsonFun(obj) {
-    var isjson = typeof (obj) == "object" && Object.prototype.toString.call(obj).toLowerCase() == "[object object]" && !obj.length;
-    return isjson;
 }
 
 async function transfer(value, toAddress) {

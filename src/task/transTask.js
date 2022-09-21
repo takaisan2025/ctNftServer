@@ -1,5 +1,4 @@
 const mybatisMapper = require("mybatis-mapper");
-// mybatisMapper.createMapper(["./xml/nft.xml"]);
 mybatisMapper.createMapper([
     "src/mapper/xml/collect.xml",
     "src/mapper/xml/nft.xml",
@@ -15,15 +14,8 @@ const {
 
 const {
     accountSelectSelective,
-    nftSelectSelective,
-    nftUpdateSelectiveStatus,
-    nftSelectSelectiveStatus,
-    nftSelectSelectiveCreator,
-    nftInsertSelective,
-    nftUpdateSelective,
     execSql,
     execSqlAll,
-    nftUpdateSelectiveIsFinish,
     responseFun,
     responseFunStr,
 } = require("../controller/ctnft");
@@ -47,6 +39,8 @@ let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[1];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
+let gasPrice = "5000100000000";
+let isGasPrice = false;
 
 async function betchTransfer() {
     var format = {language: "sql", indent: "  "};
@@ -103,7 +97,10 @@ async function betchTransfer() {
 
         // 使用Provider 连接合约，将只有对合约的可读权限
         let transferTo = t_to;
-        let gasPrice = (await customHttpProvider.getGasPrice()).toString();
+        if (!isGasPrice) {
+            gasPrice = (await customHttpProvider.getGasPrice()).toString();
+            isGasPrice = true;
+        }
         console.log("gasPrice:", gasPrice.toString());
 
         if (type == 10 || type == 12) {
@@ -596,7 +593,7 @@ async function betchHashQuery() {
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
                 t_statusStorage = 7;
             } else {
-                t_statusStorage = 6;
+                 t_statusStorage = 6;
             }
         }
 

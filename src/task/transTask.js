@@ -689,17 +689,39 @@ async function betchHashQuery() {
         } = transList[retKey];
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
-        if (recept == null) {
+        if (recept == null || receptRet.data.transaction == null) {
             console.log(recept.err);
+            let currTime = new Date().getTime();
+            if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
+                await delNonce(t_from);
+                let trans_from_obj = {
+                    t_status: 1, // 6 成功,7 失败
+                    id: id
+                };
+                console.log("nftUpdateSelective:", trans_from_obj);
+
+                var paramsUp = trans_from_obj;
+                var sqlUp = mybatisMapper.getStatement(
+                    "trans_form_list",
+                    "updateByPrimaryKeySelective",
+                    paramsUp,
+                    format
+                );
+                await execSql(sqlUp);
+
+            }
             continue;
         } else {
             // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
             // save db
             let t_statusStorage;
-            if (recept.data.transaction == null) {
+            // if (recept.data.transaction == null || recept.data.transaction.status == null) {
+            if (recept.data.transaction != null && recept.data.transaction.status == null) {
                 // t_statusStorage = 7;
                 formatTime(new Date());
                 console.log("查询hash结果为空,", hash);
+
+
                 continue;
             } else {
 
@@ -731,13 +753,7 @@ async function betchHashQuery() {
                 paramsUp,
                 format
             );
-            let result = await execSql(sqlUp)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.error(responseFun(500, err, ""), id);
-                });
+            await execSql(sqlUp);
 
 
         }
@@ -841,10 +857,8 @@ async function betchCallFund() {
         let response = responseRet.data
         //处理响应结果
         console.log(response);
-        if (response == null) {
-            continue;
-        }
-        if (response.status == 1) {
+
+        if (response != null && response.status == 1) {
 
             let trans_from_obj = {
                 t_status: 4, // 上链成功
@@ -867,9 +881,39 @@ async function betchCallFund() {
                     console.error(responseFun(500, err, ""), id);
                     return responseFun(500, err, "");
                 });
-        } else if (response.msg == "作品不存在") {
+        } else if (response != null && response.msg == "作品不存在") {
+
+            let trans_from_obj = {
+                t_status: 8, // 上链成功
+                id: id
+            };
+            console.log("nftUpdateSelective:", trans_from_obj);
+
+            var paramsUp = trans_from_obj;
+            var sqlUp = mybatisMapper.getStatement(
+                "trans_form_list",
+                "updateByPrimaryKeySelective",
+                paramsUp,
+                format
+            );
+            let result = await execSql(sqlUp);
         } else {
             console.log("回调接口失败,", orderId);
+
+            let trans_from_obj = {
+                t_status: 8, // 上链成功
+                id: id
+            };
+            console.log("nftUpdateSelective:", trans_from_obj);
+
+            var paramsUp = trans_from_obj;
+            var sqlUp = mybatisMapper.getStatement(
+                "trans_form_list",
+                "updateByPrimaryKeySelective",
+                paramsUp,
+                format
+            );
+            let result = await execSql(sqlUp);
         }
     }
     console.log("betchCallFund All Done!");

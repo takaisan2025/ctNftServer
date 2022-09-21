@@ -25,7 +25,7 @@ const fetch = require("node-fetch");
 
 async function transactionQuery() {
 
-    let hash = "0x1e6a623214078ba0848f299e75cbb6c042e9933e21d489425c91c8efa9d43b2e";
+    let hash = "0x009ee289aad4877d1771ac214b97ce464b18155cedc958867457b56b563f10ef";
     let req_url = "https://ctblock.cn/graphiql";
     let recept = await fetch(req_url, {
         headers: {
@@ -120,5 +120,6 @@ async function trabackTest() {
 function main() {
     console.log(typeof String(1))
 }
-console.log(checkURL("https://chaonft.cn/index.php?a=NftChainTransReturn"))
-console.log(checkURL("http://gdu.com"))
+// console.log(checkURL("https://chaonft.cn/index.php?a=NftChainTransReturn"))
+// console.log(checkURL("http://gdu.com"))
+transactionQuery()

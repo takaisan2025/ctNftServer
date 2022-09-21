@@ -1,3 +1,4 @@
+const fetch = require("node-fetch");
 async function graphiqlHashQuery(hash) {
     let req_url = "https://ctblock.cn/graphiql";
     let receptRet = await fetch(req_url, {

@@ -25,7 +25,7 @@ const fetch = require("node-fetch");
 
 async function transactionQuery() {
 
-    let hash = "0xb938b3a628ffba9b01f05adf820d43de834627c2c69edf6a3babb7d2ad6946d3";
+    let hash = "0x1e6a623214078ba0848f299e75cbb6c042e9933e21d489425c91c8efa9d43b2e";
     let req_url = "https://ctblock.cn/graphiql";
     let recept = await fetch(req_url, {
         headers: {

@@ -287,6 +287,8 @@ async function betchMint() {
             if (gasLimit == null) {
                 if (gasLimitRet.err == minted1155TokenStr) {
                     await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
+                } else if ("replacement fee too low" == gasLimitRet.err) {
+                    await updateNonce(address, transactionCount1Mint + 1);
                 }
                 continue;
             } else {
@@ -399,6 +401,9 @@ async function betchMint() {
                         console.log("update NFT data:", result);
                         console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
                         await updateNonce(address, transactionCount1Mint + 1);
+                    } else if ("replacement fee too low" == txRet.err) {
+                        //手续费不足
+                        await updateNonce(address, transactionCount1Mint + 1);
                     } else {
                         //手续费不足
                         console.error("txRet.err", txRet.err);
@@ -428,9 +433,13 @@ async function betchMint() {
                 });
 
             let gasLimit = gasLimitRet.gasLimit;
-            if (gasLimit == null && minted721TokenStr == gasLimitRet.err) {
+            if (gasLimit == null) {
                 // console.log(minted721TokenStr == gasLimitRet.err)
-                await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
+                if (minted721TokenStr == gasLimitRet.err) {
+                    await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
+                } else if ("replacement fee too low" == gasLimitRet.err) {
+                    await updateNonce(address, transactionCount1Mint + 1);
+                }
                 continue;
             } else {
                 console.log("gasLimit:", gasLimit.toString());
@@ -543,6 +552,9 @@ async function betchMint() {
                             console.error(responseFun(500, err, ""), tokenId);
                         });
                     console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
+                    await updateNonce(address, transactionCount1Mint + 1);
+                } else if ("replacement fee too low" == txRet.err) {
+                    //手续费不足
                     await updateNonce(address, transactionCount1Mint + 1);
                 } else {
                     //手续费不足

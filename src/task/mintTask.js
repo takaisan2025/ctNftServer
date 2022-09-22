@@ -747,7 +747,7 @@ async function betchHashQuery() {
 
     for (let retKey in transList) {
         console.log(transList[retKey]);
-        let {tokenId, update_time, hash, rebackUrl} = transList[retKey];
+        let {tokenId, update_time, hash, rebackUrl, address, id} = transList[retKey];
         if (!hash || hash == "" || hash == null) {
             continue;
         }
@@ -755,17 +755,22 @@ async function betchHashQuery() {
         let req_url = "https://ctblock.cn/graphiql";
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
-        if (recept == null) {
+        if (recept == null || receptRet.data.transaction == null) {
             console.log(recept.err);
+            let currTime = new Date().getTime();
+            if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
+                await delNonce(address);
+                await nftUpdateSelectiveStatus(6, tokenId);
+            }
             continue;
-        } else {
+        }  else {
             console.log(recept);
             // console.log(recept);
 
             // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
             // save db
             let t_statusStorage;
-            if (recept.data.transaction == null) {
+            if (recept.data.transaction != null && recept.data.transaction.status == null) {
                 // t_statusStorage = 7;
                 formatTime(new Date());
                 console.log("查询hash结果为空,", hash);
@@ -775,9 +780,10 @@ async function betchHashQuery() {
                     console.log("hash出错:", recept.data.transaction);
                     if ("dropped/replaced" == recept.data.transaction.error) {
                         t_statusStorage = 6;
-                    } else {
-                        t_statusStorage = 8;
                     }
+                    // else {
+                    //     t_statusStorage = 8;
+                    // }
 
                 } else if (recept.data.transaction.status == "OK") {
                     t_statusStorage = 7;

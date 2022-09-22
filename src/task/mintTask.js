@@ -701,13 +701,7 @@ async function betchCallFund() {
                 await nftUpdateSelectiveStatus(9, tokenId);
                 continue;
             } else if (response.status && response.status == 1) {
-                await nftUpdateSelectiveStatus(1, tokenId)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        console.error(responseFun(500, err, ""), tokenId);
-                    }); // 设置为回调成功状态
+                await nftUpdateSelectiveStatus(1, tokenId); // 设置为回调成功状态
             } else {
                 await nftUpdateSelectiveStatus(9, tokenId);
                 continue;
@@ -781,9 +775,9 @@ async function betchHashQuery() {
                     if ("dropped/replaced" == recept.data.transaction.error) {
                         t_statusStorage = 6;
                     }
-                    // else {
-                    //     t_statusStorage = 8;
-                    // }
+                    else {
+                        t_statusStorage = 6;
+                    }
 
                 } else if (recept.data.transaction.status == "OK") {
                     t_statusStorage = 7;

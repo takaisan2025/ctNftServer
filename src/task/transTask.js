@@ -689,7 +689,7 @@ async function betchHashQuery() {
         } = transList[retKey];
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
-        if (receptRet.data.err == null && recept.data.transaction != null) {
+        if (receptRet.err == null && recept.data.transaction != null) {
             console.log(recept.data.transaction);
             if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
                 console.log(recept.data.transaction);

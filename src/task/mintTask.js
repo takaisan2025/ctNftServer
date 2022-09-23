@@ -289,7 +289,7 @@ async function betchMint() {
                     await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
                 } else if ("replacement fee too low" == gasLimitRet.err) {
                     await updateNonce(address, transactionCount1Mint + 1);
-                }else {
+                } else {
                     await delNonce(address);
                 }
                 continue;
@@ -749,44 +749,46 @@ async function betchHashQuery() {
         let req_url = "https://ctblock.cn/graphiql";
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
-        if (recept == null || receptRet.data.transaction == null || receptRet.data.transaction.gasUsed == null) {
-            console.log(recept.err);
-            let currTime = new Date().getTime();
-            if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                await delNonce(address);
-                await nftUpdateSelectiveStatus(6, tokenId);
-            }
-            continue;
-        }  else {
-            console.log(recept);
-            // console.log(recept);
-
-            // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-            // save db
-            let t_statusStorage;
-            if (recept.data.transaction != null && recept.data.transaction.status == null) {
-                // t_statusStorage = 7;
-                formatTime(new Date());
-                console.log("查询hash结果为空,", hash);
+        if (receptRet.data.err == null && recept.data.transaction != null) {
+            if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
+                console.log(recept.err);
+                let currTime = new Date().getTime();
+                if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
+                    await delNonce(address);
+                    await nftUpdateSelectiveStatus(6, tokenId);
+                }
                 continue;
             } else {
-                if (recept.data.transaction.status == "ERROR") {
-                    console.log("hash出错:", recept.data.transaction);
-                    if ("dropped/replaced" == recept.data.transaction.error) {
-                        t_statusStorage = 6;
-                    }
-                    else {
-                        t_statusStorage = 6;
-                    }
+                console.log(recept);
+                // console.log(recept);
 
-                } else if (recept.data.transaction.status == "OK") {
-                    t_statusStorage = 7;
-                } else {
+                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+                // save db
+                let t_statusStorage;
+                if (recept.data.transaction != null && recept.data.transaction.status == null) {
+                    // t_statusStorage = 7;
+                    formatTime(new Date());
+                    console.log("查询hash结果为空,", hash);
                     continue;
+                } else {
+                    if (recept.data.transaction.status == "ERROR") {
+                        console.log("hash出错:", recept.data.transaction);
+                        if ("dropped/replaced" == recept.data.transaction.error) {
+                            t_statusStorage = 6;
+                        } else {
+                            t_statusStorage = 6;
+                        }
+
+                    } else if (recept.data.transaction.status == "OK") {
+                        t_statusStorage = 7;
+                    } else {
+                        continue;
+                    }
                 }
+
+                await nftUpdateSelectiveStatus(t_statusStorage, tokenId);
             }
 
-            await nftUpdateSelectiveStatus(t_statusStorage, tokenId);
         }
 
     }

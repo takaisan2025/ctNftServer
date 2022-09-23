@@ -15,7 +15,9 @@ let web3o = new web3("http://ctblock.cn/blockChain");
 // console.log(reqdataRet)
 const ethers = require("ethers");
 // 通过定制 URL 连接 :
-
+const {
+    graphiqlHashQuery
+} = require("../broapi/broapi");
 const GlobalConfig = require("../config/GlobalConfig.json");
 let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
@@ -25,31 +27,13 @@ const fetch = require("node-fetch");
 
 async function transactionQuery() {
 
-    let hash = "0x009ee289aad4877d1771ac214b97ce464b18155cedc958867457b56b563f10ef";
-    let req_url = "https://ctblock.cn/graphiql";
-    let recept = await fetch(req_url, {
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        method: "POST",
-        body: JSON.stringify({
-            "query": `{transaction(hash: \"${hash}\") \n  \n  \n  { hash, error, status, blockNumber, value, gasUsed }}`,
-            "variables": null,
-            "operationName": null
-        })
-    })
-        .then((response) => {
-            return response.json();
-        })
-        .then((response) => {
-            return response;
-        })
-        .catch((err) => {
-            console.log("Call Faild  reCall:", err);
-            return err.type;
-        });
-    console.log(recept.data.transaction.status);
-    console.log(recept.data.transaction);
+    let hash = "0x52921ed34c1432da9d75580efb8ee7ea63efd038b557cada993421ff3acf8b8f";
+    let receptRet = await graphiqlHashQuery(hash);
+    let recept = receptRet.data;
+
+    if (receptRet.data.err == null && recept.data.transaction != null) {
+        console.log(recept.data.transaction);
+    }
 
 }
 
@@ -118,7 +102,9 @@ async function trabackTest() {
 }
 
 function main() {
-    console.log(typeof String(1))
+    let a = null;
+    console.log(a.aa == null)
+    console.log(a.gag)
 }
 // console.log(checkURL("https://chaonft.cn/index.php?a=NftChainTransReturn"))
 // console.log(checkURL("http://gdu.com"))

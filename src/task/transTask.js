@@ -443,7 +443,7 @@ async function betchTransfer() {
                     });
                 let gasLimit = gasLimitRet.gasLimit;
 
-                console.log("gasLimit:", gasLimit.toString());
+                // console.log("gasLimit:", gasLimit.toString());
                 if (gasLimit == null) {
                     continue;
                 } else {
@@ -524,7 +524,7 @@ async function betchTransfer() {
                         return {err: err.reason, gasLimit: null}
                     });
                 gasLimit = gasLimitRet.gasLimit;
-                console.log("gasLimit:", gasLimit.toString());
+                // console.log("gasLimit:", gasLimit.toString());
                 if (gasLimit == null) {
                     continue;
                 } else {

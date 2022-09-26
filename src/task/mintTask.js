@@ -749,7 +749,7 @@ async function betchHashQuery() {
         let req_url = "https://ctblock.cn/graphiql";
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
-        if (receptRet.err == null && recept.data.transaction != null) {
+        if (receptRet.err == null && recept.data.transaction != null && recept.data.transaction != undefined) {
             if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
                 console.log(recept.err);
                 let currTime = new Date().getTime();

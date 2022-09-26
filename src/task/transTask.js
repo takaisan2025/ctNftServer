@@ -689,9 +689,9 @@ async function betchHashQuery() {
         } = transList[retKey];
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
-        if (receptRet.err == null && recept.data.transaction != null) {
+        if (receptRet.err == null && recept.data.transaction != null && recept.data.transaction != undefined) {
             console.log(recept.data.transaction);
-            if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
+            if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.gasUsed == null) {
                 console.log(recept.data.transaction);
                 let currTime = new Date().getTime();
                 if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
@@ -718,7 +718,7 @@ async function betchHashQuery() {
                 // save db
                 let t_statusStorage;
                 // if (recept.data.transaction == null || recept.data.transaction.status == null) {
-                if (recept.data.transaction != null && recept.data.transaction.status == null) {
+                if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.status == null) {
                     // t_statusStorage = 7;
                     formatTime(new Date());
                     console.log("查询hash结果为空,", hash);

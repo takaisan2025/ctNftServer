@@ -1997,9 +1997,9 @@ const handleUserRouter = async (req, res) => {
                     if (transObjTo && transObjTo['sumAmount']) {
                         juAmount += Number(transObjTo['sumAmount']);
                     }
-                    console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
-                        transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
-                        nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
+                    // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
+                    //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
+                    //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
 
                     //这里对余额进行判断
                     //判断是否是发行方,然后根据发行量进行判断
@@ -2115,9 +2115,9 @@ const handleUserRouter = async (req, res) => {
                         juAmount += Number(transObjTo['sumAmount']);
                     }
 
-                    console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
-                        transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
-                        nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
+                    // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
+                    //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
+                    //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
                     //这里对余额进行判断
                     //判断是否是发行方,然后根据发行量进行判断
                     if (nftObj["address"].toLowerCase() == address.toLowerCase()) {

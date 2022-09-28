@@ -689,15 +689,83 @@ async function betchHashQuery() {
         } = transList[retKey];
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
-        if (receptRet.err == null && recept.data.transaction != null && recept.data.transaction != undefined) {
-            console.log(recept.data.transaction);
-            if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.gasUsed == null) {
+        let currTime = new Date().getTime();
+        if (receptRet.err == null && recept && recept.data && recept.data.transaction == null) {
+            if (currTime - update_time.getTime() > 300000) {   // 超过5min自动重新获取
+                await delNonce(t_from);
+                let trans_from_obj = {
+                    t_status: 1, // 6 成功,7 失败
+                    id: id
+                };
+                console.log("nftUpdateSelective:", trans_from_obj);
+
+                var paramsUp1 = trans_from_obj;
+                var sqlUp1 = mybatisMapper.getStatement(
+                    "trans_form_list",
+                    "updateByPrimaryKeySelective",
+                    paramsUp1,
+                    format
+                );
+                await execSql(sqlUp1);
+
+            }
+            continue;
+        } else {
+            if (receptRet.err == null && recept.data.transaction != null && recept.data.transaction != undefined) {
                 console.log(recept.data.transaction);
-                let currTime = new Date().getTime();
-                if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                    await delNonce(t_from);
+                if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.gasUsed == null) {
+                    console.log(recept.data.transaction);
+
+                    if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
+                        await delNonce(t_from);
+                        let trans_from_obj = {
+                            t_status: 1, // 6 成功,7 失败
+                            id: id
+                        };
+                        console.log("nftUpdateSelective:", trans_from_obj);
+
+                        var paramsUp2 = trans_from_obj;
+                        var sqlUp2 = mybatisMapper.getStatement(
+                            "trans_form_list",
+                            "updateByPrimaryKeySelective",
+                            paramsUp2,
+                            format
+                        );
+                        await execSql(sqlUp2);
+
+                    }
+                    continue;
+                } else {
+                    // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+                    // save db
+                    let t_statusStorage;
+                    // if (recept.data.transaction == null || recept.data.transaction.status == null) {
+                    if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.status == null) {
+                        // t_statusStorage = 7;
+                        formatTime(new Date());
+                        console.log("查询hash结果为空,", hash);
+
+
+                        continue;
+                    } else {
+
+                        if (recept.data.transaction.status == "ERROR") {
+                            console.log("hash出错:", recept.data.transaction);
+                            if ("dropped/replaced" == recept.data.transaction.error) {
+                                t_statusStorage = 1;
+                            } else {
+                                t_statusStorage = 7;
+                            }
+
+                        } else if (recept.data.transaction.status == "OK") {
+                            t_statusStorage = 6;
+                        } else {
+                            continue;
+                        }
+                    }
+
                     let trans_from_obj = {
-                        t_status: 1, // 6 成功,7 失败
+                        t_status: t_statusStorage, // 6 成功,7 失败
                         id: id
                     };
                     console.log("nftUpdateSelective:", trans_from_obj);
@@ -711,52 +779,8 @@ async function betchHashQuery() {
                     );
                     await execSql(sqlUp);
 
+
                 }
-                continue;
-            } else {
-                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                // save db
-                let t_statusStorage;
-                // if (recept.data.transaction == null || recept.data.transaction.status == null) {
-                if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.status == null) {
-                    // t_statusStorage = 7;
-                    formatTime(new Date());
-                    console.log("查询hash结果为空,", hash);
-
-
-                    continue;
-                } else {
-
-                    if (recept.data.transaction.status == "ERROR") {
-                        console.log("hash出错:", recept.data.transaction);
-                        if ("dropped/replaced" == recept.data.transaction.error) {
-                            t_statusStorage = 1;
-                        } else {
-                            t_statusStorage = 7;
-                        }
-
-                    } else if (recept.data.transaction.status == "OK") {
-                        t_statusStorage = 6;
-                    } else {
-                        continue;
-                    }
-                }
-
-                let trans_from_obj = {
-                    t_status: t_statusStorage, // 6 成功,7 失败
-                    id: id
-                };
-                console.log("nftUpdateSelective:", trans_from_obj);
-
-                var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
-                    "trans_form_list",
-                    "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
-                );
-                await execSql(sqlUp);
-
 
             }
 

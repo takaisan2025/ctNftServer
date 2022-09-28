@@ -102,54 +102,71 @@ async function trabackTest() {
         });
 }
 
-async function main() {
-    // let a = web3.utils.hexToNumberString("0x8a49953b8e1012d7c1c03fe60571ee073fea9a50c12345678901663921798949")
-    //   console.log(a)
-    //   let hash = "0x09131a08a1a1131fe08fa391804aec3d7e9eb5a352937e76811c037d89400c33";
-    //   let receptRet = await graphiqlHashQuery(hash);
-    //   let recept = receptRet.data;
-    //   if (receptRet.err == null && recept.data.transaction != null) {
-    //       console.log(recept.data.transaction);
-    //       if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
-    //           console.log(recept.data.transaction);
-    //
-    //       } else {
-    //           // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-    //           // save db
-    //           let t_statusStorage;
-    //           // if (recept.data.transaction == null || recept.data.transaction.status == null) {
-    //           if (recept.data.transaction != null && recept.data.transaction.status == null) {
-    //               // t_statusStorage = 7;
-    //               formatTime(new Date());
-    //               console.log("查询hash结果为空,", hash);
-    //           } else {
-    //
-    //               if (recept.data.transaction.status == "ERROR") {
-    //                   console.log("hash出错:", recept.data.transaction);
-    //                   if ("dropped/replaced" == recept.data.transaction.error) {
-    //                       t_statusStorage = 1;
-    //                   } else {
-    //                       t_statusStorage = 7;
-    //                   }
-    //
-    //               } else if (recept.data.transaction.status == "OK") {
-    //                   t_statusStorage = 6;
-    //               }
-    //           }
-    //
-    //           let trans_from_obj = {
-    //               t_status: t_statusStorage, // 6 成功,7 失败
-    //           };
-    //           console.log("nftUpdateSelective:", trans_from_obj);
-    //
-    //       }
-    //
-    //   }
-    let a = "undefined";
-    console.log(a.gasUsed == null)
+async function test1() {
+    let a = web3.utils.hexToNumberString("0xa627fc3ce27724c5ec602c7ff4249ae1ff0845e65bbd2ac0acfe3a341f75d6b9")
+    console.log(a)
+    // let hash = "0xc6e12a73deee454e83c81e750429e16350a21b80453506149f24e5612f788588";
+    let hash = "0x3de1f2c35fd8d6bcd7d896fa12b6c72ecf165e40f44debb197824bf4a3ac15c4";
+    let receptRet = await graphiqlHashQuery(hash);
+    let recept = receptRet.data;
+    console.log(recept.data.transaction);
+    if (receptRet.err == null && recept.data.transaction != null) {
+        console.log(recept.data.transaction);
+        if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
+            console.log(recept.data.transaction);
+
+        } else {
+            // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+            // save db
+            let t_statusStorage;
+            // if (recept.data.transaction == null || recept.data.transaction.status == null) {
+            if (recept.data.transaction != null && recept.data.transaction.status == null) {
+                // t_statusStorage = 7;
+                formatTime(new Date());
+                console.log("查询hash结果为空,", hash);
+            } else {
+
+                if (recept.data.transaction.status == "ERROR") {
+                    console.log("hash出错:", recept.data.transaction);
+                    if ("dropped/replaced" == recept.data.transaction.error) {
+                        t_statusStorage = 1;
+                    } else {
+                        t_statusStorage = 7;
+                    }
+
+                } else if (recept.data.transaction.status == "OK") {
+                    t_statusStorage = 6;
+                }
+            }
+
+            let trans_from_obj = {
+                t_status: t_statusStorage, // 6 成功,7 失败
+            };
+            console.log("nftUpdateSelective:", trans_from_obj);
+
+        }
+
+    }
+    // let a = "undefined";
+    // console.log(a.gasUsed == null)
 }
 
 // console.log(checkURL("https://chaonft.cn/index.php?a=NftChainTransReturn"))
 // console.log(checkURL("http://gdu.com"))
 // transactionQuery()
+async function main() {
+    let receptRet = {
+        "data": {
+            "data": {
+                "transaction": null
+            }
+        },
+        err: null
+    };
+    let recept = receptRet.data;
+    if (receptRet.err == null && recept && recept.data && recept.data.transaction == null) {
+        console.log(1)
+    }
+}
+
 main();

@@ -29,6 +29,7 @@ const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
     REVERTED: 0,
 };
+const gasConfig = require("../config/gasConfig.json");
 const xss = require("xss");
 const ethers = require("ethers");
 const fetch = require("node-fetch");
@@ -52,6 +53,12 @@ let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
+const {
+    queryNonce,
+    insertNonce,
+    updateNonce,
+    delNonce
+} = require("../mapper/NftNonceMapper");
 
 const fs = require("fs");
 const path = require("path");
@@ -1213,7 +1220,7 @@ const handleUserRouter = async (req, res) => {
             .catch((err) => {
                 return responseFun(500, err, {});
             });
-        console.log(ret);
+        // console.log(ret);
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
@@ -1289,16 +1296,26 @@ const handleUserRouter = async (req, res) => {
                 .catch((err) => {
                     return responseFun(500, err, {});
                 });
-
+            var nonceResult = await queryNonce(address);
+            let currTime = new Date().getTime();
             let transCount;
-            if (retNft == null) {
-                transCount = await customHttpProvider.getTransactionCount(
-                    address
-                );
-            } else {
-                transCount = retNft.nonce + 1;
-            }
 
+            if (nonceResult.length == 0) {
+                transCount =
+                    await customHttpProvider.getTransactionCount(address, "latest");
+                await insertNonce(address, transCount);
+            }
+            // else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
+            //     // 超时,重新获取nonce
+            //     console.log("超时,重新获取nonce.....................");
+            //     transCount =
+            //         await customHttpProvider.getTransactionCount(address, "latest");
+            //
+            // }
+            else {
+                transCount = nonceResult[0].nonce;
+            }
+            await updateNonce(address, transCount + 1);
             //    暂时插入数据库
             console.log("insert...", transCount);
             let nft = {
@@ -1432,6 +1449,7 @@ const handleUserRouter = async (req, res) => {
             let necelibyInit = ethers.utils.formatEther((gasPrice * gaslimitInit).toString());
             console.log("neceliby*:", neceliby);
             console.log("necelibyInit*:", necelibyInit);
+            console.log("gaslimitInit:", gaslimitInit);
             let necelibyTotal = Number(neceliby) + Number(necelibyInit)
             let balance = await wallet.provider.getBalance(address);
             // 余额是 BigNumber (in wei); 格式化为 ether 字符串
@@ -1455,7 +1473,9 @@ const handleUserRouter = async (req, res) => {
             let collectAddress = await createCollectV2(
                 wallet,
                 gasPrice,
+                // gasConfig.create_contract1155.gasPrice,
                 gaslimit,
+                // gasConfig.create_contract1155.gasLimit,
                 type,
                 false
             );

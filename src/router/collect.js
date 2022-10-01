@@ -297,7 +297,7 @@ async function collectInit(
                 .catch((err) => {
                     console.log("err:", err);
                 });
-            console.log(recept);
+            // console.log(recept);
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
                 throw {message: "Transaction Reverted"};
             }

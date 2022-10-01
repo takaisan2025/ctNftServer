@@ -236,8 +236,10 @@ const nftSelectSelective = (tokenIds) => {
 
 const nftSelectSelectiveStatus = (status) => {
     // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
-    const sql = ` SELECT nft.*, collect.type FROM nft RIGHT JOIN collect ON nft.collectAddress = collect.address WHERE status = ${status}`;
-    console.log(sql)
+    let collectAddress = "0xb47d88ffd09575bfe174ef1f91d0a7d483f066ad";
+    const sql = ` SELECT nft.*, collect.type FROM nft RIGHT JOIN collect ON nft.collectAddress = collect.address WHERE status = ${status} and  collectAddress != '${xss(collectAddress)}' limit 50`;
+    // const sql = ` SELECT nft.*, collect.type FROM nft RIGHT JOIN collect ON nft.collectAddress = collect.address WHERE status = ${status}  limit 50`;
+    // console.log(sql)
     return exec(sql).then((rows) => {
         return rows || [];
     });

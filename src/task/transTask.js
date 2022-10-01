@@ -35,6 +35,8 @@ const TRANSACTION_RECEIPT_STATUS = {
 const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
 const CtnftMToken = require("../contract/CtnftMToken.json");
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
+const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
+const CtTransferExecutorAddress = "0xF41d25234dB41465450F5cCfE1e302A1fA0E2fEF";
 const ethers = require("ethers");
 // 通过定制 URL 连接 :
 let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[1];
@@ -44,6 +46,7 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
 });
 let gasPrice = "5000100000000";
 let isGasPrice = false;
+const ethUtil = require("ethereumjs-util");
 
 async function betchTransfer() {
     var format = {language: "sql", indent: "  "};
@@ -106,261 +109,95 @@ async function betchTransfer() {
         }
         console.log("gasPrice:", gasPrice.toString());
 
-        if (type == 10 || type == 12) {
-            let contract = new ethers.Contract(
-                collectAddress,
-                ERC1155Ctnft.abi,
-                customHttpProvider
-            );
-
-            // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
-            let contractWithSigner = contract.connect(wallet);
-            //safeTransferFrom(from, to, data.tokenId, transfer, "");
-
-            let tx;
-            let txRet;
-            let transactionCount1Mint;
-            if (transferTo == GlobalConfig.ZERO_ADDRESS) {
-                let gasLimitRet = await contractWithSigner.estimateGas
-                    .burn(
-                        t_from,
-                        token_id,
-                        amount
-                    )
-                    .then((ret) => {
-                        return {err: null, gasLimit: ret}
-                    })
-                    .catch((err) => {
-                        console.log("err:", err.reason);
-                        return {err: err.reason, gasLimit: null}
-                    });
-                let gasLimit = gasLimitRet.gasLimit;
-
-                if (gasLimit == null) {
-                    if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
-                        let trans_from_obj = {
-                            hash: "none",
-                            t_status: 3, // 上链成功
-                            id: id
-                        };
-                        console.log("nftUpdateSelective:", trans_from_obj);
-
-                        var paramsUp = trans_from_obj;
-                        var sqlUp = mybatisMapper.getStatement(
-                            "trans_form_list",
-                            "updateByPrimaryKeySelective",
-                            paramsUp,
-                            format
-                        );
-                        await execSql(sqlUp);
-                    } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
-                        // 计算手续费导致的错误, 稍后重试
-                    } else if ("replacement fee too low" == gasLimitRet.err) {
-                        await updateNonce(t_from, transactionCount1Mint + 1);
-                    } else {
-                        await delNonce(t_from);
-                    }
-                    continue;
-                } else {
-                    console.log("gasLimit:", gasLimit.toString());
-                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
-                    console.log("gasPrice*:", neceliby);
-                    let balance = await wallet.provider.getBalance(t_from);
-                    // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                    let etherString = ethers.utils.formatEther(balance);
-                    console.log("Balance: ", etherString);
-
-                    //这里进行判断, 如果是合约持有者, 将不进行手续费赠送
-                    var format1 = {language: "sql", indent: "  "};
-                    var params1 = {address: collectAddress};
-                    var sql1 = mybatisMapper.getStatement(
-                        "collect",
-                        "selectByAddress",
-                        params1,
-                        format1
-                    );
-                    let collectDetail = await execSql(sql1);
-                    if (collectDetail['owner'].toLowerCase() == t_from.toLowerCase()) {
-                        console.error("合约持有者余额不足,请充值!", t_from);
-                        await delNonce(t_from);
-                        continue;
-                        // let {err, hash} = await transfer(neceliby.toString(), t_from);
-                    } else {
-                        if (Number(etherString) < 1) {
-                            let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
-                            if (err != null) {
-                                //
-                                console.log("txTransfer faild");
-                                continue;
-                            }
-                            console.log("tx Hash:", hash);
-                        }
-                    }
-                    //这里通过数据库查询来获取nonce
-                    var nonceResult = await queryNonce(t_from);
-
-                    let currTime = new Date().getTime();
-                    if (nonceResult.length == 0) {
-                        transactionCount1Mint =
-                            await customHttpProvider.getTransactionCount(t_from, "latest");
-                        await insertNonce(t_from, transactionCount1Mint);
-                    } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                        // 超时,重新获取nonce
-                        console.log("超时,重新获取nonce.....................");
-                        transactionCount1Mint =
-                            await customHttpProvider.getTransactionCount(t_from, "latest");
-                        await updateNonce(t_from, transactionCount1Mint);
-                    } else {
-                        transactionCount1Mint = nonceResult[0].nonce;
-                    }
-                    // gasPrice = 0;
-                    let overrides = {
-                        // The maximum units of gas for the transaction to use
-                        gasLimit: web3.utils.numberToHex(gasLimit),
-                        // The price (in wei) per unit of gas
-                        gasPrice: web3.utils.numberToHex(gasPrice),
-                        // The nonce to use in the transaction
-                        // nonce: nonce,
-                        nonce: transactionCount1Mint,
-                        // The amount to send with the transaction (i.e. msg.value)
-                        // value: utils.parseEther('1.0'),
-                        // The chain ID (or network ID) to use
-                        // chainId: 27
-                    };
-                    // 设置一个新值，返回交易
-                    txRet = await contractWithSigner
-                        .burn(
-                            t_from,
-                            token_id,
-                            amount,
-                            overrides
-                        )
-                        .then((ret) => {
-                            return {err: null, data: ret};
-                        })
-                        .catch((err) => {
-                            return {err: err.reason, data: null};
-                        });
-                }
-
-
-            } else {
-                let gasLimitRet = await contractWithSigner.estimateGas
-                    .safeTransferFrom(
-                        t_from,
-                        transferTo,
-                        token_id,
-                        amount,
-                        "0x"
-                    )
-                    .then((ret) => {
-                        return {err: null, gasLimit: ret}
-                    })
-                    .catch((err) => {
-                        console.log("err:", err);
-                        return {err: err.reason, gasLimit: null}
-                    });
-                let gasLimit = gasLimitRet.gasLimit;
-                //这里通过数据库查询来获取nonce
-                var nonceResult = await queryNonce(t_from);
-                let currTime = new Date().getTime();
-                if (nonceResult.length == 0) {
-                    transactionCount1Mint =
-                        await customHttpProvider.getTransactionCount(t_from, "latest");
-                    await insertNonce(t_from, transactionCount1Mint);
-                } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                    // 超时,重新获取nonce
-                    console.log("超时,重新获取nonce.....................");
-                    transactionCount1Mint =
-                        await customHttpProvider.getTransactionCount(t_from, "latest");
-                    await updateNonce(t_from, transactionCount1Mint);
-                } else {
-                    transactionCount1Mint = nonceResult[0].nonce;
-                }
-                if (gasLimit == null) {
-                    // console.log(minted721TokenStr == gasLimitRet.err)
-                    if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
-                        let trans_from_obj = {
-                            hash: "none",
-                            t_status: 3, // 上链成功
-                            id: id
-                        };
-                        console.log("nftUpdateSelective:", trans_from_obj);
-
-                        var paramsUp = trans_from_obj;
-                        var sqlUp = mybatisMapper.getStatement(
-                            "trans_form_list",
-                            "updateByPrimaryKeySelective",
-                            paramsUp,
-                            format
-                        );
-                        await execSql(sqlUp);
-                    } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
-                        // 计算手续费导致的错误, 稍后重试
-                    } else if ("replacement fee too low" == gasLimitRet.err) {
-                        await updateNonce(t_from, transactionCount1Mint + 1);
-                    } else {
-                        await delNonce(t_from);
-                    }
-                    continue;
-                } else {
-                    console.log("gasLimit:", gasLimit.toString());
-                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
-                    console.log("gasPrice*:", neceliby);
-                    let balance = await wallet.provider.getBalance(t_from);
-                    // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                    let etherString = ethers.utils.formatEther(balance);
-                    console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(1))) {
-                        let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
-                        if (err != null) {
-                            //
-                            console.log("txTransfer faild");
-                            continue;
-                        }
-                        console.log("tx Hash:", hash);
-                    }
-
-                    // gasPrice = 0;
-                    let overrides = {
-                        // The maximum units of gas for the transaction to use
-                        gasLimit: web3.utils.numberToHex(gasLimit),
-                        // The price (in wei) per unit of gas
-                        gasPrice: web3.utils.numberToHex(gasPrice),
-                        // The nonce to use in the transaction
-                        // nonce: nonce,
-                        nonce: transactionCount1Mint,
-                        // The amount to send with the transaction (i.e. msg.value)
-                        // value: utils.parseEther('1.0'),
-                        // The chain ID (or network ID) to use
-                        // chainId: 27
-                    };
-                    // 设置一个新值，返回交易
-                    txRet = await contractWithSigner
-                        .safeTransferFrom(
-                            t_from,
-                            transferTo,
-                            token_id,
-                            amount,
-                            "0x",
-                            overrides
-                        )
-                        .then((ret) => {
-                            return {err: null, data: ret};
-                        })
-                        .catch((err) => {
-                            console.log("err:", err.reason);
-                            return {err: err.reason, data: null};
-                        });
-
-                }
-
+        // 链上余额判断
+        let balance = await wallet.provider.getBalance(t_from);
+        // 余额是 BigNumber (in wei); 格式化为 ether 字符串
+        let etherString = ethers.utils.formatEther(balance);
+        console.log("Balance: ", etherString);
+        if (Number(etherString) < Number(String(1))) {
+            let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
+            if (err != null) {
+                console.log("txTransfer faild");
+                continue;
             }
-            tx = txRet.data;
-            console.log("tx:", tx);
+            console.log("tx Hash:", hash);
+        }
 
-            // console.log("hash:", tx.hash);
-            if (tx == null && "execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
+        // TODO 首先需要判断授权 ApproveAll
+        let contractToken = new ethers.Contract(
+            collectAddress,
+            ERC1155Ctnft.abi,
+            customHttpProvider
+        );
+        let contractWithSignerToken = contractToken.connect(wallet);
+
+
+        let isApprovedForAll = await contractWithSignerToken.isApprovedForAll(
+            t_from,
+            CtTransferExecutorAddress
+        );
+        console.log("isApprovedForAll:", isApprovedForAll);
+        if (isApprovedForAll == false) {
+            // 进行授权
+            let txApproveRet = await contractWithSignerToken.setApprovalForAll(
+                CtTransferExecutorAddress,
+                true
+            );
+            let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
+
+            console.log("txApprove:", recept1);
+
+        }
+
+        // 如果没有授权, 需要先授权
+        let contract = new ethers.Contract(
+            CtTransferExecutorAddress,
+            CtTransferExecutor.abi,
+            customHttpProvider
+        );
+
+        // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
+        let contractWithSigner = contract.connect(wallet);
+        //safeTransferFrom(from, to, data.tokenId, transfer, "");
+
+        let assetClass;
+        if (type == 9) {
+            assetClass = id_fun("ERC721");
+        } else if (type == 10 || type == 12) {
+            assetClass = id_fun("ERC1155");
+        } else {
+            continue;
+        }
+
+        let transferDirection = assetClass;
+        let transferType = assetClass;
+        let orderIdEcc = `0x${ethUtil
+            .keccak256(Buffer.from(orderId))
+            .toString("hex")}`;
+        let data = orderIdEcc;
+        let gasLimitRet = await contractWithSigner.estimateGas
+            .transfer(
+                assetClass,
+                collectAddress,
+                t_from,
+                transferTo,
+                token_id,
+                orderIdEcc,
+                amount,
+                transferDirection,
+                transferType,
+                data
+            )
+            .then((ret) => {
+                return {err: null, gasLimit: ret}
+            })
+            .catch((err) => {
+                return {err: err.reason, gasLimit: null}
+            });
+        if (gasLimitRet.err != null) {
+            console.log(gasLimitRet.err);
+            // console.log(minted721TokenStr == gasLimitRet.err)
+            if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
                 let trans_from_obj = {
                     hash: "none",
                     t_status: 3, // 上链成功
@@ -376,7 +213,97 @@ async function betchTransfer() {
                     format
                 );
                 await execSql(sqlUp);
-            } else if (tx != null) {
+            } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
+                // 计算手续费导致的错误, 稍后重试
+            } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
+                // 计算手续费导致的错误, 稍后重试
+                let trans_from_obj = {
+                    hash: "none",
+                    t_status: 6, // 上链成功
+                    id: id
+                };
+
+                var paramsUp1 = trans_from_obj;
+                var sqlUp1 = mybatisMapper.getStatement(
+                    "trans_form_list",
+                    "updateByPrimaryKeySelective",
+                    paramsUp1,
+                    format
+                );
+                await execSql(sqlUp1);
+            } else if ("replacement fee too low" == gasLimitRet.err) {
+                await updateNonce(t_from, transactionCount1Mint + 1);
+            } else {
+                await delNonce(t_from);
+            }
+            continue;
+        } else {
+
+            let tx;
+            let txRet;
+            let transactionCount1Mint;
+            //这里通过数据库查询来获取nonce
+            var nonceResult = await queryNonce(t_from);
+            let currTime = new Date().getTime();
+            if (nonceResult.length == 0) {
+                transactionCount1Mint =
+                    await customHttpProvider.getTransactionCount(t_from, "latest");
+                await insertNonce(t_from, transactionCount1Mint);
+            } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
+                // 超时,重新获取nonce
+                console.log("超时,重新获取nonce.....................");
+                transactionCount1Mint =
+                    await customHttpProvider.getTransactionCount(t_from, "latest");
+                await updateNonce(t_from, transactionCount1Mint);
+            } else {
+                transactionCount1Mint = nonceResult[0].nonce;
+            }
+            let gasLimit = gasLimitRet.gasLimit;
+            console.log("gasLimit:", gasLimit.toString());
+            let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+            console.log("gasPrice*:", neceliby);
+
+            // gasPrice = 0;
+            let overrides = {
+                // The maximum units of gas for the transaction to use
+                gasLimit: web3.utils.numberToHex(gasLimit),
+                // The price (in wei) per unit of gas
+                gasPrice: web3.utils.numberToHex(gasPrice),
+                // The nonce to use in the transaction
+                // nonce: nonce,
+                nonce: transactionCount1Mint,
+                // The amount to send with the transaction (i.e. msg.value)
+                // value: utils.parseEther('1.0'),
+                // The chain ID (or network ID) to use
+                // chainId: 27
+            };
+            // 设置一个新值，返回交易
+
+            txRet = await contractWithSigner
+                .transfer(
+                    assetClass,
+                    collectAddress,
+                    t_from,
+                    transferTo,
+                    token_id,
+                    orderIdEcc,
+                    amount,
+                    transferDirection,
+                    transferType,
+                    data,
+                    overrides
+                )
+                .then((ret) => {
+                    return {err: null, data: ret};
+                })
+                .catch((err) => {
+                    console.log("err:", err.reason);
+                    return {err: err.reason, data: null};
+                });
+            tx = txRet.data;
+            console.log("txRet:", txRet);
+            console.log("txTransForm:", tx);
+            if (txRet.err == null) {
                 // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
                 // save db
                 let trans_from_obj = {
@@ -402,246 +329,63 @@ async function betchTransfer() {
                     });
                 console.log("update TransFrom data:", result);
                 await updateNonce(t_from, transactionCount1Mint + 1)
-            } else if (tx == null && "ErrFunds must less than 0.105 ETH" == txRet.err) {
-                // 计算手续费导致的错误, 稍后重试
-            } else if ("replacement fee too low" == txRet.err) {
-                //手续费不足
-                await updateNonce(t_from, transactionCount1Mint + 1);
+                continue;
             } else {
+                if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
+                    let trans_from_obj = {
+                        hash: "none",
+                        t_status: 3, // 上链成功
+                        id: id
+                    };
+                    console.log("nftUpdateSelective:", trans_from_obj);
+
+                    var paramsUp = trans_from_obj;
+                    var sqlUp = mybatisMapper.getStatement(
+                        "trans_form_list",
+                        "updateByPrimaryKeySelective",
+                        paramsUp,
+                        format
+                    );
+                    await execSql(sqlUp);
+                    continue;
+                }
+                if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
+                    // 计算手续费导致的错误, 稍后重试
+                    continue;
+                }
+                if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
+                    // 计算手续费导致的错误, 稍后重试
+                    continue;
+                }
+                if ("execution reverted: order has been processed!" == gasLimitRet.err) {
+                    // 计算手续费导致的错误, 稍后重试
+                    let trans_from_obj = {
+                        hash: "none",
+                        t_status: 6, // 上链成功
+                        id: id
+                    };
+
+                    var paramsUp1 = trans_from_obj;
+                    var sqlUp1 = mybatisMapper.getStatement(
+                        "trans_form_list",
+                        "updateByPrimaryKeySelective",
+                        paramsUp1,
+                        format
+                    );
+                    await execSql(sqlUp1);
+                    continue;
+                }
+                if ("replacement fee too low" == txRet.err) {
+                    //手续费不足
+                    await updateNonce(t_from, transactionCount1Mint + 1);
+                    continue;
+                }
                 //手续费不足
                 console.error("txRet.err", txRet.err);
                 await delNonce(t_from);
-            }
-
-        } else if (type === 9) {
-            // 721
-            let contract = new ethers.Contract(
-                collectAddress,
-                ERC721Ctnft.abi,
-                customHttpProvider
-            );
-            // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
-            let contractWithSigner = contract.connect(wallet);
-            //safeTransferFrom(from, to, data.tokenId, transfer, "");
-            // console.log("contractWithSigner.estimateGas",contractWithSigner.estimateGas)
-            let tx;
-            let txRet;
-            let transactionCount1Mint;
-
-            if (transferTo == GlobalConfig.ZERO_ADDRESS) {
-                // Burn  burn
-                let gasLimitRet = await contractWithSigner.estimateGas
-                    .burn(
-                        token_id
-                    )
-                    .then((ret) => {
-                        return {err: null, gasLimit: ret}
-                    })
-                    .catch((err) => {
-                        console.log("err:", err.reason);
-                        return {err: err.reason, gasLimit: null}
-                    });
-                let gasLimit = gasLimitRet.gasLimit;
-
-                // console.log("gasLimit:", gasLimit.toString());
-                if (gasLimit == null) {
-                    continue;
-                } else {
-                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
-                    console.log("gasPrice*:", neceliby);
-                    let balance = await wallet.provider.getBalance(t_from);
-                    // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                    let etherString = ethers.utils.formatEther(balance);
-                    console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(1))) {
-                        let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
-                        if (err != null) {
-                            //
-                            console.log("txTransfer faild");
-                            continue;
-                        }
-                        console.log("tx Hash:", hash);
-                    }
-                    //这里通过数据库查询来获取nonce
-                    var nonceResult = await queryNonce(t_from);
-                    let currTime = new Date().getTime();
-                    if (nonceResult.length == 0) {
-                        transactionCount1Mint =
-                            await customHttpProvider.getTransactionCount(t_from, "latest");
-                        await insertNonce(t_from, transactionCount1Mint);
-                    } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                        // 超时,重新获取nonce
-                        console.log("超时,重新获取nonce.....................");
-                        transactionCount1Mint =
-                            await customHttpProvider.getTransactionCount(t_from, "latest");
-                        await updateNonce(t_from, transactionCount1Mint);
-                    } else {
-                        transactionCount1Mint = nonceResult[0].nonce;
-                    }
-
-                    // gasPrice = 0;
-
-                    let overrides = {
-                        // The maximum units of gas for the transaction to use
-                        gasLimit: web3.utils.numberToHex(gasLimit),
-                        // The price (in wei) per unit of gas
-                        gasPrice: web3.utils.numberToHex(gasPrice),
-                        // The nonce to use in the transaction
-                        // nonce: nonce,
-                        nonce: transactionCount1Mint,
-                        // The amount to send with the transaction (i.e. msg.value)
-                        // value: utils.parseEther('1.0'),
-                        // The chain ID (or network ID) to use
-                        // chainId: 27
-                    };
-                    // 设置一个新值，返回交易
-                    txRet = await contractWithSigner
-                        .burn(
-                            token_id,
-                            overrides
-                        )
-                        .then((ret) => {
-                            return {err: null, data: ret};
-                        })
-                        .catch((err) => {
-                            return {err: err.reason, data: null};
-                        });
-
-                }
-
-            } else {
-                let gasLimitRet = await contractWithSigner.estimateGas
-                    .transferFrom(
-                        t_from,
-                        transferTo,
-                        token_id
-                    )
-                    .then((ret) => {
-                        return {err: null, gasLimit: ret}
-                    })
-                    .catch((err) => {
-                        console.log("err:", err.reason);
-                        return {err: err.reason, gasLimit: null}
-                    });
-                gasLimit = gasLimitRet.gasLimit;
-                // console.log("gasLimit:", gasLimit.toString());
-                if (gasLimit == null) {
-                    continue;
-                } else {
-                    let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
-                    console.log("gasPrice*:", neceliby);
-                    let balance = await wallet.provider.getBalance(t_from);
-                    // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                    let etherString = ethers.utils.formatEther(balance);
-                    console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(1))) {
-                        let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
-                        if (err != null) {
-                            //
-                            console.log("txTransfer faild");
-                            continue;
-                        }
-                        console.log("tx Hash:", hash);
-                    }
-                    //这里通过数据库查询来获取nonce
-                    var nonceResult = await queryNonce(t_from);
-                    let currTime = new Date().getTime();
-                    if (nonceResult.length == 0) {
-                        transactionCount1Mint =
-                            await customHttpProvider.getTransactionCount(t_from, "latest");
-                        await insertNonce(t_from, transactionCount1Mint);
-                    } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                        // 超时,重新获取nonce
-                        console.log("超时,重新获取nonce.....................");
-                        transactionCount1Mint =
-                            await customHttpProvider.getTransactionCount(t_from, "latest");
-                        await updateNonce(t_from, transactionCount1Mint);
-                    } else {
-                        transactionCount1Mint = nonceResult[0].nonce;
-                    }
-
-                    // gasPrice = 0;
-
-                    let overrides = {
-                        // The maximum units of gas for the transaction to use
-                        gasLimit: web3.utils.numberToHex(gasLimit),
-                        // The price (in wei) per unit of gas
-                        gasPrice: web3.utils.numberToHex(gasPrice),
-                        // The nonce to use in the transaction
-                        // nonce: nonce,
-                        nonce: transactionCount1Mint,
-                        // The amount to send with the transaction (i.e. msg.value)
-                        // value: utils.parseEther('1.0'),
-                        // The chain ID (or network ID) to use
-                        // chainId: 27
-                    };
-                    // 设置一个新值，返回交易
-                    txRet = await contractWithSigner
-                        .transferFrom(
-                            t_from,
-                            transferTo,
-                            token_id,
-                            overrides
-                        )
-                        .then((ret) => {
-                            return {err: null, data: ret};
-                        })
-                        .catch((err) => {
-                            return {err: err.reason, data: null};
-                        });
-
-                }
+                continue;
 
             }
-            tx = txRet.data;
-            console.log("hash:", tx.hash);
-            // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-            if (tx != null) {
-                // save db
-                let trans_from_obj = {
-                    hash: tx.hash,
-                    t_status: 5, // 上链成功
-                    id: id
-                };
-                console.log("nftUpdateSelective:", trans_from_obj);
-
-                var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
-                    "trans_form_list",
-                    "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
-                );
-                let result = await execSql(sqlUp)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        console.error(responseFun(500, err, ""), id);
-                    });
-                console.log("update TransFrom data:", result);
-                await updateNonce(t_from, transactionCount1Mint + 1);
-
-            } else if (tx == null && "ErrFunds must less than 0.105 ETH" == txRet.err) {
-                // 计算手续费导致的错误, 稍后重试
-            } else if ("replacement fee too low" == txRet.err) {
-                //手续费不足
-                await updateNonce(t_from, transactionCount1Mint + 1);
-            } else {
-                //手续费不足
-                console.error("txRet.err", txRet.err);
-                await delNonce(t_from);
-            }
-        } else if (type == 1) {
-            // 1155
-            let contract = new ethers.Contract(
-                collectAddress,
-                CtnftMToken.abi,
-                customHttpProvider
-            );
-            console.log("ERROR:", "no implements");
-        } else {
-            console.log("ERROR:", "没有找到匹配的合约信息");
         }
     }
     console.log("betchTransfer All Done!");
@@ -649,7 +393,7 @@ async function betchTransfer() {
         formatTime(new Date())
         console.log("betchTransfer Start !!")
         betchTransfer()
-    }, 2000)
+    }, 2000);
 }
 
 async function betchHashQuery() {
@@ -795,6 +539,13 @@ async function betchHashQuery() {
     }, 2000)
 }
 
+function id_fun(str) {
+    return `0x${ethUtil
+        .keccak256(Buffer.from(str))
+        .toString("hex")
+        .substring(0, 8)}`;
+}
+
 async function transfer(value, toAddress) {
     let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
     // console.log("nonce: " + nonce);
@@ -804,7 +555,7 @@ async function transfer(value, toAddress) {
         // to: "ricmoo.firefly.eth"
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
-        value: web3.utils.numberToHex(value),
+        value: web3.utils.toHex(value),
     };
 
     let txTransfer = await walletSys.sendTransaction(tx);

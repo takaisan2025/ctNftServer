@@ -1,0 +1,18 @@
+{
+  "create_contract721": {
+    "gasLimit": 20
+  },
+  "create_contract1155": {
+    "gasPrice": 5000000000000,
+    "gasLimit": 3800000
+  },
+  "mint721": {
+    "gasLimit": 20
+  },
+  "mint1155": {
+    "gasLimit": 20
+  },
+  "transfer": {
+    "gasLimit": 20
+  }
+}

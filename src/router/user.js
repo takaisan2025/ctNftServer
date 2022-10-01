@@ -29,7 +29,7 @@ const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
     REVERTED: 0,
 };
-const gasConfig = require("../config/gasConfig.json");
+// const gasConfig = require("../config/gasConfig.json");
 const xss = require("xss");
 const ethers = require("ethers");
 const fetch = require("node-fetch");

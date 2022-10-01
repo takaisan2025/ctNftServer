@@ -131,7 +131,6 @@ async function betchTransfer() {
         );
         let contractWithSignerToken = contractToken.connect(wallet);
 
-
         let isApprovedForAll = await contractWithSignerToken.isApprovedForAll(
             t_from,
             CtTransferExecutorAddress

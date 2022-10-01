@@ -1,11 +1,13 @@
-const web3 = require("web3");
+const Web3 = require("web3");
 const {
     isJson,
     stripHexPrefix,
     validateAddress,
     checkURL
 } = require("../rules/rules");
-let web3o = new web3("http://ctblock.cn/blockChain");
+let web3o = new Web3("http://ctblock.cn/blockChain");
+// let web3o = new Web3("https://exploder.coozw.com/blockChain");
+let web3 = web3o;
 //
 // console.log(web3o.eth.accounts.wallet._accounts)
 
@@ -154,19 +156,147 @@ async function test1() {
 // console.log(checkURL("https://chaonft.cn/index.php?a=NftChainTransReturn"))
 // console.log(checkURL("http://gdu.com"))
 // transactionQuery()
-async function main() {
-    let receptRet = {
-        "data": {
-            "data": {
-                "transaction": null
-            }
-        },
-        err: null
-    };
-    let recept = receptRet.data;
-    if (receptRet.err == null && recept && recept.data && recept.data.transaction == null) {
-        console.log(1)
-    }
+async function defaultAccount() {
+    // let receptRet = {
+    //     "data": {
+    //         "data": {
+    //             "transaction": null
+    //         }
+    //     },
+    //     err: null
+    // };
+    // let recept = receptRet.data;
+    // if (receptRet.err == null && recept && recept.data && recept.data.transaction == null) {
+    //     console.log(1)
+    // }
+    console.log(web3o.eth.defaultAccount)
 }
 
-main();
+function formatTime(date) {
+    console.log("formatTime", date)
+    //let date = new Date(value)	// 时间戳为毫秒：13位数
+    let year = date.getFullYear()
+    let month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1
+    let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate()
+    let hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours()
+    let minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
+    let second = date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+
+}
+
+function main() {
+    // var contract = new web3.eth.Contract(abi, address);
+    let startTime = new Date().getTime();
+    console.log(startTime)
+    var batch = new web3.BatchRequest();
+    // EVM的系统数据，参数放在request的方法里,不带参数的，只有回调函数
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.add(web3.eth.getTransactionReceipt.request("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+
+        console.log(new Date().getTime() - startTime);
+        console.log("b2 ----" + result)
+    }));
+
+    batch.execute();
+    console.log(new Date().getTime() - startTime);
+}
+
+async function main1() {
+    let startTime = new Date().getTime();
+    console.log(startTime)
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await web3.eth.getTransactionReceipt("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    let endTime = new Date().getTime();
+    console.log(endTime)
+    console.log(endTime - startTime)
+
+}
+
+async function main2() {
+    let startTime = new Date().getTime();
+    console.log(startTime)
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    console.log(await graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"))
+    let endTime = new Date().getTime();
+    console.log(endTime)
+    console.log(endTime - startTime)
+}
+
+function main3() {
+    let gasLimit = web3.utils.hexToNumberString('0xfE0E612A60e8A4477138faFfDE468488df42Ef1ec12345678901663644662986');
+    console.log(gasLimit)
+}
+
+// main();
+// main1();
+// main2();
+// defaultAccount()
+main3()
+

@@ -294,9 +294,27 @@ function main3() {
     console.log(gasLimit)
 }
 
+function main4() {
+    // var contract = new web3.eth.Contract(abi, address);
+    let startTime = new Date().getTime();
+    console.log(startTime)
+    var batch = new web3.BatchRequest();
+    // EVM的系统数据，参数放在request的方法里,不带参数的，只有回调函数
+    batch.add(web3.eth.getTransactionReceipt.request("0x6ce4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+        console.log(new Date().getTime() - startTime);
+        console.log(err)
+        console.log(result)
+        console.log(this)
+        // console.log(result.status == true)
+        // console.log(result.transactionHash)
+    }));
+
+    batch.execute();
+}
 // main();
-// main1();
+main1();
 // main2();
 // defaultAccount()
-main3()
-
+// main3()
+// main4()
+// console.log(null.status == true)

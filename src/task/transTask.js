@@ -83,6 +83,27 @@ async function betchTransfer() {
             update_time
         } = transList[retKey];
         let accountDetail = accountSelectSelective(t_from);
+        var params1 = {address: collectAddress};
+        var sql1 = mybatisMapper.getStatement(
+            "collect",
+            "selectByAddress",
+            params1,
+            format
+        );
+        let collectDetail = await execSql(sql1)
+            .then((ret) => {
+                return ret;
+            })
+            .catch((err) => {
+                console.log("ERR:", err);
+                return err;
+            });
+        let contractAddressDetail;
+        if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
+            contractAddressDetail = accountDetail;
+        } else {
+            contractAddressDetail = accountSelectSelective(collectDetail.owner);
+        }
         let accountItem = await accountDetail.then((result) => {
             return result;
         });
@@ -115,7 +136,8 @@ async function betchTransfer() {
         let etherString = ethers.utils.formatEther(balance);
         console.log("Balance: ", etherString);
         if (Number(etherString) < Number(String(1))) {
-            let {err, hash} = await transfer(ethers.utils.parseEther(String(1)), t_from);
+            let privateKey = contractAddressDetail.private_key;
+            let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(1)), t_from);
             if (err != null) {
                 console.log("txTransfer faild");
                 continue;
@@ -430,106 +452,43 @@ async function betchHashQuery() {
             update_time,
             hash
         } = transList[retKey];
-        let receptRet = await graphiqlHashQuery(hash);
-        let recept = receptRet.data;
+        let recept = await web3.eth.getTransactionReceipt(hash);
         let currTime = new Date().getTime();
         if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
             continue;
-        }
-        if (receptRet.err == null && recept && recept.data && recept.data.transaction == null) {
-            if (currTime - update_time.getTime() > 300000) {   // 超过5min自动重新获取
-                await delNonce(t_from);
+        } else {
+            let t_statusStorage;
+            if (recept != null && recept.status == true) {
+                t_statusStorage = 6;
+            } else {
+
+                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+                // save db
+                // if (recept.data.transaction == null || recept.data.transaction.status == null) {
+                if (currTime - update_time.getTime() < 60000) {
+                    continue;
+                } else {
+                    await delNonce(t_from);
+                    t_statusStorage = 1;
+                    console.log("查询hash结果false,", hash);
+                }
+
                 let trans_from_obj = {
-                    t_status: 1, // 6 成功,7 失败
+                    t_status: t_statusStorage, // 6 成功,7 失败
                     id: id
                 };
                 console.log("nftUpdateSelective:", trans_from_obj);
 
-                var paramsUp1 = trans_from_obj;
-                var sqlUp1 = mybatisMapper.getStatement(
+                var paramsUp = trans_from_obj;
+                var sqlUp = mybatisMapper.getStatement(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
-                    paramsUp1,
+                    paramsUp,
                     format
                 );
-                await execSql(sqlUp1);
+                await execSql(sqlUp);
 
             }
-            continue;
-        } else {
-            if (receptRet.err == null && recept.data.transaction != null && recept.data.transaction != undefined) {
-                console.log(recept.data.transaction);
-                if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.gasUsed == null) {
-                    console.log(recept.data.transaction);
-
-                    if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                        await delNonce(t_from);
-                        let trans_from_obj = {
-                            t_status: 1, // 6 成功,7 失败
-                            id: id
-                        };
-                        console.log("nftUpdateSelective:", trans_from_obj);
-
-                        var paramsUp2 = trans_from_obj;
-                        var sqlUp2 = mybatisMapper.getStatement(
-                            "trans_form_list",
-                            "updateByPrimaryKeySelective",
-                            paramsUp2,
-                            format
-                        );
-                        await execSql(sqlUp2);
-
-                    }
-                    continue;
-                } else {
-                    // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                    // save db
-                    let t_statusStorage;
-                    // if (recept.data.transaction == null || recept.data.transaction.status == null) {
-                    if (recept.data.transaction != null && recept.data.transaction != undefined && recept.data.transaction.status == null) {
-                        // t_statusStorage = 7;
-                        formatTime(new Date());
-                        console.log("查询hash结果为空,", hash);
-
-
-                        continue;
-                    } else {
-
-                        if (recept.data.transaction.status == "ERROR") {
-                            console.log("hash出错:", recept.data.transaction);
-                            if ("dropped/replaced" == recept.data.transaction.error) {
-                                t_statusStorage = 1;
-                            } else {
-                                t_statusStorage = 7;
-                            }
-
-                        } else if (recept.data.transaction.status == "OK") {
-                            t_statusStorage = 6;
-                        } else {
-                            continue;
-                        }
-                    }
-
-                    let trans_from_obj = {
-                        t_status: t_statusStorage, // 6 成功,7 失败
-                        id: id
-                    };
-                    console.log("nftUpdateSelective:", trans_from_obj);
-
-                    var paramsUp = trans_from_obj;
-                    var sqlUp = mybatisMapper.getStatement(
-                        "trans_form_list",
-                        "updateByPrimaryKeySelective",
-                        paramsUp,
-                        format
-                    );
-                    await execSql(sqlUp);
-
-
-                }
-
-            }
-
         }
 
     }
@@ -548,8 +507,8 @@ function id_fun(str) {
         .substring(0, 8)}`;
 }
 
-async function transfer(value, toAddress) {
-    let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
+async function transfer(privateKey, value, toAddress) {
+    let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
     // console.log("nonce: " + nonce);
     let tx = {
         to: toAddress,

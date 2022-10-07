@@ -1,4 +1,13 @@
 const fetch = require("node-fetch");
+const Web3 = require("web3");
+const {
+    isJson,
+    stripHexPrefix,
+    validateAddress,
+    checkURL
+} = require("../rules/rules");
+let web3o = new Web3("http://ctblock.cn/blockChain");
+let web3 = web3o;
 async function graphiqlHashQuery(hash) {
     let req_url = "https://ctblock.cn/graphiql";
     let receptRet = await fetch(req_url, {
@@ -25,6 +34,11 @@ async function graphiqlHashQuery(hash) {
     return receptRet;
 }
 
+async function nodeHashQuery() {
+
+}
+
 module.exports = {
-    graphiqlHashQuery
+    graphiqlHashQuery,
+    nodeHashQuery
 };

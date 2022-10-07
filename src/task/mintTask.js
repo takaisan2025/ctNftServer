@@ -749,10 +749,13 @@ async function betchHashQuery() {
         let req_url = "https://ctblock.cn/graphiql";
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
+        let currTime = new Date().getTime();
+        if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
+            continue;
+        }
         if (receptRet.err == null && recept.data.transaction != null && recept.data.transaction != undefined) {
             if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
                 console.log(recept.err);
-                let currTime = new Date().getTime();
                 if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
                     await delNonce(address);
                     await nftUpdateSelectiveStatus(6, tokenId);

@@ -433,6 +433,9 @@ async function betchHashQuery() {
         let receptRet = await graphiqlHashQuery(hash);
         let recept = receptRet.data;
         let currTime = new Date().getTime();
+        if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
+            continue;
+        }
         if (receptRet.err == null && recept && recept.data && recept.data.transaction == null) {
             if (currTime - update_time.getTime() > 300000) {   // 超过5min自动重新获取
                 await delNonce(t_from);

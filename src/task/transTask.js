@@ -24,7 +24,10 @@ const {
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const FormData = require("form-data");
-const web3 = require("web3");
+const Web3 = require("web3");
+let web3o = new Web3("http://ctblock.cn/blockChain");
+// let web3o = new Web3("https://exploder.coozw.com/blockChain");
+let web3 = web3o;
 const fetch = require("node-fetch");
 let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 
@@ -472,23 +475,22 @@ async function betchHashQuery() {
                     t_statusStorage = 1;
                     console.log("查询hash结果false,", hash);
                 }
-
-                let trans_from_obj = {
-                    t_status: t_statusStorage, // 6 成功,7 失败
-                    id: id
-                };
-                console.log("nftUpdateSelective:", trans_from_obj);
-
-                var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
-                    "trans_form_list",
-                    "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
-                );
-                await execSql(sqlUp);
-
             }
+            let trans_from_obj = {
+                t_status: t_statusStorage, // 6 成功,7 失败
+                id: id
+            };
+            console.log("nftUpdateSelective:", trans_from_obj);
+
+            var paramsUp = trans_from_obj;
+            var sqlUp = mybatisMapper.getStatement(
+                "trans_form_list",
+                "updateByPrimaryKeySelective",
+                paramsUp,
+                format
+            );
+            await execSql(sqlUp);
+
         }
 
     }

@@ -4,6 +4,8 @@ mybatisMapper.createMapper([
     "src/mapper/xml/nft.xml",
     "src/mapper/xml/TransFormListMapper.xml"
 ]);
+const  EventEmitter= require('events')
+EventEmitter.setMaxListeners(500)
 const {
     graphiqlHashQuery
 } = require("../broapi/broapi");
@@ -50,9 +52,9 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
 let gasPrice = "5000100000000";
 let isGasPrice = false;
 const ethUtil = require("ethereumjs-util");
+var format = {language: "sql", indent: "  "};
 
 async function betchTransfer() {
-    var format = {language: "sql", indent: "  "};
     var params = {t_status: 1};
     var sql = mybatisMapper.getStatement(
         "trans_form_list",
@@ -223,7 +225,6 @@ async function betchTransfer() {
             // console.log(minted721TokenStr == gasLimitRet.err)
             if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
                 let trans_from_obj = {
-                    hash: "none",
                     t_status: 3, // 上链成功
                     id: id
                 };
@@ -242,7 +243,6 @@ async function betchTransfer() {
             } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
                 // 计算手续费导致的错误, 稍后重试
                 let trans_from_obj = {
-                    hash: "none",
                     t_status: 6, // 上链成功
                     id: id
                 };
@@ -325,8 +325,8 @@ async function betchTransfer() {
                     return {err: err.reason, data: null};
                 });
             tx = txRet.data;
-            console.log("txRet:", txRet);
-            console.log("txTransForm:", tx);
+            // console.log("txRet:", txRet);
+            // console.log("txTransForm:", tx);
             if (txRet.err == null) {
                 // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
                 // save db
@@ -357,7 +357,6 @@ async function betchTransfer() {
             } else {
                 if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
                     let trans_from_obj = {
-                        hash: "none",
                         t_status: 3, // 上链成功
                         id: id
                     };
@@ -384,7 +383,6 @@ async function betchTransfer() {
                 if ("execution reverted: order has been processed!" == gasLimitRet.err) {
                     // 计算手续费导致的错误, 稍后重试
                     let trans_from_obj = {
-                        hash: "none",
                         t_status: 6, // 上链成功
                         id: id
                     };
@@ -421,7 +419,6 @@ async function betchTransfer() {
 }
 
 async function betchHashQuery() {
-    var format = {language: "sql", indent: "  "};
     var params = {t_status: 5};
     var sql = mybatisMapper.getStatement(
         "trans_form_list",
@@ -537,6 +534,177 @@ async function transfer(privateKey, value, toAddress) {
 }
 
 async function betchCallFund() {
+    var params = {t_status: 6};
+    var sql = mybatisMapper.getStatement(
+        "trans_form_list",
+        "selectByStatus",
+        params,
+        format
+    );
+    let transList = await execSqlAll(sql)
+        .then((ret) => {
+            return ret;
+        })
+        .catch((err) => {
+            console.error(responseFunStr(500, err, {}));
+        });
+
+    let urls = [];
+    for (let retKey in transList) {
+
+        const {
+            token_id,
+            id,
+            hash,
+            update_time,
+            orderId,
+            reback_url
+        } = transList[retKey];
+        var formdata = new FormData()
+
+        // if (reback_url == "" || reback_url == null) {
+        //     continue;
+        // }
+
+        formdata.append("key", "qianyidata");
+        // console.log(tokenId)
+        formdata.append("tokenId", token_id);
+        formdata.append("orderId", orderId);
+        formdata.append("mintDate", formatTime(update_time));
+        formdata.append("status", "true");
+        formdata.append("hash", hash);
+        // console.log("formdata:", formdata)
+        var requestOptions = {
+            method: "POST",
+            body: formdata,
+            redirect: "follow"
+        };
+
+        urls.push({
+            url: reback_url,
+            id: id,
+            param: requestOptions
+        });
+
+        handleFetchQueue(urls, max, callbackByCall);
+    }
+    console.log("betchCallFund All Done!");
+    setTimeout(() => {
+        formatTime(new Date())
+        console.log("betchCallFund Start !!")
+        betchCallFund()
+    }, 2000)
+}
+
+const max = 5;
+
+function handleFetchQueue(urls, max, callback) {
+    const urlCount = urls.length;
+    const requestsQueue = [];
+    const results = [];
+    let i = 0;
+    const handleRequest = (url) => {
+        if (url != undefined) {
+            // console.log("回调urlDetail:", url);
+            const req = fetch(url.url, url.param).then(res => {
+                console.log("回调返回原始内容status:", res.status);
+                console.log("回调返回原始内容statusText:", res.statusText);
+                return res.json();
+            }).then(res => {
+                console.log("回调返回处理结果:", res);
+                console.log('当前并发： ');
+                console.log(requestsQueue);
+                const len = results.push({data: res, id: url.id, err: null});
+                if (len < urlCount && i + 1 < urlCount) {
+                    requestsQueue.shift();
+                    handleRequest(urls[++i])
+                } else if (len === urlCount) {
+                    'function' === typeof callback && callback(results)
+                }
+            }).catch(e => {
+                console.log("回调错误:", e, ",id", url.id);
+                results.push({err: e, data: null, id: url.id})
+            });
+            if (requestsQueue.push(req) < max) {
+                handleRequest(urls[++i])
+            }
+        }
+
+    };
+    handleRequest(urls[i])
+}
+
+async function callbackByCall(result) {
+    console.log('run callback');
+    console.log(result);
+    for (const resultElement of result) {
+//处理响应结果
+        let response = resultElement.data
+        //处理响应结果
+        console.log(response);
+
+        if (response != null && response.status == 1) {
+
+            let trans_from_obj = {
+                t_status: 4, // 上链成功
+                id: resultElement.id
+            };
+            console.log("nftUpdateSelective:", trans_from_obj);
+
+            var paramsUp = trans_from_obj;
+            var sqlUp = mybatisMapper.getStatement(
+                "trans_form_list",
+                "updateByPrimaryKeySelective",
+                paramsUp,
+                format
+            );
+            let result = await execSql(sqlUp)
+                .then((ret) => {
+                    return ret;
+                })
+                .catch((err) => {
+                    console.error(responseFun(500, err, ""), resultElement.id);
+                    return responseFun(500, err, "");
+                });
+        } else if (response != null && response.msg == "作品不存在") {
+
+            let trans_from_obj = {
+                t_status: 8, // 上链成功
+                id: resultElement.id
+            };
+            console.log("nftUpdateSelective:", trans_from_obj);
+
+            var paramsUp = trans_from_obj;
+            var sqlUp = mybatisMapper.getStatement(
+                "trans_form_list",
+                "updateByPrimaryKeySelective",
+                paramsUp,
+                format
+            );
+            let result = await execSql(sqlUp);
+        } else {
+            // console.log("回调接口失败,", resultElement.id);
+            //
+            // let trans_from_obj = {
+            //     t_status: 8, // 上链成功
+            //     id: resultElement.id
+            // };
+            // console.log("nftUpdateSelective:", trans_from_obj);
+            //
+            // var paramsUp = trans_from_obj;
+            // var sqlUp = mybatisMapper.getStatement(
+            //     "trans_form_list",
+            //     "updateByPrimaryKeySelective",
+            //     paramsUp,
+            //     format
+            // );
+            // let result = await execSql(sqlUp);
+        }
+
+    }
+};
+
+async function betchCallFund1() {
     var format = {language: "sql", indent: "  "};
     var params = {t_status: 6};
     var sql = mybatisMapper.getStatement(
@@ -641,28 +809,28 @@ async function betchCallFund() {
             let result = await execSql(sqlUp);
         } else {
             console.log("回调接口失败,", orderId);
-
-            let trans_from_obj = {
-                t_status: 8, // 上链成功
-                id: id
-            };
-            console.log("nftUpdateSelective:", trans_from_obj);
-
-            var paramsUp = trans_from_obj;
-            var sqlUp = mybatisMapper.getStatement(
-                "trans_form_list",
-                "updateByPrimaryKeySelective",
-                paramsUp,
-                format
-            );
-            let result = await execSql(sqlUp);
+            //
+            // let trans_from_obj = {
+            //     t_status: 8, // 上链成功
+            //     id: id
+            // };
+            // console.log("nftUpdateSelective:", trans_from_obj);
+            //
+            // var paramsUp = trans_from_obj;
+            // var sqlUp = mybatisMapper.getStatement(
+            //     "trans_form_list",
+            //     "updateByPrimaryKeySelective",
+            //     paramsUp,
+            //     format
+            // );
+            // let result = await execSql(sqlUp);
         }
     }
     console.log("betchCallFund All Done!");
     setTimeout(() => {
         formatTime(new Date())
         console.log("betchCallFund Start !!")
-        betchCallFund()
+        betchCallFund1()
     }, 2000)
 }
 
@@ -682,7 +850,8 @@ function formatTime(date) {
 //TEST
 betchTransfer();
 betchHashQuery()
-betchCallFund();
+// betchCallFund();
+betchCallFund1();
 
 module.exports = {
     betchTransfer

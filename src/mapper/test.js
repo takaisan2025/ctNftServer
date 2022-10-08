@@ -25,6 +25,7 @@ let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
+
 const fetch = require("node-fetch");
 
 async function transactionQuery() {
@@ -300,21 +301,108 @@ function main4() {
     console.log(startTime)
     var batch = new web3.BatchRequest();
     // EVM的系统数据，参数放在request的方法里,不带参数的，只有回调函数
-    batch.add(web3.eth.getTransactionReceipt.request("0x6ce4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af", 'latest', (err, result) => {
+    batch.add(graphiqlHashQuery("0x6be4dbc7939b19a42402f74884cbd58af9d1ba994463c23cac759f8a1192a0af"), (err, result) => {
         console.log(new Date().getTime() - startTime);
         console.log(err)
         console.log(result)
-        console.log(this)
         // console.log(result.status == true)
         // console.log(result.transactionHash)
-    }));
+    });
 
     batch.execute();
 }
+
+// 不限制监听数量
+process.setMaxListeners(0)
+
+function handleFetchQueue(urls, max, callback) {
+    const urlCount = urls.length;
+    const requestsQueue = [];
+    const results = [];
+    let i = 0;
+    const handleRequest = (url) => {
+        if(url != undefined) {
+            console.log('当前并发： ',url);
+            const req = fetch(url.url).then(res => {
+                return res.json()
+            }).then(res => {
+                console.log('当前并发： ');
+                console.log(requestsQueue);
+                const len = results.push({ret: res, id: url.id});
+                if (len < urlCount && i + 1 < urlCount) {
+                    requestsQueue.shift();
+                    handleRequest(urls[++i])
+                } else if (len === urlCount) {
+                    'function' === typeof callback && callback(results)
+                }
+            }).catch(e => {
+                results.push({err: e, id: url.id})
+            });
+            if (requestsQueue.push(req) < max) {
+                handleRequest(urls[++i])
+            }
+        }
+
+    };
+    handleRequest(urls[i])
+}
+
+
+// const fetch = function (idx) {
+//     return new Promise(resolve => {
+//         console.log(`start request ${idx}`);
+//         const timeout = parseInt(Math.random() * 1e4);
+//         setTimeout(() => {
+//             console.log(`end request ${idx}`);
+//             resolve(idx)
+//         }, timeout)
+//     })
+// };
+
+const max = 6;
+
+const urls = [
+    {
+        url: "http://ctblock.cn/api?module=account&action=tokenlist&address=0x269153639cd53a0e41841801a149824c320f1d29",
+        id: 1
+    },
+    {
+        url: "http://ctblock.cn/api?module=account&action=tokenlist&address=0x269153639cd53a0e41841801a149824c320f1d29",
+        id: 2
+    },
+    {
+        url: "http://ctblock.cn/api?module=account&action=tokenlist&address=0x269153639cd53a0e41841801a149824c320f1d29",
+        id: 3
+    },
+    {
+        url: "http://ctblock.cn/api?module=account&action=tokenlist&address=0x269153639cd53a0e41841801a149824c320f1d29",
+        id: 4
+    },
+    {
+        url: "http://ctblock.cn/api?module=account&action=tokenlist&address=0x269153639cd53a0e41841801a149824c320f1d29",
+        id: 5
+    }];
+
+function callback(result) {
+    console.log('run callback');
+    console.log(result);
+};
+
+
+// handleFetchQueue(urls, max, callback);
 // main();
-main1();
+// main1();
 // main2();
 // defaultAccount()
 // main3()
 // main4()
 // console.log(null.status == true)
+function main5() {
+    const FormData = require("form-data");
+    let formdata = new FormData(this);
+    FormData.set("a","a")
+
+    console.log(formdata.get("a"))
+    console.log(formdata);
+}
+main5()

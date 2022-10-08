@@ -4,7 +4,7 @@ mybatisMapper.createMapper([
     "src/mapper/xml/nft.xml",
     "src/mapper/xml/TransFormListMapper.xml"
 ]);
-const  EventEmitter= require('events')
+const EventEmitter = require('events')
 EventEmitter.setMaxListeners(500)
 const {
     graphiqlHashQuery
@@ -721,7 +721,7 @@ async function betchCallFund1() {
             console.error(responseFunStr(500, err, {}));
         });
     for (let retKey in transList) {
-        const {
+        let {
             token_id,
             id,
             hash,
@@ -741,6 +741,9 @@ async function betchCallFund1() {
         formdata.append("orderId", orderId);
         formdata.append("mintDate", formatTime(update_time));
         formdata.append("status", "true");
+        if (hash == null) {
+            hash = "none";
+        }
         formdata.append("hash", hash);
         // console.log("formdata:", formdata)
         var requestOptions = {

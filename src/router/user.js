@@ -60,6 +60,11 @@ const {
     delNonce
 } = require("../mapper/NftNonceMapper");
 
+const {
+    balanceQuery,
+    queryBalanceAndTokenBalance
+} = require("../chain/balanceQuery");
+
 const fs = require("fs");
 const path = require("path");
 const mybatisMapper = require("mybatis-mapper");
@@ -1985,105 +1990,113 @@ const handleUserRouter = async (req, res) => {
 
                     // 数据量大的情况下, 这里可能会出现数据库阻塞, 所以发行方不进行这个判断
                     // TODO 这里要进行余额判断
-
                     // 这里对藏品余额进行判断
-
-
                     // 这里对手续费余额进行判断
+                    var balanceRet = await queryBalanceAndTokenBalance(address, collectAddress, tokenId);
+                    if (balanceRet.err != null) {
+                        throw {message: err}
+                    } else {
+                        let mainBalance = ethers.utils.formatEther(web3.utils.hexToNumberString(balanceRet.data.balance));
+                        let tokenBalance = web3.utils.hexToNumberString(balanceRet.data.tokenBalance)
+                        if (mainBalance < 50) {
+                            throw {message: "手续费余额不足"}
+                        }
+                        if (tokenBalance < amount) {
+                            throw {message: "藏品库存不足"}
+                        }
 
+                        if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
+                            transObjFrom = await execSql(mybatisMapper.getStatement(
+                                "trans_form_list",
+                                "selectByFormAndTokenId",
+                                {token_id: tokenId, t_from: address},
+                                format
+                            ))
+                                .then((ret) => {
+                                    return ret;
+                                })
+                                .catch((err) => {
+                                    console.log("ERR:", err);
+                                    return err;
+                                });
+                            transObjTo = await execSql(mybatisMapper.getStatement(
+                                "trans_form_list",
+                                "selectByToAndTokenId",
+                                {token_id: tokenId, t_to: address},
+                                format
+                            ))
+                                .then((ret) => {
+                                    return ret;
+                                })
+                                .catch((err) => {
+                                    console.log("ERR:", err);
+                                    return err;
+                                });
 
+                            juAmount = 0;
+                            if (transObjFrom && transObjFrom['sumAmount']) {
+                                juAmount -= Number(transObjFrom['sumAmount']);
+                            }
 
-                    if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
-                        transObjFrom = await execSql(mybatisMapper.getStatement(
+                            if (transObjTo && transObjTo['sumAmount']) {
+                                juAmount += Number(transObjTo['sumAmount']);
+                            }
+                            // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
+                            //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
+                            //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
+
+                            //这里对余额进行判断
+                            //判断是否是发行方,然后根据发行量进行判断
+                            if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
+                                // if (supply > 0) {   // 这里再判断一次, 按理12是都是大于0的
+                                if (Number(supply) - Number(juAmount) <= 0) {
+                                    throw {message: "db balance is enough!"}
+                                }
+                                // }
+
+                            } else {
+                                // 根据数据库的转账数量来判断
+                                // 不是发行方,根据数据库转入转出记录判断
+                                if (Number(juAmount) <= 0) {
+                                    throw {message: "db balance is enough!"}
+                                }
+
+                            }
+                        }
+
+                        // save db
+                        let trans_form_list_item = {
+                            t_from: address,
+                            t_to: to,
+                            collectAddress: collectAddress,
+                            amount: amount,
+                            reback_url: rebackUrl,
+                            token_id: tokenId,
+                            orderId: orderId,
+                            type: collectDetail['type'],
+                            t_status: 1,
+                        };
+
+                        //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
+                        var sqlQueryByTokenIdAndForm = mybatisMapper.getStatement(
                             "trans_form_list",
-                            "selectByFormAndTokenId",
-                            {token_id: tokenId, t_from: address},
+                            "insertSelective",
+                            trans_form_list_item,
                             format
-                        ))
+                        );
+                        return await execSql(sqlQueryByTokenIdAndForm)
                             .then((ret) => {
-                                return ret;
+                                console.log("inset TransFotmList data:", ret);
+                                // betchTransfer();
+                                return responseFun(200, "", {ret: ret});
+
                             })
                             .catch((err) => {
                                 console.log("ERR:", err);
-                                return err;
+                                return responseFun(500, err, "");
                             });
-                        transObjTo = await execSql(mybatisMapper.getStatement(
-                            "trans_form_list",
-                            "selectByToAndTokenId",
-                            {token_id: tokenId, t_to: address},
-                            format
-                        ))
-                            .then((ret) => {
-                                return ret;
-                            })
-                            .catch((err) => {
-                                console.log("ERR:", err);
-                                return err;
-                            });
-
-                        juAmount = 0;
-                        if (transObjFrom && transObjFrom['sumAmount']) {
-                            juAmount -= Number(transObjFrom['sumAmount']);
-                        }
-
-                        if (transObjTo && transObjTo['sumAmount']) {
-                            juAmount += Number(transObjTo['sumAmount']);
-                        }
-                        // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
-                        //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
-                        //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
-
-                        //这里对余额进行判断
-                        //判断是否是发行方,然后根据发行量进行判断
-                        if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
-                            // if (supply > 0) {   // 这里再判断一次, 按理12是都是大于0的
-                            if (Number(supply) - Number(juAmount) <= 0) {
-                                throw {message: "db balance is enough!"}
-                            }
-                            // }
-
-                        } else {
-                            // 根据数据库的转账数量来判断
-                            // 不是发行方,根据数据库转入转出记录判断
-                            if (Number(juAmount) <= 0) {
-                                throw {message: "db balance is enough!"}
-                            }
-
-                        }
+                        break;
                     }
-
-                    // save db
-                    let trans_form_list_item = {
-                        t_from: address,
-                        t_to: to,
-                        collectAddress: collectAddress,
-                        amount: amount,
-                        reback_url: rebackUrl,
-                        token_id: tokenId,
-                        orderId: orderId,
-                        type: collectDetail['type'],
-                        t_status: 1,
-                    };
-
-                    //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
-                    var sqlQueryByTokenIdAndForm = mybatisMapper.getStatement(
-                        "trans_form_list",
-                        "insertSelective",
-                        trans_form_list_item,
-                        format
-                    );
-                    return await execSql(sqlQueryByTokenIdAndForm)
-                        .then((ret) => {
-                            console.log("inset TransFotmList data:", ret);
-                            // betchTransfer();
-                            return responseFun(200, "", {ret: ret});
-
-                        })
-                        .catch((err) => {
-                            console.log("ERR:", err);
-                            return responseFun(500, err, "");
-                        });
-                    break;
                 case 9:
                     contract = new ethers.Contract(
                         collectAddress,

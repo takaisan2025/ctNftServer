@@ -1985,6 +1985,14 @@ const handleUserRouter = async (req, res) => {
 
                     // 数据量大的情况下, 这里可能会出现数据库阻塞, 所以发行方不进行这个判断
                     // TODO 这里要进行余额判断
+
+                    // 这里对藏品余额进行判断
+
+
+                    // 这里对手续费余额进行判断
+
+
+
                     if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
                         transObjFrom = await execSql(mybatisMapper.getStatement(
                             "trans_form_list",

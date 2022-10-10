@@ -21,6 +21,12 @@
         from trans_form_list
         where t_status = #{t_status}
     </select>
+    <select id="selectByStatusAndNoFrom" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from trans_form_list
+        where t_status = #{t_status} and t_from != #{t_from}
+    </select>
     <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List" />

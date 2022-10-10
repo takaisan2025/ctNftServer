@@ -49,13 +49,14 @@ const ethUtil = require("ethereumjs-util");
 var format = {language: "sql", indent: "  "};
 
 async function betchHashQuery() {
-    var params = {t_status: 5};
+    var params = {t_status: 5, t_from: "0x01063da4afFa46c59B9e1e1004Cd255CBC593FbE"};
     var sql = mybatisMapper.getStatement(
         "trans_form_list",
-        "selectByStatus",
+        "selectByStatusAndNoFrom",
         params,
         format
     );
+    sql = sql.replace('! =', '!=')
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -339,13 +340,15 @@ async function callbackByCall(result) {
 
 async function betchCallFund1() {
     var format = {language: "sql", indent: "  "};
-    var params = {t_status: 6};
+    var params = {t_status: 6, t_from: "0x01063da4afFa46c59B9e1e1004Cd255CBC593FbE"};
+
     var sql = mybatisMapper.getStatement(
         "trans_form_list",
-        "selectByStatus",
+        "selectByStatusAndNoFrom",
         params,
         format
     );
+    sql = sql.replace('! =', '!=')
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;

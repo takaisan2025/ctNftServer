@@ -50,16 +50,17 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
 let gasPrice = "5000100000000";
 let isGasPrice = false;
 const ethUtil = require("ethereumjs-util");
-var format = {language: "sql", indent: "  "};
+var format = {language: "sql", indent: " "};
 
 async function betchTransfer() {
-    var params = {t_status: 1};
+    var params = {t_status: 1, t_from: "0x01063da4afFa46c59B9e1e1004Cd255CBC593FbE"};
     var sql = mybatisMapper.getStatement(
         "trans_form_list",
-        "selectByStatus",
+        "selectByStatusAndNoFrom",
         params,
         format
     );
+    sql = sql.replace('! =', '!=')
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -473,4 +474,4 @@ betchTransfer();
 module.exports = {
     betchTransfer
 };
-// node src\task\transTaskExec1.js
+// node src\task\transTaskExec1Temp.js

@@ -38,10 +38,21 @@ function validateAddress(address) {
     } else {
         return {err: null, flag: true};
     }
-};
+}
+
+function isEmpty(value) {
+
+    if (!value || value == "" || value == null) {
+        return {err: null, flag: true}
+    } else {
+        return {err: "参数为空", flag: false};
+    }
+}
+
 module.exports = {
     isJson,
     stripHexPrefix,
     validateAddress,
-    checkURL
+    checkURL,
+    isEmpty
 };

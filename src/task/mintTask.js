@@ -764,7 +764,7 @@ async function betchHashQuery() {
                     continue;
                 } else {
                     await delNonce(address);
-                    await nftUpdateSelectiveStatus(6, tokenId);
+                    t_statusStorage = 6;
                 }
             }
             await nftUpdateSelectiveStatus(t_statusStorage, tokenId);

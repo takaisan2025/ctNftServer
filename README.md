@@ -40,7 +40,8 @@ src/task/mintTask.js
 ### 运行转增定时
 
 ```
-src/task/transTask.js
+src/task/transTaskExec1.js
+src/task/transTaskExec2.js
 ```
 ---
 ## 其它

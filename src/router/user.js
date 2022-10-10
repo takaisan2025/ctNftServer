@@ -1305,12 +1305,12 @@ const handleUserRouter = async (req, res) => {
                     await customHttpProvider.getTransactionCount(address, "latest");
                 await insertNonce(address, transCount);
             }
-            // else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-            //     // 超时,重新获取nonce
-            //     console.log("超时,重新获取nonce.....................");
-            //     transCount =
-            //         await customHttpProvider.getTransactionCount(address, "latest");
-            //
+                // else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
+                //     // 超时,重新获取nonce
+                //     console.log("超时,重新获取nonce.....................");
+                //     transCount =
+                //         await customHttpProvider.getTransactionCount(address, "latest");
+                //
             // }
             else {
                 transCount = nonceResult[0].nonce;
@@ -1982,61 +1982,66 @@ const handleUserRouter = async (req, res) => {
 
                     // 数据库余额判断
                     //    数据库已有数据判断
-                    transObjFrom = await execSql(mybatisMapper.getStatement(
-                        "trans_form_list",
-                        "selectByFormAndTokenId",
-                        {token_id: tokenId, t_from: address},
-                        format
-                    ))
-                        .then((ret) => {
-                            return ret;
-                        })
-                        .catch((err) => {
-                            console.log("ERR:", err);
-                            return err;
-                        });
-                    transObjTo = await execSql(mybatisMapper.getStatement(
-                        "trans_form_list",
-                        "selectByToAndTokenId",
-                        {token_id: tokenId, t_to: address},
-                        format
-                    ))
-                        .then((ret) => {
-                            return ret;
-                        })
-                        .catch((err) => {
-                            console.log("ERR:", err);
-                            return err;
-                        });
 
-                    juAmount = 0;
-                    if (transObjFrom && transObjFrom['sumAmount']) {
-                        juAmount -= Number(transObjFrom['sumAmount']);
-                    }
+                    // 数据量大的情况下, 这里可能会出现数据库阻塞, 所以发行方不进行这个判断
+                    // TODO 这里要进行余额判断
+                    if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
+                        transObjFrom = await execSql(mybatisMapper.getStatement(
+                            "trans_form_list",
+                            "selectByFormAndTokenId",
+                            {token_id: tokenId, t_from: address},
+                            format
+                        ))
+                            .then((ret) => {
+                                return ret;
+                            })
+                            .catch((err) => {
+                                console.log("ERR:", err);
+                                return err;
+                            });
+                        transObjTo = await execSql(mybatisMapper.getStatement(
+                            "trans_form_list",
+                            "selectByToAndTokenId",
+                            {token_id: tokenId, t_to: address},
+                            format
+                        ))
+                            .then((ret) => {
+                                return ret;
+                            })
+                            .catch((err) => {
+                                console.log("ERR:", err);
+                                return err;
+                            });
 
-                    if (transObjTo && transObjTo['sumAmount']) {
-                        juAmount += Number(transObjTo['sumAmount']);
-                    }
-                    // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
-                    //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
-                    //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
-
-                    //这里对余额进行判断
-                    //判断是否是发行方,然后根据发行量进行判断
-                    if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
-                        // if (supply > 0) {   // 这里再判断一次, 按理12是都是大于0的
-                        if (Number(supply) - Number(juAmount) <= 0) {
-                            throw {message: "db balance is enough!"}
-                        }
-                        // }
-
-                    } else {
-                        // 根据数据库的转账数量来判断
-                        // 不是发行方,根据数据库转入转出记录判断
-                        if (Number(juAmount) <= 0) {
-                            throw {message: "db balance is enough!"}
+                        juAmount = 0;
+                        if (transObjFrom && transObjFrom['sumAmount']) {
+                            juAmount -= Number(transObjFrom['sumAmount']);
                         }
 
+                        if (transObjTo && transObjTo['sumAmount']) {
+                            juAmount += Number(transObjTo['sumAmount']);
+                        }
+                        // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
+                        //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
+                        //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
+
+                        //这里对余额进行判断
+                        //判断是否是发行方,然后根据发行量进行判断
+                        if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
+                            // if (supply > 0) {   // 这里再判断一次, 按理12是都是大于0的
+                            if (Number(supply) - Number(juAmount) <= 0) {
+                                throw {message: "db balance is enough!"}
+                            }
+                            // }
+
+                        } else {
+                            // 根据数据库的转账数量来判断
+                            // 不是发行方,根据数据库转入转出记录判断
+                            if (Number(juAmount) <= 0) {
+                                throw {message: "db balance is enough!"}
+                            }
+
+                        }
                     }
 
                     // save db

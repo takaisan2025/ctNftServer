@@ -452,6 +452,9 @@ async function betchHashQuery() {
             update_time,
             hash
         } = transList[retKey];
+        if (!hash || hash == "" || hash == null) {
+            continue;
+        }
         let recept = await web3.eth.getTransactionReceipt(hash);
         let currTime = new Date().getTime();
         if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过

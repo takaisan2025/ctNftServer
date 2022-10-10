@@ -22,7 +22,10 @@ const {
     graphiqlHashQuery
 } = require("../broapi/broapi");
 const FormData = require("form-data");
-const web3 = require("web3");
+const Web3 = require("web3");
+let web3o = new Web3("http://ctblock.cn/blockChain");
+// let web3o = new Web3("https://exploder.coozw.com/blockChain");
+let web3 = web3o;
 const fetch = require("node-fetch");
 let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 
@@ -746,54 +749,26 @@ async function betchHashQuery() {
             continue;
         }
         // let recept = await customHttpProvider.getTransactionReceipt(hash);
-        let req_url = "https://ctblock.cn/graphiql";
-        let receptRet = await graphiqlHashQuery(hash);
-        let recept = receptRet.data;
+        let recept = await web3.eth.getTransactionReceipt(hash);
         let currTime = new Date().getTime();
+
         if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
             continue;
-        }
-        if (receptRet.err == null && recept.data.transaction != null && recept.data.transaction != undefined) {
-            if (recept.data.transaction != null && recept.data.transaction.gasUsed == null) {
-                console.log(recept.err);
-                if (currTime - update_time.getTime() > 60000) {   // 超过1min自动重新获取
+        } else {
+            let t_statusStorage;
+            if (recept != null && recept.status == true) {
+                t_statusStorage = 7;
+            } else {
+
+                if (currTime - update_time.getTime() < 60000) {
+                    continue;
+                } else {
                     await delNonce(address);
                     await nftUpdateSelectiveStatus(6, tokenId);
                 }
-                continue;
-            } else {
-                console.log(recept);
-                // console.log(recept);
-
-                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                // save db
-                let t_statusStorage;
-                if (recept.data.transaction != null && recept.data.transaction.status == null) {
-                    // t_statusStorage = 7;
-                    formatTime(new Date());
-                    console.log("查询hash结果为空,", hash);
-                    continue;
-                } else {
-                    if (recept.data.transaction.status == "ERROR") {
-                        console.log("hash出错:", recept.data.transaction);
-                        if ("dropped/replaced" == recept.data.transaction.error) {
-                            t_statusStorage = 6;
-                        } else {
-                            t_statusStorage = 6;
-                        }
-
-                    } else if (recept.data.transaction.status == "OK") {
-                        t_statusStorage = 7;
-                    } else {
-                        continue;
-                    }
-                }
-
-                await nftUpdateSelectiveStatus(t_statusStorage, tokenId);
             }
-
+            await nftUpdateSelectiveStatus(t_statusStorage, tokenId);
         }
-
     }
     console.log("betchHashQuery All Done!");
     setTimeout(() => {

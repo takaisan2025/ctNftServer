@@ -20,7 +20,6 @@
         <include refid="Base_Column_List" />
         from trans_form_list
         where t_status = #{t_status}
-        limit 200
     </select>
     <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select

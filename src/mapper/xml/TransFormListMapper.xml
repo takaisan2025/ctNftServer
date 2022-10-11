@@ -20,6 +20,7 @@
         <include refid="Base_Column_List" />
         from trans_form_list
         where t_status = #{t_status}
+        limit 1000
     </select>
     <select id="selectByStatusAndNoFrom" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select

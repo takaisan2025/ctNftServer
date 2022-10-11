@@ -29,6 +29,7 @@ const {
     responseFunStr,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
+const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
 let web3o = new Web3("http://ctblock.cn/blockChain");
 let web3 = web3o;
@@ -47,7 +48,6 @@ let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[1];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
-let gasPrice = "5000100000000";
 let isGasPrice = false;
 const ethUtil = require("ethereumjs-util");
 var format = {language: "sql", indent: "  "};
@@ -101,12 +101,16 @@ async function betchTransfer() {
                 console.log("ERR:", err);
                 return err;
             });
-        let contractAddressDetail;
+        let contractAddressDetailAsync;
+
         if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
-            contractAddressDetail = accountDetail;
+            contractAddressDetailAsync = accountDetail;
         } else {
-            contractAddressDetail = accountSelectSelective(collectDetail.owner);
+            contractAddressDetailAsync = accountSelectSelective(collectDetail.owner);
         }
+        let contractAddressDetail = await contractAddressDetailAsync.then((result) => {
+            return result;
+        });
         let accountItem = await accountDetail.then((result) => {
             return result;
         });
@@ -127,11 +131,6 @@ async function betchTransfer() {
 
         // 使用Provider 连接合约，将只有对合约的可读权限
         let transferTo = t_to;
-        if (!isGasPrice) {
-            gasPrice = (await customHttpProvider.getGasPrice()).toString();
-            isGasPrice = true;
-        }
-        console.log("gasPrice:", gasPrice.toString());
 
         // 链上余额判断
         let balance = await wallet.provider.getBalance(t_from);
@@ -287,15 +286,12 @@ async function betchTransfer() {
             }
             let gasLimit = gasLimitRet.gasLimit;
             console.log("gasLimit:", gasLimit.toString());
-            let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
-            console.log("gasPrice*:", neceliby);
 
-            // gasPrice = 0;
             let overrides = {
                 // The maximum units of gas for the transaction to use
                 gasLimit: web3.utils.numberToHex(gasLimit),
                 // The price (in wei) per unit of gas
-                gasPrice: web3.utils.numberToHex(gasPrice),
+                gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
                 // The nonce to use in the transaction
                 // nonce: nonce,
                 nonce: transactionCount1Mint,

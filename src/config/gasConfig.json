@@ -13,6 +13,7 @@
     "gasLimit": 20
   },
   "transfer": {
-    "gasLimit": 20
+    "gasLimit": 20,
+    "gas": 300000000000000000
   }
 }

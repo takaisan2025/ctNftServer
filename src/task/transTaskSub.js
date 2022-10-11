@@ -387,7 +387,7 @@ async function betchTransfer() {
         }
     }
     console.log("betchTransfer All Done!");
-
+    process.exit();
 }
 
 function id_fun(str) {

@@ -32,7 +32,7 @@ const {
 
 async function main() {
     console.log("betchTransferThread Start !!")
-    var params = {t_status: 1};
+    var params = {t_status: 6};
     var sql = mybatisMapper.getStatement(
         "trans_form_list",
         "selectByStatus",
@@ -51,7 +51,7 @@ async function main() {
     let processedTransList = spArr(transList, 200);
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {
-        var workerProcess = child_process.spawn('node', ['src/task/transTaskSub.js', i], {
+        var workerProcess = child_process.spawn('node', ['src/task/transTaskReCallSub.js', i], {
             env: {
                 spTransList: JSON.stringify(processedTransList[i])
             }
@@ -78,4 +78,4 @@ async function main() {
 
 main();
 module.exports = {};
-// node src\task\transTaskMaster.js
+// node src\task\transTaskReCallMaster.js

@@ -486,6 +486,6 @@ function formatTime(date) {
 //TEST
 betchHashQuery()
 // betchCallFund();
-betchCallFund1();
+// betchCallFund1();
 
 // node src\task\transTaskExec2.js

@@ -1488,7 +1488,7 @@ const handleUserRouter = async (req, res) => {
             //     return responseFun(500, {message: "创建合约失败"}, {});
             // }
             // 这里前面已经可以算出合约地址, 这里为了方便,直接计算得出, 不使用返回值.
-            collectAddress = "0x" + util.generateAddress(Buffer.from(stripHexPrefix(wallet.address), "hex"), nonce).toString("hex");
+            // collectAddress = "0x" + util.generateAddress(Buffer.from(stripHexPrefix(wallet.address), "hex"), nonce).toString("hex");
             //    初始化{err, hash}
             let result1 = await collectInit(
                 cMetadata.name,

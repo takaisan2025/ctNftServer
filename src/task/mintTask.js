@@ -182,12 +182,12 @@ async function fileUploadIpfs() {
     }, 2000)
 }
 
-const {
-    queryNonce,
-    insertNonce,
-    updateNonce,
-    delNonce
-} = require("../mapper/NftNonceMapper");
+// const {
+//     queryNonce,
+//     insertNonce,
+//     updateNonce,
+//     delNonce
+// } = require("../mapper/NftNonceMapper");
 
 let gasPrice = "5000100000000";
 let isGasPrice = false;
@@ -238,24 +238,24 @@ async function betchMint() {
         var creators = Part(minter, 10000);
         let transactionCount1Mint;
         //     await customHttpProvider.getTransactionCount(address, "latest");
-        var nonceResult = await queryNonce(address);
-        let currTime = new Date().getTime();
-        if (nonceResult.length == 0) {
-            transactionCount1Mint =
-                await customHttpProvider.getTransactionCount(address, "latest");
-            await insertNonce(address, transactionCount1Mint);
-        } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-            // 超时,重新获取nonce
-            console.log("超时,重新获取nonce.....................");
-            transactionCount1Mint =
-                await customHttpProvider.getTransactionCount(address, "latest");
-            await updateNonce(address, transactionCount1Mint);
-        } else {
-            transactionCount1Mint = nonceResult[0].nonce;
-        }
-        console.log("address: " + address);
+        // var nonceResult = await queryNonce(address);
+        // let currTime = new Date().getTime();
+        // if (nonceResult.length == 0) {
+        //     transactionCount1Mint =
+        //         await customHttpProvider.getTransactionCount(address, "latest");
+        //     await insertNonce(address, transactionCount1Mint);
+        // } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
+        //     // 超时,重新获取nonce
+        //     console.log("超时,重新获取nonce.....................");
+        //     transactionCount1Mint =
+        //         await customHttpProvider.getTransactionCount(address, "latest");
+        //     await updateNonce(address, transactionCount1Mint);
+        // } else {
+        //     transactionCount1Mint = nonceResult[0].nonce;
+        // }
+        // console.log("address: " + address);
         // console.log("发送交易总数1: " + transactionCount1Mint);
-        console.log("nonce: " + nonce);
+        // console.log("nonce: " + nonce);
         let tokenURI = metaData;
         if (!isGasPrice) {
             gasPrice = (await customHttpProvider.getGasPrice()).toString();
@@ -291,9 +291,9 @@ async function betchMint() {
                 if (gasLimitRet.err == minted1155TokenStr) {
                     await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
                 } else if ("replacement fee too low" == gasLimitRet.err) {
-                    await updateNonce(address, transactionCount1Mint + 1);
+                    // await updateNonce(address, transactionCount1Mint + 1);
                 } else {
-                    await delNonce(address);
+                    // await delNonce(address);
                 }
                 continue;
             } else {
@@ -306,7 +306,7 @@ async function betchMint() {
                 console.log("Balance: ", etherString);
                 if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
                     console.log("合约持有者余额不足, 请进行充值!", address);
-                    await delNonce(address);
+                    // await delNonce(address);
                     continue;
                 } else {
                     let overrides = {
@@ -316,7 +316,7 @@ async function betchMint() {
                         // gasPrice: web3.utils.numberToHex(gasPrice),
                         // The nonce to use in the transaction
                         // nonce: nonce,
-                        nonce: transactionCount1Mint,
+                        // nonce: transactionCount1Mint,
                         // The amount to send with the transaction (i.e. msg.value)
                         // value: utils.parseEther('1.0'),
                         // The chain ID (or network ID) to use
@@ -405,14 +405,14 @@ async function betchMint() {
                             });
                         console.log("update NFT data:", result);
                         console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
-                        await updateNonce(address, transactionCount1Mint + 1);
+                        // await updateNonce(address, transactionCount1Mint + 1);
                     } else if ("replacement fee too low" == txRet.err) {
                         //手续费不足
-                        await updateNonce(address, transactionCount1Mint + 1);
+                        // await updateNonce(address, transactionCount1Mint + 1);
                     } else {
                         //手续费不足
                         console.error("txRet.err", txRet.err);
-                        await delNonce(address);
+                        // await delNonce(address);
                     }
                 }
             }
@@ -443,9 +443,9 @@ async function betchMint() {
                 if (minted721TokenStr == gasLimitRet.err) {
                     await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
                 } else if ("replacement fee too low" == gasLimitRet.err) {
-                    await updateNonce(address, transactionCount1Mint + 1);
+                    // await updateNonce(address, transactionCount1Mint + 1);
                 } else {
-                    await delNonce(address);
+                    // await delNonce(address);
                 }
                 continue;
             } else {
@@ -469,8 +469,8 @@ async function betchMint() {
                     }
                     console.log("tx Hash:", hash);
                 }
-                console.log("nonce: " + nonce);
-                console.log("nonce: " + transactionCount1Mint);
+                // console.log("nonce: " + nonce);
+                // console.log("nonce: " + transactionCount1Mint);
                 let overrides = {
                     // The maximum units of gas for the transaction to use
                     gasLimit: web3.utils.numberToHex(gasLimit),
@@ -478,7 +478,7 @@ async function betchMint() {
                     gasPrice: web3.utils.numberToHex(gasPrice),
                     // The nonce to use in the transaction
                     // nonce: nonce,
-                    nonce: transactionCount1Mint,
+                    // nonce: transactionCount1Mint,
                     // The amount to send with the transaction (i.e. msg.value)
                     // value: utils.parseEther('1.0'),
                     // The chain ID (or network ID) to use
@@ -559,14 +559,14 @@ async function betchMint() {
                             console.error(responseFun(500, err, ""), tokenId);
                         });
                     console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
-                    await updateNonce(address, transactionCount1Mint + 1);
+                    // await updateNonce(address, transactionCount1Mint + 1);
                 } else if ("replacement fee too low" == txRet.err) {
                     //手续费不足
-                    await updateNonce(address, transactionCount1Mint + 1);
+                    // await updateNonce(address, transactionCount1Mint + 1);
                 } else {
                     //手续费不足
                     console.error("txRet.err", txRet.err);
-                    await delNonce(address);
+                    // await delNonce(address);
                 }
             }
 
@@ -763,7 +763,7 @@ async function betchHashQuery() {
                 if (currTime - update_time.getTime() < 60000) {
                     continue;
                 } else {
-                    await delNonce(address);
+                    // await delNonce(address);
                     t_statusStorage = 6;
                 }
             }

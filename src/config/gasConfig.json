@@ -7,10 +7,12 @@
     "gasLimit": 3800000
   },
   "mint721": {
-    "gasLimit": 20
+    "gasLimit": 20,
+    "gas": 1200000000000000000
   },
   "mint1155": {
-    "gasLimit": 20
+    "gasLimit": 20,
+    "gas": 1200000000000000000
   },
   "transfer": {
     "gasLimit": 20,

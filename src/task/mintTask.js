@@ -21,6 +21,7 @@ const ipfsNode = ipfsAPI({
 const {
     graphiqlHashQuery
 } = require("../broapi/broapi");
+const gasConfig = require("../config/gasConfig.json");
 const FormData = require("form-data");
 const Web3 = require("web3");
 let web3o = new Web3("http://ctblock.cn/blockChain");
@@ -189,9 +190,6 @@ async function fileUploadIpfs() {
 //     delNonce
 // } = require("../mapper/NftNonceMapper");
 
-let gasPrice = "5000100000000";
-let isGasPrice = false;
-
 async function betchMint() {
     let nfts = nftSelectSelectiveStatus(6); // 资源未上链ipfs的条目
     let nftArr = await nfts
@@ -257,10 +255,7 @@ async function betchMint() {
         // console.log("发送交易总数1: " + transactionCount1Mint);
         // console.log("nonce: " + nonce);
         let tokenURI = metaData;
-        if (!isGasPrice) {
-            gasPrice = (await customHttpProvider.getGasPrice()).toString();
-            isGasPrice = true;
-        }
+
         if (type == 10 || type == 12) {
             let contract = new ethers.Contract(
                 collectAddress,
@@ -298,7 +293,7 @@ async function betchMint() {
                 continue;
             } else {
                 console.log("gasLimit:", gasLimit.toString());
-                let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+                let neceliby = ethers.utils.formatEther((gasConfig.mint1155.gas).toString());
                 console.log("gasPrice*:", neceliby);
                 let balance = await wallet.provider.getBalance(address);
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
@@ -311,9 +306,9 @@ async function betchMint() {
                 } else {
                     let overrides = {
                         // The maximum units of gas for the transaction to use
-                        // gasLimit: web3.utils.numberToHex(gasLimit),
+                        gasLimit: web3.utils.numberToHex(gasLimit),
                         // The price (in wei) per unit of gas
-                        // gasPrice: web3.utils.numberToHex(gasPrice),
+                        gasPrice: web3.utils.numberToHex(parseInt(gasConfig.mint1155.gas / Number(gasLimit))),
                         // The nonce to use in the transaction
                         // nonce: nonce,
                         // nonce: transactionCount1Mint,
@@ -450,9 +445,9 @@ async function betchMint() {
                 continue;
             } else {
                 console.log("gasLimit:", gasLimit.toString());
-                let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
+                let neceliby = ethers.utils.formatEther((gasConfig.mint721.gas).toString());
                 console.log("gasPrice*:", neceliby);
-                console.log("gasPrice*:", gasPrice * gasLimit);
+                console.log("gasPrice*:", gasConfig.mint721.gas);
                 let balance = await wallet.provider.getBalance(address);
                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                 let etherString = ethers.utils.formatEther(balance);
@@ -475,7 +470,7 @@ async function betchMint() {
                     // The maximum units of gas for the transaction to use
                     gasLimit: web3.utils.numberToHex(gasLimit),
                     // The price (in wei) per unit of gas
-                    gasPrice: web3.utils.numberToHex(gasPrice),
+                    gasPrice: web3.utils.numberToHex(parseInt(gasConfig.mint721.gas / Number(gasLimit))),
                     // The nonce to use in the transaction
                     // nonce: nonce,
                     // nonce: transactionCount1Mint,

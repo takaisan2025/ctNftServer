@@ -41,7 +41,6 @@ let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[1];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
-let isGasPrice = false;
 const ethUtil = require("ethereumjs-util");
 var format = {language: "sql", indent: "  "};
 

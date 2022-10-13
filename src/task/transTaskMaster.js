@@ -32,6 +32,7 @@ const {
 
 async function main() {
     console.log("betchTransferThread Start !!")
+    let countTh = 0;
     var params = {t_status: 1};
     var sql = mybatisMapper.getStatement(
         "trans_form_list",
@@ -55,7 +56,7 @@ async function main() {
             env: {
                 spTransList: JSON.stringify(processedTransList[i])
             }
-        } );
+        });
 
 
         workerProcess.stdout.on('data', function (data) {
@@ -68,12 +69,21 @@ async function main() {
 
         workerProcess.on('close', function (code) {
             console.log('子进程已退出，退出码 ' + code);
+            countTh += 1;
+            console.log('countTh ' + countTh);
+            // if (countTh == processedTransList.length || countTh + 2 == processedTransList.length) {
+            //     setTimeout(() => {
+            //         main()
+            //     }, 1000);
+            // }
         });
     }
     console.log("betchTransferThread End !!")
+    // if (processedTransList.length == 0) {
     setTimeout(() => {
         main()
-    }, 30000);
+    }, 60000);
+    // }
 }
 
 main();

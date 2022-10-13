@@ -4,7 +4,7 @@ mybatisMapper.createMapper([
     "src/mapper/xml/nft.xml",
     "src/mapper/xml/TransFormListMapper.xml"
 ]);
-
+const gasConfig = require("../config/gasConfig.json");
 const EventEmitter = require('events')
 EventEmitter.setMaxListeners(500)
 const {
@@ -132,10 +132,10 @@ async function betchTransfer() {
 
         // 使用Provider 连接合约，将只有对合约的可读权限
         let transferTo = t_to;
-        if (!isGasPrice) {
-            gasPrice = (await customHttpProvider.getGasPrice()).toString();
-            isGasPrice = true;
-        }
+        // if (!isGasPrice) {
+        //     gasPrice = (await customHttpProvider.getGasPrice()).toString();
+        //     isGasPrice = true;
+        // }
         console.log("gasPrice:", gasPrice.toString());
 
         // 链上余额判断
@@ -264,9 +264,9 @@ async function betchTransfer() {
                 );
                 await execSql(sqlUp1);
             } else if ("replacement fee too low" == gasLimitRet.err) {
-                await updateNonce(t_from, transactionCount1Mint + 1);
+                // await updateNonce(t_from, transactionCount1Mint + 1);
             } else {
-                await delNonce(t_from);
+                // await delNonce(t_from);
             }
             continue;
         } else {
@@ -275,21 +275,21 @@ async function betchTransfer() {
             let txRet;
             let transactionCount1Mint;
             //这里通过数据库查询来获取nonce
-            var nonceResult = await queryNonce(t_from);
-            let currTime = new Date().getTime();
-            if (nonceResult.length == 0) {
-                transactionCount1Mint =
-                    await customHttpProvider.getTransactionCount(t_from, "latest");
-                await insertNonce(t_from, transactionCount1Mint);
-            } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                // 超时,重新获取nonce
-                console.log("超时,重新获取nonce.....................");
-                transactionCount1Mint =
-                    await customHttpProvider.getTransactionCount(t_from, "latest");
-                await updateNonce(t_from, transactionCount1Mint);
-            } else {
-                transactionCount1Mint = nonceResult[0].nonce;
-            }
+            // var nonceResult = await queryNonce(t_from);
+            // let currTime = new Date().getTime();
+            // if (nonceResult.length == 0) {
+            //     transactionCount1Mint =
+            //         await customHttpProvider.getTransactionCount(t_from, "latest");
+            //     await insertNonce(t_from, transactionCount1Mint);
+            // } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
+            //     // 超时,重新获取nonce
+            //     console.log("超时,重新获取nonce.....................");
+            //     transactionCount1Mint =
+            //         await customHttpProvider.getTransactionCount(t_from, "latest");
+            //     await updateNonce(t_from, transactionCount1Mint);
+            // } else {
+            //     transactionCount1Mint = nonceResult[0].nonce;
+            // }
             let gasLimit = gasLimitRet.gasLimit;
             console.log("gasLimit:", gasLimit.toString());
             let neceliby = ethers.utils.formatEther((gasPrice * gasLimit).toString());
@@ -300,10 +300,10 @@ async function betchTransfer() {
                 // The maximum units of gas for the transaction to use
                 gasLimit: web3.utils.numberToHex(gasLimit),
                 // The price (in wei) per unit of gas
-                gasPrice: web3.utils.numberToHex(gasPrice),
+                gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
                 // The nonce to use in the transaction
                 // nonce: nonce,
-                nonce: transactionCount1Mint,
+                // nonce: transactionCount1Mint,
                 // The amount to send with the transaction (i.e. msg.value)
                 // value: utils.parseEther('1.0'),
                 // The chain ID (or network ID) to use
@@ -360,7 +360,7 @@ async function betchTransfer() {
                         console.error(responseFun(500, err, ""), id);
                     });
                 console.log("update TransFrom data:", result);
-                await updateNonce(t_from, transactionCount1Mint + 1)
+                // await updateNonce(t_from, transactionCount1Mint + 1)
                 continue;
             } else {
                 if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
@@ -407,12 +407,12 @@ async function betchTransfer() {
                 }
                 if ("replacement fee too low" == txRet.err) {
                     //手续费不足
-                    await updateNonce(t_from, transactionCount1Mint + 1);
+                    // await updateNonce(t_from, transactionCount1Mint + 1);
                     continue;
                 }
                 //手续费不足
                 console.error("txRet.err", txRet.err);
-                await delNonce(t_from);
+                // await delNonce(t_from);
                 continue;
 
             }

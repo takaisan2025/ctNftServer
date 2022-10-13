@@ -58,4 +58,5 @@ async function main() {
 
 // main();
 
-main()
+// main()
+console.log(1200000000000000000 / 10045)

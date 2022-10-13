@@ -1991,22 +1991,22 @@ const handleUserRouter = async (req, res) => {
                     // TODO 这里要进行余额判断
                     // 这里对藏品余额进行判断
                     // 这里对手续费余额进行判断
-                    // var balanceRet = await queryBalanceAndTokenBalance(address, collectAddress, tokenId);
-                    if (false) {
+                    var balanceRet = await queryBalanceAndTokenBalance(address, collectAddress, tokenId);
+                    if (balanceRet.err != null) {
                         throw {message: err}
                     } else {
-                        // let mainBalance = ethers.utils.formatEther(web3.utils.hexToNumberString(balanceRet.data.balance));
-                        // let tokenBalance = web3.utils.hexToNumberString(balanceRet.data.tokenBalance);
+                        let mainBalance = ethers.utils.formatEther(web3.utils.hexToNumberString(balanceRet.data.balance));
+                        let tokenBalance = web3.utils.hexToNumberString(balanceRet.data.tokenBalance);
                         // 这里如果是合约发行方的话, 做手续费判断   1155协议
-                        // if (nftObj['address'].toLowerCase() == address.toLowerCase()) {
-                        //     if (mainBalance < 50) {
-                        //         throw {message: "手续费余额不足"}
-                        //     }
-                        // }
-                        //
-                        // if (tokenBalance < amount) {
-                        //     throw {message: "藏品库存不足"}
-                        // }
+                        if (nftObj['address'].toLowerCase() == address.toLowerCase()) {
+                            if (mainBalance < 50) {
+                                throw {message: "手续费余额不足"}
+                            }
+                        }
+
+                        if (tokenBalance < amount) {
+                            throw {message: "藏品库存不足"}
+                        }
 
                         if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
                             transObjFrom = await execSql(mybatisMapper.getStatement(

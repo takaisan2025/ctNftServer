@@ -30,25 +30,38 @@ let processedArr = spArr(arr, 4);
 //         console.log('子进程已退出，退出码 ' + code);
 //     });
 // }
+function main() {
+    let countTh = 0;
+    for (let i = 0; i < processedArr.length; i++) {
+        var workerProcess = child_process.spawn('node', ['src/mapper/test.js', i], {
+            env: {
+                a: processedArr[i]
+            }
+        });
 
-for (let i = 0; i < processedArr.length; i++) {
-    var workerProcess = child_process.spawn('node', ['src/mapper/test.js', i], {
-        env: {
-            a: processedArr[i]
-        }
-    });
+        workerProcess.stdout.on('data', function (data) {
+            console.log('stdout: ' + data);
+        });
 
-    workerProcess.stdout.on('data', function (data) {
-        console.log('stdout: ' + data);
-    });
+        workerProcess.stderr.on('data', function (data) {
+            console.log('stderr: ' + data);
+        });
 
-    workerProcess.stderr.on('data', function (data) {
-        console.log('stderr: ' + data);
-    });
-
-    workerProcess.on('close', function (code) {
-        console.log('子进程已退出，退出码 ' + code);
-    });
+        workerProcess.on('close', function (code) {
+            console.log('子进程已退出，退出码 ' + code);
+            countTh += 1;
+            console.log('countTh ' + countTh);
+            if (countTh == processedArr.length) {
+                setTimeout(() => {
+                    main()
+                }, 1000);
+            }
+        });
+    }
+    // setTimeout(() => {
+    //     main()
+    // }, 1000);
 }
 
+main()
 // node src\mapper\process_test.js

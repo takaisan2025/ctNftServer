@@ -60,3 +60,9 @@ async function main() {
 
 // main()
 console.log(1200000000000000000 / 10045)
+try {
+    throw "haha"
+}  catch (e) {
+    console.trace(e.stack)
+}
+// node src/mapper/test.js

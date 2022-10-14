@@ -45,7 +45,7 @@ async function main() {
             return ret;
         })
         .catch((err) => {
-            console.log("ERR:", err);
+            console.trace("ERR:", err);
             return err;
         });
 
@@ -57,7 +57,6 @@ async function main() {
                 spTransList: JSON.stringify(processedTransList[i])
             }
         });
-
 
         workerProcess.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
@@ -71,19 +70,19 @@ async function main() {
             console.log('子进程已退出，退出码 ' + code);
             countTh += 1;
             console.log('countTh ' + countTh);
-            // if (countTh == processedTransList.length || countTh + 2 == processedTransList.length) {
-            //     setTimeout(() => {
-            //         main()
-            //     }, 1000);
-            // }
+            if (countTh == processedTransList.length) {
+                setTimeout(() => {
+                    main()
+                }, 1000);
+            }
         });
     }
     console.log("betchTransferThread End !!")
-    // if (processedTransList.length == 0) {
-    setTimeout(() => {
-        main()
-    }, 60000);
-    // }
+    if (processedTransList.length == 0) {
+        setTimeout(() => {
+            main()
+        }, 5000);
+    }
 }
 
 main();

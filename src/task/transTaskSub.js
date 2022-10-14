@@ -75,7 +75,7 @@ async function betchTransfer() {
                 return ret;
             })
             .catch((err) => {
-                console.log("ERR:", err);
+                console.trace("ERR:", err);
                 return err;
             });
         let contractAddressDetailAsync;
@@ -200,7 +200,7 @@ async function betchTransfer() {
                 return {err: err.reason, gasLimit: null}
             });
         if (gasLimitRet.err != null) {
-            console.log(gasLimitRet.err);
+            console.trace(gasLimitRet.err);
             // console.log(minted721TokenStr == gasLimitRet.err)
             if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
                 let trans_from_obj = {
@@ -235,7 +235,6 @@ async function betchTransfer() {
                 );
                 await execSql(sqlUp1);
             } else if ("replacement fee too low" == gasLimitRet.err) {
-                // await updateNonce(t_from, transactionCount1Mint + 1);
             } else {
             }
             continue;
@@ -243,23 +242,7 @@ async function betchTransfer() {
 
             let tx;
             let txRet;
-            let transactionCount1Mint;
-            //这里通过数据库查询来获取nonce
-            // var nonceResult = await queryNonce(t_from);
-            // let currTime = new Date().getTime();
-            // if (nonceResult.length == 0) {
-            //     transactionCount1Mint =
-            //         await customHttpProvider.getTransactionCount(t_from, "latest");
-            //     await insertNonce(t_from, transactionCount1Mint);
-            // } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-            //     // 超时,重新获取nonce
-            //     console.log("超时,重新获取nonce.....................");
-            //     transactionCount1Mint =
-            //         await customHttpProvider.getTransactionCount(t_from, "latest");
-            //     await updateNonce(t_from, transactionCount1Mint);
-            // } else {
-            //     transactionCount1Mint = nonceResult[0].nonce;
-            // }
+
             let gasLimit = gasLimitRet.gasLimit;
             console.log("gasLimit:", gasLimit.toString());
 
@@ -270,7 +253,6 @@ async function betchTransfer() {
                 gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
                 // The nonce to use in the transaction
                 // nonce: nonce,
-                // nonce: transactionCount1Mint,
                 // The amount to send with the transaction (i.e. msg.value)
                 // value: utils.parseEther('1.0'),
                 // The chain ID (or network ID) to use
@@ -296,7 +278,7 @@ async function betchTransfer() {
                     return {err: null, data: ret};
                 })
                 .catch((err) => {
-                    console.log("err:", err.reason);
+                    console.trace("err:", err.reason);
                     return {err: err.reason, data: null};
                 });
             tx = txRet.data;
@@ -324,10 +306,9 @@ async function betchTransfer() {
                         return ret;
                     })
                     .catch((err) => {
-                        console.error(responseFun(500, err, ""), id);
+                        console.trace(responseFun(500, err, ""), id);
                     });
                 console.log("update TransFrom data:", result);
-                // await updateNonce(t_from, transactionCount1Mint + 1)
                 continue;
             } else {
                 if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
@@ -374,12 +355,10 @@ async function betchTransfer() {
                 }
                 if ("replacement fee too low" == txRet.err) {
                     //手续费不足
-                    // await updateNonce(t_from, transactionCount1Mint + 1);
                     continue;
                 }
                 //手续费不足
-                console.error("txRet.err", txRet.err);
-                await delNonce(t_from);
+                console.trace("txRet.err", txRet.err);
                 continue;
 
             }
@@ -398,7 +377,6 @@ function id_fun(str) {
 
 async function transfer(privateKey, value, toAddress) {
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
-    // console.log("nonce: " + nonce);
     let tx = {
         to: toAddress,
         // ... or supports ENS names
@@ -418,7 +396,7 @@ async function transfer(privateKey, value, toAddress) {
         }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {
-        console.log("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
+        console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
         return {err, hash: null};
     }
 }

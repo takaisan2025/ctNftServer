@@ -65,7 +65,7 @@ async function betchCallFund1() {
                 return {data: response};
             })
             .catch((err) => {
-                console.log("回调错误:", err, ",orderId", orderId);
+                console.trace("回调错误:", err, ",orderId", orderId);
                 return {data: null, err: err};
             });
         //处理响应结果
@@ -93,7 +93,7 @@ async function betchCallFund1() {
                     return ret;
                 })
                 .catch((err) => {
-                    console.error(responseFun(500, err, ""), id);
+                    console.trace(responseFun(500, err, ""), id);
                     return responseFun(500, err, "");
                 });
         } else if (response != null && response.msg == "作品不存在") {

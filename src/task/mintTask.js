@@ -95,7 +95,7 @@ async function fileUploadIpfs() {
             return ret;
         })
         .catch((err) => {
-            console.error(responseFunStr(500, err, {}));
+            console.trace(responseFunStr(500, err, {}));
         });
 
     for (let retKey in nftArr) {
@@ -113,7 +113,7 @@ async function fileUploadIpfs() {
                 return {err: null, data: imgResponse}
             })
             .catch((err) => {
-                console.error(responseFunStr(500, err, {}));
+                console.trace(responseFunStr(500, err, {}));
                 return {err: err, data: null}
             });
         if (imgResponseRet.err == null) {
@@ -142,7 +142,7 @@ async function fileUploadIpfs() {
                     return response;
                 })
                 .catch((err) => {
-                    console.error(responseFunStr(500, err, {}), id);
+                    console.trace(responseFunStr(500, err, {}), id);
                 });
             console.log("metaData:", response[0].path);
             try {
@@ -165,14 +165,14 @@ async function fileUploadIpfs() {
                         return ret;
                     })
                     .catch((err) => {
-                        console.error(responseFunStr(500, err, ""), id);
+                        console.trace(responseFunStr(500, err, ""), id);
                     });
                 console.info(responseFunStr(200, ""), id);
             } catch (e) {
-                console.error(responseFunStr(500, e, ""), id);
+                console.trace(responseFunStr(500, e, ""), id);
             }
         } else {
-            console.log("ipfs upload err:", imgResponseRet.err)
+            console.trace("ipfs upload err:", imgResponseRet.err)
         }
     }
     console.log("fileUploadIpfs All Done!");
@@ -197,7 +197,7 @@ async function betchMint() {
             return ret;
         })
         .catch((err) => {
-            console.error(responseFunStr(500, err, {}));
+            console.trace(responseFunStr(500, err, {}));
         });
     for (let retKey in nftArr) {
         // console.log(ret[retKey]);
@@ -278,7 +278,7 @@ async function betchMint() {
                     return {err: null, gasLimit: ret}
                 })
                 .catch((err) => {
-                    console.log("err:", err.reason);
+                    console.trace("err:", err.reason);
                     return {err: err.reason, gasLimit: null}
                 });
             let gasLimit = gasLimitRet.gasLimit;
@@ -356,7 +356,7 @@ async function betchMint() {
                                 return ret;
                             })
                             .catch((err) => {
-                                console.error(responseFun(500, err, ""), tokenId);
+                                console.trace(responseFun(500, err, ""), tokenId);
                             });
                         console.log("update NFT data:", result);
                         console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
@@ -396,7 +396,7 @@ async function betchMint() {
                                 return ret;
                             })
                             .catch((err) => {
-                                console.error(responseFun(500, err, ""), tokenId);
+                                console.trace(responseFun(500, err, ""), tokenId);
                             });
                         console.log("update NFT data:", result);
                         console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
@@ -406,7 +406,7 @@ async function betchMint() {
                         // await updateNonce(address, transactionCount1Mint + 1);
                     } else {
                         //手续费不足
-                        console.error("txRet.err", txRet.err);
+                        console.trace("txRet.err", txRet.err);
                         // await delNonce(address);
                     }
                 }
@@ -428,7 +428,7 @@ async function betchMint() {
                     return {err: null, gasLimit: ret}
                 })
                 .catch(async (err) => {
-                    console.error("err:", err.reason);
+                    console.trace("err:", err.reason);
                     return {err: err.reason, gasLimit: null}
                 });
 
@@ -514,7 +514,7 @@ async function betchMint() {
                             return ret;
                         })
                         .catch((err) => {
-                            console.error(responseFun(500, err, ""), tokenId);
+                            console.trace(responseFun(500, err, ""), tokenId);
                         });
                     console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
                     continue;
@@ -551,7 +551,7 @@ async function betchMint() {
                             return ret;
                         })
                         .catch((err) => {
-                            console.error(responseFun(500, err, ""), tokenId);
+                            console.trace(responseFun(500, err, ""), tokenId);
                         });
                     console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
                     // await updateNonce(address, transactionCount1Mint + 1);
@@ -560,7 +560,7 @@ async function betchMint() {
                     // await updateNonce(address, transactionCount1Mint + 1);
                 } else {
                     //手续费不足
-                    console.error("txRet.err", txRet.err);
+                    console.trace("txRet.err", txRet.err);
                     // await delNonce(address);
                 }
             }
@@ -607,7 +607,7 @@ async function transfer(value, toAddress) {
         }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {
-        console.log("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
+        console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
         return {err, hash: null};
     }
 }
@@ -619,7 +619,7 @@ async function betchCallFund() {
             return ret;
         })
         .catch((err) => {
-            console.error(responseFunStr(500, err, {}));
+            console.trace(responseFunStr(500, err, {}));
         });
     for (let retKey in nftArr) {
         let {tokenId, update_time, hash, rebackUrl} = nftArr[retKey];
@@ -663,7 +663,7 @@ async function betchCallFund() {
                     return {data: response};
                 })
                 .catch((err) => {
-                    console.log("回调错误:", err, ",tokenId", tokenId);
+                    console.trace("回调错误:", err, ",tokenId", tokenId);
                     return {data: null, err: err};
                 });
             //处理响应结果
@@ -689,7 +689,7 @@ async function betchCallFund() {
                     return {data: response};
                 })
                 .catch((err) => {
-                    console.log("回调错误:", err, ",tokenId", tokenId);
+                    console.trace("回调错误:", err, ",tokenId", tokenId);
                     return {data: null, err: err};
                 });
             //处理响应结果
@@ -733,7 +733,7 @@ async function betchHashQuery() {
             return ret;
         })
         .catch((err) => {
-            console.log("ERR:", err);
+            console.trace("ERR:", err);
             return err;
         });
 

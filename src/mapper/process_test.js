@@ -11,28 +11,30 @@ function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 console.log(spArr(arr, 4))
 let processedArr = spArr(arr, 4);
-// for (let i = 0; i < processedArr.length; i++) {
-//     var workerProcess = child_process.spawn('node src/mapper/test.js ', {
-//         env: {
-//             a: processedArr[i]
-//         }
-//     }, function (error, stdout, stderr) {
-//         if (error) {
-//             console.log(error.stack);
-//             console.log('Error code: ' + error.code);
-//             console.log('Signal received: ' + error.signal);
-//         }
-//         console.log('stdout: ' + stdout);
-//         console.log('stderr: ' + stderr);
-//     });
-//
-//     workerProcess.on('exit', function (code) {
-//         console.log('子进程已退出，退出码 ' + code);
-//     });
-// }
 function main() {
+
+// for (let i = 0; i < processedArr.length; i++) {
+    // var workerProcess = child_process.exec('node src/mapper/test.js ', {
+    //     env: {
+    //         a: processedArr[i]
+    //     }
+    // }, function (error, stdout, stderr) {
+    //     if (error) {
+    //         console.log(error.stack);
+    //         console.log('Error code: ' + error.code);
+    //         console.log('Signal received: ' + error.signal);
+    //     }
+    //     console.log('stdout: ' + stdout);
+    //     console.log('stderr: ' + stderr);
+    // });
+    //
+    // workerProcess.on('exit', function (code) {
+    //     console.log('子进程已退出，退出码 ' + code);
+    // });
+// }
     let countTh = 0;
     for (let i = 0; i < processedArr.length; i++) {
+
         var workerProcess = child_process.spawn('node', ['src/mapper/test.js', i], {
             env: {
                 a: processedArr[i]
@@ -51,6 +53,7 @@ function main() {
             console.log('子进程已退出，退出码 ' + code);
             countTh += 1;
             console.log('countTh ' + countTh);
+            console.log((new Date().getTime()));
             if (countTh == processedArr.length) {
                 setTimeout(() => {
                     main()
@@ -64,4 +67,4 @@ function main() {
 }
 
 main()
-// node src\mapper\process_test.js
+// node src/mapper/process_test.js

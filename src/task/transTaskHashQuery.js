@@ -61,7 +61,7 @@ async function betchHashQuery() {
             return ret;
         })
         .catch((err) => {
-            console.log("ERR:", err);
+            console.trace("ERR:", err);
             return err;
         });
 
@@ -161,7 +161,7 @@ async function transfer(privateKey, value, toAddress) {
         }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {
-        console.log("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
+        console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
         return {err, hash: null};
     }
 }

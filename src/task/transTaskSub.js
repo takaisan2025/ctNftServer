@@ -113,21 +113,6 @@ async function betchTransfer() {
         let balance = await wallet.provider.getBalance(t_from);
         // 余额是 BigNumber (in wei); 格式化为 ether 字符串
         let etherString = ethers.utils.formatEther(balance);
-        console.log("Balance: ", etherString);
-        if (Number(etherString) < Number(String(1))) {
-            let privateKey = contractAddressDetail.private_key;
-            if (isEmpty(privateKey).flag) {
-                continue;
-            } else {
-                let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(1)), t_from);
-                if (err != null) {
-                    console.log("txTransfer faild");
-                    continue;
-                }
-                console.log("tx Hash:", hash);
-            }
-
-        }
 
         // TODO 首先需要判断授权 ApproveAll
         let contractToken = new ethers.Contract(
@@ -143,14 +128,94 @@ async function betchTransfer() {
         );
         console.log("isApprovedForAll:", isApprovedForAll);
         if (isApprovedForAll == false) {
+            console.log("Balance: ", etherString);
+            if (Number(etherString) < Number(String(0.405))) {
+                let privateKey = contractAddressDetail.private_key;
+                if (isEmpty(privateKey).flag) {
+                    continue;
+                } else {
+                    let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from);
+                    if (err != null) {
+                        console.log("txTransfer faild");
+                        continue;
+                    }
+                    console.log("tx Hash:", hash);
+                    continue;
+                }
+            }
+        } else {
+            console.log("Balance: ", etherString);
+            if (Number(etherString) < Number(String(0.3))) {
+                let privateKey = contractAddressDetail.private_key;
+                if (isEmpty(privateKey).flag) {
+                    continue;
+                } else {
+                    let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from);
+                    if (err != null) {
+                        console.log("txTransfer faild");
+                        continue;
+                    }
+                    console.log("tx Hash:", hash);
+                    continue;
+                }
+            }
+        }
+        if (isApprovedForAll == false) {
+
+            console.log("Balance: ", etherString);
+            if (Number(etherString) < Number(String(0.405))) {
+                let privateKey = contractAddressDetail.private_key;
+                if (isEmpty(privateKey).flag) {
+                    continue;
+                } else {
+                    let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from);
+                    if (err != null) {
+                        console.log("txTransfer faild");
+                        continue;
+                    }
+                    console.log("tx Hash:", hash);
+                    continue;
+                }
+
+            }
+
+
             // 进行授权
+            let gasLimitRet = await contractWithSignerToken.estimateGas
+                .setApprovalForAll(
+                    CtTransferExecutorAddress,
+                    true
+                )
+                .then((ret) => {
+                    return {err: null, gasLimit: ret}
+                })
+                .catch((err) => {
+                    return {err: err.reason, gasLimit: null}
+                });
+            if (gasLimitRet.err != null) {
+                continue;
+            }
+            let gasLimitA = gasLimitRet.gasLimit
             let txApproveRet = await contractWithSignerToken.setApprovalForAll(
                 CtTransferExecutorAddress,
-                true
+                true,
+                {
+                    // The maximum units of gas for the transaction to use
+                    gasLimit: web3.utils.numberToHex(gasLimitA),
+                    // The price (in wei) per unit of gas
+                    gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
+                    // The nonce to use in the transaction
+                    // nonce: nonce,
+                    // The amount to send with the transaction (i.e. msg.value)
+                    // value: utils.parseEther('1.0'),
+                    // The chain ID (or network ID) to use
+                    // chainId: 27
+                }
             );
-            let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
-
-            console.log("txApprove:", recept1);
+            continue;
+            // let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
+            //
+            // console.log("txApprove:", recept1);
 
         }
 
@@ -389,11 +454,11 @@ async function transfer(privateKey, value, toAddress) {
     let txTransfer = await walletSys.sendTransaction(tx);
     console.log("txTransfer: :", txTransfer.hash);
     try {
-        let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
-        console.log("recept1:", recept1);
-        if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-            throw {message: "Transaction Reverted"};
-        }
+        // let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
+        // console.log("recept1:", recept1);
+        // if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
+        //     throw {message: "Transaction Reverted"};
+        // }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {
         console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略

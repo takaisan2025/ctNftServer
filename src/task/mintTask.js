@@ -88,6 +88,7 @@ function Mint1155Data(
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
  */
+
 async function fileUploadIpfs() {
     let nfts = nftSelectSelectiveStatus(0); // 资源未上链ipfs的条目
     let nftArr = await nfts

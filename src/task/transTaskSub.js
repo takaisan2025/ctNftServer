@@ -62,270 +62,191 @@ async function betchTransfer() {
             create_time,
             update_time
         } = transList[retKey];
-        let accountDetail = accountSelectSelective(t_from);
-        var params1 = {address: collectAddress};
-        var sql1 = mybatisMapper.getStatement(
-            "collect",
-            "selectByAddress",
-            params1,
-            format
-        );
-        let collectDetail = await execSql(sql1)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                console.trace("ERR:", err);
-                return err;
-            });
-        let contractAddressDetailAsync;
-
-        if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
-            contractAddressDetailAsync = accountDetail;
-        } else {
-            contractAddressDetailAsync = accountSelectSelective(collectDetail.owner);
-        }
-        let contractAddressDetail = await contractAddressDetailAsync.then((result) => {
-            return result;
-        });
-        let accountItem = await accountDetail.then((result) => {
-            return result;
-        });
-        // try {
-        let wallet;
-        if (accountItem.private_key) {
-            wallet = new ethers.Wallet(accountItem.private_key, customHttpProvider);
-        } else {
-            wallet = await ethers.Wallet.fromEncryptedJson(
-                accountItem.keystore,
-                accountItem.psd
+        try {
+            let accountDetail = accountSelectSelective(t_from);
+            var params1 = {address: collectAddress};
+            var sql1 = mybatisMapper.getStatement(
+                "collect",
+                "selectByAddress",
+                params1,
+                format
             );
-            // address: wallet.address,
-            // privateKey: wallet.privateKey,
-            wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
-
-        }
-
-        // 使用Provider 连接合约，将只有对合约的可读权限
-        let transferTo = t_to;
-
-        // 链上余额判断
-        let balance = await wallet.provider.getBalance(t_from);
-        // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-        let etherString = ethers.utils.formatEther(balance);
-
-        // TODO 首先需要判断授权 ApproveAll
-        let contractToken = new ethers.Contract(
-            collectAddress,
-            ERC1155Ctnft.abi,
-            customHttpProvider
-        );
-        let contractWithSignerToken = contractToken.connect(wallet);
-
-        let isApprovedForAll = await contractWithSignerToken.isApprovedForAll(
-            t_from,
-            CtTransferExecutorAddress
-        );
-        console.log("isApprovedForAll:", isApprovedForAll);
-        if (isApprovedForAll == false) {
-            console.log("Balance: ", etherString);
-            if (Number(etherString) < Number(String(0.405))) {
-                let privateKey = contractAddressDetail.private_key;
-                if (isEmpty(privateKey).flag) {
-                    continue;
-                } else {
-                    let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from);
-                    if (err != null) {
-                        console.log("txTransfer faild");
-                        continue;
-                    }
-                    console.log("tx Hash:", hash);
-                    continue;
-                }
-            }
-        } else {
-            console.log("Balance: ", etherString);
-            if (Number(etherString) < Number(String(0.3))) {
-                let privateKey = contractAddressDetail.private_key;
-                if (isEmpty(privateKey).flag) {
-                    continue;
-                } else {
-                    let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from);
-                    if (err != null) {
-                        console.log("txTransfer faild");
-                        continue;
-                    }
-                    console.log("tx Hash:", hash);
-                    continue;
-                }
-            }
-        }
-        if (isApprovedForAll == false) {
-
-            console.log("Balance: ", etherString);
-            if (Number(etherString) < Number(String(0.405))) {
-                let privateKey = contractAddressDetail.private_key;
-                if (isEmpty(privateKey).flag) {
-                    continue;
-                } else {
-                    let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from);
-                    if (err != null) {
-                        console.log("txTransfer faild");
-                        continue;
-                    }
-                    console.log("tx Hash:", hash);
-                    continue;
-                }
-
-            }
-
-
-            // 进行授权
-            let gasLimitRet = await contractWithSignerToken.estimateGas
-                .setApprovalForAll(
-                    CtTransferExecutorAddress,
-                    true
-                )
+            let collectDetail = await execSql(sql1)
                 .then((ret) => {
-                    return {err: null, gasLimit: ret}
+                    return ret;
                 })
                 .catch((err) => {
-                    return {err: err.reason, gasLimit: null}
+                    console.trace("ERR:", err);
+                    return err;
                 });
-            if (gasLimitRet.err != null) {
+            let contractAddressDetailAsync;
+
+            if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
+                contractAddressDetailAsync = accountDetail;
+            } else {
+                contractAddressDetailAsync = accountSelectSelective(collectDetail.owner);
+            }
+            let contractAddressDetail = await contractAddressDetailAsync.then((result) => {
+                return result;
+            });
+            let accountItem = await accountDetail.then((result) => {
+                return result;
+            });
+            // try {
+            let wallet;
+            if (accountItem.private_key) {
+                wallet = new ethers.Wallet(accountItem.private_key, customHttpProvider);
+            } else {
+                wallet = await ethers.Wallet.fromEncryptedJson(
+                    accountItem.keystore,
+                    accountItem.psd
+                );
+                // address: wallet.address,
+                // privateKey: wallet.privateKey,
+                wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+
+            }
+
+            // 使用Provider 连接合约，将只有对合约的可读权限
+            let transferTo = t_to;
+
+            // 链上余额判断
+            let balance = await wallet.provider.getBalance(t_from);
+            // 余额是 BigNumber (in wei); 格式化为 ether 字符串
+            let etherString = ethers.utils.formatEther(balance);
+
+            // TODO 首先需要判断授权 ApproveAll
+            let contractToken = new ethers.Contract(
+                collectAddress,
+                ERC1155Ctnft.abi,
+                customHttpProvider
+            );
+            let contractWithSignerToken = contractToken.connect(wallet);
+
+            let isApprovedForAll = await contractWithSignerToken.isApprovedForAll(
+                t_from,
+                CtTransferExecutorAddress
+            );
+            console.log("isApprovedForAll:", isApprovedForAll);
+            if (isApprovedForAll == false) {
+                console.log("Balance: ", etherString);
+                if (Number(etherString) < Number(String(0.405))) {
+                    let privateKey = contractAddressDetail.private_key;
+                    if (isEmpty(privateKey).flag) {
+                        continue;
+                    } else {
+                        let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from);
+                        if (err != null) {
+                            console.log("txTransfer faild");
+                            continue;
+                        }
+                        console.log("tx Hash:", hash);
+                        continue;
+                    }
+                }
+            } else {
+                console.log("Balance: ", etherString);
+                if (Number(etherString) < Number(String(0.3))) {
+                    let privateKey = contractAddressDetail.private_key;
+                    if (isEmpty(privateKey).flag) {
+                        continue;
+                    } else {
+                        let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from);
+                        if (err != null) {
+                            console.log("txTransfer faild");
+                            continue;
+                        }
+                        console.log("tx Hash:", hash);
+                        continue;
+                    }
+                }
+            }
+            if (isApprovedForAll == false) {
+
+                console.log("Balance: ", etherString);
+                if (Number(etherString) < Number(String(0.405))) {
+                    let privateKey = contractAddressDetail.private_key;
+                    if (isEmpty(privateKey).flag) {
+                        continue;
+                    } else {
+                        let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from);
+                        if (err != null) {
+                            console.log("txTransfer faild");
+                            continue;
+                        }
+                        console.log("tx Hash:", hash);
+                        continue;
+                    }
+
+                }
+
+
+                // 进行授权
+                let gasLimitRet = await contractWithSignerToken.estimateGas
+                    .setApprovalForAll(
+                        CtTransferExecutorAddress,
+                        true
+                    )
+                    .then((ret) => {
+                        return {err: null, gasLimit: ret}
+                    })
+                    .catch((err) => {
+                        return {err: err.reason, gasLimit: null}
+                    });
+                if (gasLimitRet.err != null) {
+                    continue;
+                }
+                let gasLimitA = gasLimitRet.gasLimit
+                let txApproveRet = await contractWithSignerToken.setApprovalForAll(
+                    CtTransferExecutorAddress,
+                    true,
+                    {
+                        // The maximum units of gas for the transaction to use
+                        gasLimit: web3.utils.numberToHex(gasLimitA),
+                        // The price (in wei) per unit of gas
+                        gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
+                        // The nonce to use in the transaction
+                        // nonce: nonce,
+                        // The amount to send with the transaction (i.e. msg.value)
+                        // value: utils.parseEther('1.0'),
+                        // The chain ID (or network ID) to use
+                        // chainId: 27
+                    }
+                );
+                continue;
+                // let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
+                //
+                // console.log("txApprove:", recept1);
+
+            }
+
+            // 如果没有授权, 需要先授权
+            let contract = new ethers.Contract(
+                CtTransferExecutorAddress,
+                CtTransferExecutor.abi,
+                customHttpProvider
+            );
+
+            // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
+            let contractWithSigner = contract.connect(wallet);
+            //safeTransferFrom(from, to, data.tokenId, transfer, "");
+
+            let assetClass;
+            if (type == 9) {
+                assetClass = id_fun("ERC721");
+            } else if (type == 10 || type == 12) {
+                assetClass = id_fun("ERC1155");
+            } else {
                 continue;
             }
-            let gasLimitA = gasLimitRet.gasLimit
-            let txApproveRet = await contractWithSignerToken.setApprovalForAll(
-                CtTransferExecutorAddress,
-                true,
-                {
-                    // The maximum units of gas for the transaction to use
-                    gasLimit: web3.utils.numberToHex(gasLimitA),
-                    // The price (in wei) per unit of gas
-                    gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
-                    // The nonce to use in the transaction
-                    // nonce: nonce,
-                    // The amount to send with the transaction (i.e. msg.value)
-                    // value: utils.parseEther('1.0'),
-                    // The chain ID (or network ID) to use
-                    // chainId: 27
-                }
-            );
-            continue;
-            // let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
-            //
-            // console.log("txApprove:", recept1);
 
-        }
-
-        // 如果没有授权, 需要先授权
-        let contract = new ethers.Contract(
-            CtTransferExecutorAddress,
-            CtTransferExecutor.abi,
-            customHttpProvider
-        );
-
-        // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
-        let contractWithSigner = contract.connect(wallet);
-        //safeTransferFrom(from, to, data.tokenId, transfer, "");
-
-        let assetClass;
-        if (type == 9) {
-            assetClass = id_fun("ERC721");
-        } else if (type == 10 || type == 12) {
-            assetClass = id_fun("ERC1155");
-        } else {
-            continue;
-        }
-
-        let transferDirection = assetClass;
-        let transferType = assetClass;
-        let orderIdEcc = `0x${ethUtil
-            .keccak256(Buffer.from(orderId))
-            .toString("hex")}`;
-        let data = orderIdEcc;
-        let gasLimitRet = await contractWithSigner.estimateGas
-            .transfer(
-                assetClass,
-                collectAddress,
-                t_from,
-                transferTo,
-                token_id,
-                orderIdEcc,
-                amount,
-                transferDirection,
-                transferType,
-                data
-            )
-            .then((ret) => {
-                return {err: null, gasLimit: ret}
-            })
-            .catch((err) => {
-                return {err: err.reason, gasLimit: null}
-            });
-        if (gasLimitRet.err != null) {
-            console.trace(gasLimitRet.err);
-            // console.log(minted721TokenStr == gasLimitRet.err)
-            if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
-                let trans_from_obj = {
-                    t_status: 3, // 上链成功
-                    id: id
-                };
-                console.log("nftUpdateSelective:", trans_from_obj);
-
-                var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
-                    "trans_form_list",
-                    "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
-                );
-                await execSql(sqlUp);
-            } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
-                // 计算手续费导致的错误, 稍后重试
-            } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
-                // 计算手续费导致的错误, 稍后重试
-                let trans_from_obj = {
-                    t_status: 6, // 上链成功
-                    id: id
-                };
-
-                var paramsUp1 = trans_from_obj;
-                var sqlUp1 = mybatisMapper.getStatement(
-                    "trans_form_list",
-                    "updateByPrimaryKeySelective",
-                    paramsUp1,
-                    format
-                );
-                await execSql(sqlUp1);
-            } else if ("replacement fee too low" == gasLimitRet.err) {
-            } else {
-            }
-            continue;
-        } else {
-
-            let tx;
-            let txRet;
-
-            let gasLimit = gasLimitRet.gasLimit;
-            console.log("gasLimit:", gasLimit.toString());
-
-            let overrides = {
-                // The maximum units of gas for the transaction to use
-                gasLimit: web3.utils.numberToHex(gasLimit),
-                // The price (in wei) per unit of gas
-                gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
-                // The nonce to use in the transaction
-                // nonce: nonce,
-                // The amount to send with the transaction (i.e. msg.value)
-                // value: utils.parseEther('1.0'),
-                // The chain ID (or network ID) to use
-                // chainId: 27
-            };
-            // 设置一个新值，返回交易
-
-            txRet = await contractWithSigner
+            let transferDirection = assetClass;
+            let transferType = assetClass;
+            let orderIdEcc = `0x${ethUtil
+                .keccak256(Buffer.from(orderId))
+                .toString("hex")}`;
+            let data = orderIdEcc;
+            let gasLimitRet = await contractWithSigner.estimateGas
                 .transfer(
                     assetClass,
                     collectAddress,
@@ -336,47 +257,18 @@ async function betchTransfer() {
                     amount,
                     transferDirection,
                     transferType,
-                    data,
-                    overrides
+                    data
                 )
                 .then((ret) => {
-                    return {err: null, data: ret};
+                    return {err: null, gasLimit: ret}
                 })
                 .catch((err) => {
-                    console.trace("err:", err.reason);
-                    return {err: err.reason, data: null};
+                    return {err: err.reason, gasLimit: null}
                 });
-            tx = txRet.data;
-            // console.log("txRet:", txRet);
-            // console.log("txTransForm:", tx);
-            if (txRet.err == null) {
-                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                // save db
-                let trans_from_obj = {
-                    hash: tx.hash,
-                    t_status: 5, // 上链成功
-                    id: id
-                };
-                console.log("nftUpdateSelective:", trans_from_obj);
-
-                var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
-                    "trans_form_list",
-                    "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
-                );
-                let result = await execSql(sqlUp)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        console.trace(responseFun(500, err, ""), id);
-                    });
-                console.log("update TransFrom data:", result);
-                continue;
-            } else {
-                if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
+            if (gasLimitRet.err != null) {
+                console.trace(gasLimitRet.err);
+                // console.log(minted721TokenStr == gasLimitRet.err)
+                if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
                     let trans_from_obj = {
                         t_status: 3, // 上链成功
                         id: id
@@ -391,17 +283,9 @@ async function betchTransfer() {
                         format
                     );
                     await execSql(sqlUp);
-                    continue;
-                }
-                if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
+                } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
                     // 计算手续费导致的错误, 稍后重试
-                    continue;
-                }
-                if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
-                    // 计算手续费导致的错误, 稍后重试
-                    continue;
-                }
-                if ("execution reverted: order has been processed!" == gasLimitRet.err) {
+                } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
                     // 计算手续费导致的错误, 稍后重试
                     let trans_from_obj = {
                         t_status: 6, // 上链成功
@@ -416,18 +300,140 @@ async function betchTransfer() {
                         format
                     );
                     await execSql(sqlUp1);
-                    continue;
+                } else if ("replacement fee too low" == gasLimitRet.err) {
+                } else {
                 }
-                if ("replacement fee too low" == txRet.err) {
-                    //手续费不足
-                    continue;
-                }
-                //手续费不足
-                console.trace("txRet.err", txRet.err);
                 continue;
+            } else {
 
+                let tx;
+                let txRet;
+
+                let gasLimit = gasLimitRet.gasLimit;
+                console.log("gasLimit:", gasLimit.toString());
+
+                let overrides = {
+                    // The maximum units of gas for the transaction to use
+                    gasLimit: web3.utils.numberToHex(gasLimit),
+                    // The price (in wei) per unit of gas
+                    gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
+                    // The nonce to use in the transaction
+                    // nonce: nonce,
+                    // The amount to send with the transaction (i.e. msg.value)
+                    // value: utils.parseEther('1.0'),
+                    // The chain ID (or network ID) to use
+                    // chainId: 27
+                };
+                // 设置一个新值，返回交易
+
+                txRet = await contractWithSigner
+                    .transfer(
+                        assetClass,
+                        collectAddress,
+                        t_from,
+                        transferTo,
+                        token_id,
+                        orderIdEcc,
+                        amount,
+                        transferDirection,
+                        transferType,
+                        data,
+                        overrides
+                    )
+                    .then((ret) => {
+                        return {err: null, data: ret};
+                    })
+                    .catch((err) => {
+                        console.trace("err:", err.reason);
+                        return {err: err.reason, data: null};
+                    });
+                tx = txRet.data;
+                // console.log("txRet:", txRet);
+                // console.log("txTransForm:", tx);
+                if (txRet.err == null) {
+                    // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+                    // save db
+                    let trans_from_obj = {
+                        hash: tx.hash,
+                        t_status: 5, // 上链成功
+                        id: id
+                    };
+                    console.log("nftUpdateSelective:", trans_from_obj);
+
+                    var paramsUp = trans_from_obj;
+                    var sqlUp = mybatisMapper.getStatement(
+                        "trans_form_list",
+                        "updateByPrimaryKeySelective",
+                        paramsUp,
+                        format
+                    );
+                    let result = await execSql(sqlUp)
+                        .then((ret) => {
+                            return ret;
+                        })
+                        .catch((err) => {
+                            console.trace(responseFun(500, err, ""), id);
+                        });
+                    console.log("update TransFrom data:", result);
+                    continue;
+                } else {
+                    if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
+                        let trans_from_obj = {
+                            t_status: 3, // 上链成功
+                            id: id
+                        };
+                        console.log("nftUpdateSelective:", trans_from_obj);
+
+                        var paramsUp = trans_from_obj;
+                        var sqlUp = mybatisMapper.getStatement(
+                            "trans_form_list",
+                            "updateByPrimaryKeySelective",
+                            paramsUp,
+                            format
+                        );
+                        await execSql(sqlUp);
+                        continue;
+                    }
+                    if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
+                        // 计算手续费导致的错误, 稍后重试
+                        continue;
+                    }
+                    if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
+                        // 计算手续费导致的错误, 稍后重试
+                        continue;
+                    }
+                    if ("execution reverted: order has been processed!" == gasLimitRet.err) {
+                        // 计算手续费导致的错误, 稍后重试
+                        let trans_from_obj = {
+                            t_status: 6, // 上链成功
+                            id: id
+                        };
+
+                        var paramsUp1 = trans_from_obj;
+                        var sqlUp1 = mybatisMapper.getStatement(
+                            "trans_form_list",
+                            "updateByPrimaryKeySelective",
+                            paramsUp1,
+                            format
+                        );
+                        await execSql(sqlUp1);
+                        continue;
+                    }
+                    if ("replacement fee too low" == txRet.err) {
+                        //手续费不足
+                        continue;
+                    }
+                    //手续费不足
+                    console.trace("txRet.err", txRet.err);
+                    continue;
+
+                }
             }
+        } catch (e) {
+            console.trace(e)
+            continue;
         }
+
     }
     console.log("betchTransfer All Done!");
     process.exit();

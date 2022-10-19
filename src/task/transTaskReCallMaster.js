@@ -71,20 +71,20 @@ async function main() {
             console.log('子进程已退出，退出码 ' + code);
             countTh += 1;
             console.log('countTh ' + countTh);
-            // if (countTh == processedTransList.length) {
-            //     countTh = 0;
-            //     setTimeout(() => {
-            //         main()
-            //     }, 1000);
-            // }
+            if (countTh == processedTransList.length) {
+                countTh = 0;
+                setTimeout(() => {
+                    main()
+                }, 1000);
+            }
         });
     }
     console.log("betchTransferReCallThread End !!")
-    // if (processedTransList.length == 0) {
+    if (processedTransList.length == 0) {
         setTimeout(() => {
             main()
-        }, 30000);
-    // }
+        }, 3000);
+    }
 }
 
 main();

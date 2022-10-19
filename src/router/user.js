@@ -709,7 +709,7 @@ const handleUserRouter = async (req, res) => {
                 address,
                 collectAddress,
                 isFinish: 0,
-                premetadata: JSON.stringify(data),
+                premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
                 status: 0, // 未上架
                 tokenId: tokenId,
                 owner: address,
@@ -878,7 +878,7 @@ const handleUserRouter = async (req, res) => {
                 address,
                 collectAddress,
                 isFinish: 0,
-                premetadata: JSON.stringify(data),
+                premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
                 status: 0, // 未上架
                 tokenId: tokenId,
                 owner: address,
@@ -1128,7 +1128,7 @@ const handleUserRouter = async (req, res) => {
                     let nft = {
                         address,
                         isFinish: 0,
-                        premetadata: JSON.stringify(data),
+                        premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
                         status: 0, // 未上架
                         supply,
                         tokenId: tokenId,
@@ -1326,7 +1326,7 @@ const handleUserRouter = async (req, res) => {
             let nft = {
                 address,
                 isFinish: 0,
-                premetadata: JSON.stringify(data),
+                premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
                 status: 0, // 未上架
                 supply,
                 collectAddress,
@@ -1721,7 +1721,7 @@ const handleUserRouter = async (req, res) => {
                                                     tokenId: tokenId,
                                                     imgPath: data.image,
                                                     metaData: response[0].path,
-                                                    metaDataSource: JSON.stringify(data),
+                                                    metaDataSource: JSON.stringify(data).replace(/&quot;/g,'\\"'),
                                                     author,
                                                     authorDesc,
                                                     owner: address,

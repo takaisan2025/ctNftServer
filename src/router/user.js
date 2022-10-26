@@ -190,7 +190,7 @@ const handleUserRouter = async (req, res) => {
         });
     }
 
-    // 管理用户相关开口开始 
+    // 管理用户相关开口开始
     // 管理用户相关接口结束
 
     // 创建账户
@@ -1213,9 +1213,9 @@ const handleUserRouter = async (req, res) => {
             return responseFun(500, {message: e}, {});
         }
 
-        if (supply >= 100000) {
-            return responseFun(500, {message: "supply must less than 100000"}, {});
-        }
+        // if (supply >= 100000) {
+        //     return responseFun(500, {message: "supply must less than 100000"}, {});
+        // }
 
         //  判断参数是否满足规范
         let ret = await accountSelectSelective(address)

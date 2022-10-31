@@ -430,6 +430,7 @@ async function betchTransfer() {
                 }
             }
         } catch (e) {
+            console.error(e)
             console.trace(e)
             continue;
         }

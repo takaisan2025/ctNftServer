@@ -85,42 +85,50 @@ async function betchHashQuery() {
         if (!hash || hash == "" || hash == null) {
             continue;
         }
-        let recept = await web3.eth.getTransactionReceipt(hash);
-        let currTime = new Date().getTime();
-        if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
-            continue;
-        } else {
-            let t_statusStorage;
-            if (recept != null && recept.status == true) {
-                t_statusStorage = 6;
+        try {
+
+
+            let recept = await web3.eth.getTransactionReceipt(hash);
+            let currTime = new Date().getTime();
+            if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
+                continue;
             } else {
-
-                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                // save db
-                // if (recept.data.transaction == null || recept.data.transaction.status == null) {
-                if (currTime - update_time.getTime() < 60000) {
-                    continue;
+                let t_statusStorage;
+                if (recept != null && recept.status == true) {
+                    t_statusStorage = 6;
                 } else {
-                    await delNonce(t_from);
-                    t_statusStorage = 1;
-                    console.log("查询hash结果false,", hash);
+
+                    // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+                    // save db
+                    // if (recept.data.transaction == null || recept.data.transaction.status == null) {
+                    if (currTime - update_time.getTime() < 60000) {
+                        continue;
+                    } else {
+                        await delNonce(t_from);
+                        t_statusStorage = 1;
+                        console.log("查询hash结果false,", hash);
+                    }
                 }
+                let trans_from_obj = {
+                    t_status: t_statusStorage, // 6 成功,7 失败
+                    id: id
+                };
+                console.log("nftUpdateSelective:", trans_from_obj);
+
+                var paramsUp = trans_from_obj;
+                var sqlUp = mybatisMapper.getStatement(
+                    "trans_form_list",
+                    "updateByPrimaryKeySelective",
+                    paramsUp,
+                    format
+                );
+                await execSql(sqlUp);
+
             }
-            let trans_from_obj = {
-                t_status: t_statusStorage, // 6 成功,7 失败
-                id: id
-            };
-            console.log("nftUpdateSelective:", trans_from_obj);
-
-            var paramsUp = trans_from_obj;
-            var sqlUp = mybatisMapper.getStatement(
-                "trans_form_list",
-                "updateByPrimaryKeySelective",
-                paramsUp,
-                format
-            );
-            await execSql(sqlUp);
-
+        } catch (e) {
+            console.error(e)
+            console.trace(e)
+            continue;
         }
 
     }

@@ -54,7 +54,8 @@ async function main() {
     for (var i = 0; i < processedTransList.length; i++) {
         var workerProcess = child_process.spawn('node', ['src/task/transTaskSub.js', i], {
             env: {
-                spTransList: JSON.stringify(processedTransList[i])
+                spTransList: JSON.stringify(processedTransList[i]),
+                PATH: process.env.PATH
             }
         });
 

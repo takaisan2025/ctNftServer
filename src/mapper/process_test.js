@@ -1,4 +1,10 @@
 const child_process = require('child_process');
+const {
+    isJson,
+    stripHexPrefix,
+    validateAddressBalanceEnough,
+    checkURL
+} = require("../rules/rules");
 
 function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一组
     let newArr = [] //首先创建一个新的空数组。用来存放分割好的数组
@@ -11,6 +17,7 @@ function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一
 let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 console.log(spArr(arr, 4))
 let processedArr = spArr(arr, 4);
+let noAddress = null
 function main() {
 
 // for (let i = 0; i < processedArr.length; i++) {
@@ -33,7 +40,10 @@ function main() {
     // });
 // }
     let countTh = 0;
+
     for (let i = 0; i < processedArr.length; i++) {
+        console.log('noAddress: ' + noAddress);
+        console.log('i: ' + i);
 
         var workerProcess = child_process.spawn('node', ['src/mapper/test.js', i], {
             env: {
@@ -43,6 +53,12 @@ function main() {
 
         workerProcess.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
+            console.log(data.toString());
+            console.log(validateAddressBalanceEnough(data.toString().trim()));
+
+            if (validateAddressBalanceEnough(data.toString().trim())) {
+                noAddress = data.toString().trim().replace("草田分余额不足: ", '')
+            }
         });
 
         workerProcess.stderr.on('data', function (data) {
@@ -53,11 +69,12 @@ function main() {
             console.log('子进程已退出，退出码 ' + code);
             countTh += 1;
             console.log('countTh ' + countTh);
-            console.log((new Date().getTime()));
+            // console.log((new Date().getTime()));
             if (countTh == processedArr.length) {
                 setTimeout(() => {
                     main()
                 }, 1000);
+
             }
         });
     }

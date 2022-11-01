@@ -38,9 +38,9 @@ const ethers = require("ethers");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider({
+    ...rpc
+}, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const ethUtil = require("ethereumjs-util");
@@ -129,7 +129,15 @@ async function betchTransfer() {
                 t_from,
                 CtTransferExecutorAddress
             );
-            console.log("isApprovedForAll:", isApprovedForAll);
+            // console.log("isApprovedForAll:", isApprovedForAll);
+            if (  // 判断是否是项目方
+                contractAddressDetail.address.toLowerCase() == t_from.toLowerCase() && Number(etherString) < Number(String(10))
+            ) {
+
+                // 跳出, 重新查询数据
+                console.log("草田分余额不足:", t_from)
+                break;
+            }
             if (isApprovedForAll == false) {
                 console.log("Balance: ", etherString);
                 if (Number(etherString) < Number(String(0.405))) {
@@ -147,21 +155,27 @@ async function betchTransfer() {
                     }
                 }
             } else {
+
                 console.log("Balance: ", etherString);
-                if (Number(etherString) < Number(String(0.3))) {
-                    let privateKey = contractAddressDetail.private_key;
-                    if (isEmpty(privateKey).flag) {
-                        continue;
-                    } else {
-                        let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from);
-                        if (err != null) {
-                            console.log("txTransfer faild");
+                if (false) {
+                } else {
+                    if (Number(etherString) < Number(String(0.3))) {
+                        let privateKey = contractAddressDetail.private_key;
+                        if (isEmpty(privateKey).flag) {
+                            continue;
+                        } else {
+                            let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from);
+                            if (err != null) {
+                                console.log("txTransfer faild");
+                                continue;
+                            }
+                            console.log("tx Hash:", hash);
                             continue;
                         }
-                        console.log("tx Hash:", hash);
-                        continue;
                     }
                 }
+
+
             }
             if (isApprovedForAll == false) {
 

@@ -9,6 +9,7 @@ const {
     isJson,
     stripHexPrefix,
     validateAddress,
+    validateAddressBalanceEnough,
     checkURL,
     isEmpty
 } = require("../rules/rules");
@@ -29,17 +30,33 @@ const {
     responseFun,
     responseFunStr,
 } = require("../controller/ctnft");
-
+let noAddress = null
 async function main() {
     console.log("betchTransferThread Start !!")
     let countTh = 0;
-    var params = {t_status: 1};
-    var sql = mybatisMapper.getStatement(
-        "trans_form_list",
-        "selectByStatus",
-        params,
-        format
-    );
+
+    var sql
+    var params;
+    if (noAddress == null) {
+        params = {t_status: 1};
+        sql = mybatisMapper.getStatement(
+            "trans_form_list",
+            "selectByStatus",
+            params,
+            format
+        );
+    } else {
+        params = {t_status: 1, t_from: noAddress};
+        // params = {t_status: 1, collectAddress: noAddress};
+        sql = mybatisMapper.getStatement(
+            "trans_form_list",
+            "selectByStatusAndNoFrom",
+            params,
+            format
+        );
+    }
+    sql = sql.replace("! =", "!=")
+    console.log("betchTransferThread", sql)
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -50,8 +67,12 @@ async function main() {
         });
 
     let processedTransList = spArr(transList, 200);
+
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {
+        // if (i == 0) {
+        //     noAddress = null;
+        // }
         var workerProcess = child_process.spawn('node', ['src/task/transTaskSub.js', i], {
             env: {
                 spTransList: JSON.stringify(processedTransList[i]),
@@ -61,6 +82,10 @@ async function main() {
 
         workerProcess.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
+            if (validateAddressBalanceEnough(data.toString().trim())) {
+                noAddress = data.toString().trim().replace("草田分余额不足: ", '')
+                noAddress = noAddress.slice(0,42)
+            }
         });
 
         workerProcess.stderr.on('data', function (data) {

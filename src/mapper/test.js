@@ -105,19 +105,23 @@ async function createAccount() {
     web3.eth.getCoinbase(console.log);
     web3.eth.getNodeInfo(console.log);
     web3.eth.sendTransaction(
-      {
-        from: "0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D",
-        to: "0xC5d8ac2F419A10CF618Fd152F09779b5Aa884724",
-        value: "1000000000000000000",
-      },
-      console.log
+        {
+            from: "0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D",
+            to: "0xC5d8ac2F419A10CF618Fd152F09779b5Aa884724",
+            value: "1000000000000000000",
+        },
+        console.log
     );
 }
 
 // main();
 
 // transferETH()
-createAccount();
+// createAccount();
+console.log("草田分余额不足:", "0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5DdsfaWSEgfd")
+noAddress = "草田分余额不足: 0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5DdsfaWSEgfd".toString().trim().replace("草田分余额不足: ", '')
+noAddress = noAddress.slice(0,42)
+console.log(noAddress)
 // console.log(1200000000000000000 / 10045)
 // try {
 //     throw "haha"

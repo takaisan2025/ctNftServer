@@ -31,6 +31,7 @@ const {
     responseFunStr,
 } = require("../controller/ctnft");
 let noAddress = null
+
 async function main() {
     console.log("betchTransferThread Start !!")
     let countTh = 0;
@@ -56,7 +57,7 @@ async function main() {
         );
     }
     sql = sql.replace("! =", "!=")
-    console.log("betchTransferThread", sql)
+    // console.log("betchTransferThread", sql)
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -82,9 +83,12 @@ async function main() {
 
         workerProcess.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
-            if (validateAddressBalanceEnough(data.toString().trim())) {
+            if (validateAddressBalanceEnough(data.toString().trim()).flag == true) {
                 noAddress = data.toString().trim().replace("草田分余额不足: ", '')
-                noAddress = noAddress.slice(0,42)
+                noAddress = noAddress.slice(0, 42)
+                if (validateAddress(noAddress).flag == false) {
+                    noAddress = null;
+                }
             }
         });
 

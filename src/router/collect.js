@@ -11,12 +11,18 @@ const GlobalConfig = require("../config/GlobalConfig.json");
 let privateKeyJifen = GlobalConfig.SCORE_ACCOUNT.private_key; // mint pri
 
 // 通过定制 URL 连接 :
-let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
+let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
+let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
+        ...rpc
+    }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const Web3 = require("web3");
-let web3 = new Web3(new Web3.providers.HttpProvider(url));
+let web3 = new Web3(
+    new Web3.providers.HttpProvider(rpc.url, {
+        headers: rpc.headers
+    })
+);
 
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,

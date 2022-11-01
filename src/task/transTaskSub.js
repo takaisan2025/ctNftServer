@@ -36,9 +36,11 @@ const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
 const CtTransferExecutorAddress = "0xF41d25234dB41465450F5cCfE1e302A1fA0E2fEF";
 const ethers = require("ethers");
 // 通过定制 URL 连接 :
-let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[1];
+let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 
-let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
+        ...rpc
+    }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const ethUtil = require("ethereumjs-util");

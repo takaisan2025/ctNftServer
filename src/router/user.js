@@ -49,8 +49,10 @@ const ipfsNode = ipfsAPI({
     protocol: GlobalConfig.IPFS[0].PROTOCOL,
 });
 // 通过定制 URL 连接 :
-let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
+let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
+let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
+        ...rpc
+    }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const {

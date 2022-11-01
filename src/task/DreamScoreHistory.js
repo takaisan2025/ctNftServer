@@ -16,10 +16,12 @@ const GlobalConfig = require("../config/GlobalConfig.json");
 const scoreTokenAddress = GlobalConfig.SCORE_ADDRESS;
 const ethers = require("ethers");
 // 通过定制 URL 连接 :
-let url = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
+let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let blockNumberCreate = 1090551;   // 合约的创建区块号
 let blockNumberCurr = 0;   // 当前最新区块号
-let customHttpProvider = new ethers.providers.JsonRpcProvider(url, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
+        ...rpc
+    }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 

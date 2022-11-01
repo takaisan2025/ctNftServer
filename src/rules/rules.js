@@ -43,7 +43,7 @@ function validateAddress(address) {
 function validateAddressBalanceEnough(address) {
     const regex = /^(草田分余额不足: 0x[0-9a-fA-F]{40})$/;
     if (address === "" || !regex.test(address)) {
-        return {err: "地址格式错误", flag: false}
+        return {err: "草田分余额不足地址格式错误", flag: false}
     } else {
         return {err: null, flag: true};
     }

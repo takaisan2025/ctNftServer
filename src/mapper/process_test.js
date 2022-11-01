@@ -3,6 +3,7 @@ const {
     isJson,
     stripHexPrefix,
     validateAddressBalanceEnough,
+    validateAddress,
     checkURL
 } = require("../rules/rules");
 
@@ -42,7 +43,7 @@ function main() {
     let countTh = 0;
 
     for (let i = 0; i < processedArr.length; i++) {
-        console.log('noAddress: ' + noAddress);
+
         console.log('i: ' + i);
 
         var workerProcess = child_process.spawn('node', ['src/mapper/test.js', i], {
@@ -56,8 +57,12 @@ function main() {
             console.log(data.toString());
             console.log(validateAddressBalanceEnough(data.toString().trim()));
 
-            if (validateAddressBalanceEnough(data.toString().trim())) {
+            if (validateAddressBalanceEnough(data.toString().trim()).flag == true) {
                 noAddress = data.toString().trim().replace("草田分余额不足: ", '')
+                noAddress = noAddress.slice(0, 42)
+                if (validateAddress(noAddress).flag == false) {
+                    noAddress = null;
+                }
             }
         });
 
@@ -74,7 +79,7 @@ function main() {
                 setTimeout(() => {
                     main()
                 }, 1000);
-
+                console.log('noAddress: ' + noAddress);
             }
         });
     }

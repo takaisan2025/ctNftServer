@@ -264,7 +264,9 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/exportAccount") {
         const {address, password} = req.body;
         const result = accountSelectSelective(address);
-
+        if(isEmpty(password).flag == false) {
+            return responseFun(500, "password 不能为空!", "");
+        }
         // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
         return result.then(async (ret) => {
             if (ret == null) {
@@ -582,6 +584,9 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/createctNftAsyncDivTokenId") {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, tokenId, rebackUrl} = req.body;
+        if(isEmpty(password).flag == false) {
+            return responseFun(500, "password 不能为空!", "");
+        }
         try {
             //  判断参数是否满足规范
             let {err, flag} = validateAddress(address);
@@ -750,7 +755,9 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/createctNftAsync") {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, rebackUrl} = req.body;
-
+        if(isEmpty(password).flag == false) {
+            return responseFun(500, "password 不能为空!", "");
+        }
         try {
 
             //  判断参数是否满足规范
@@ -933,6 +940,7 @@ const handleUserRouter = async (req, res) => {
         req.method === "POST" &&
         req.path === "/api/account/createctNft1155AsyncV1"
     ) {
+
         // 创建表单解析对象
         const {
             address,
@@ -944,7 +952,9 @@ const handleUserRouter = async (req, res) => {
             data,
             cMetadata,
         } = req.body;
-
+        if(isEmpty(password).flag == false) {
+            return responseFun(500, "password 不能为空!", "");
+        }
         try {
 
             let {err2, flag2} = (() => {
@@ -1186,7 +1196,9 @@ const handleUserRouter = async (req, res) => {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, supply, rebackUrl} = req.body;
         let {} = req.body;
-
+        if(isEmpty(password).flag == false) {
+            return responseFun(500, "password 不能为空!", "");
+        }
         try {
             //  判断参数是否满足规范
             let {err, flag} = validateAddress(address);
@@ -1381,7 +1393,9 @@ const handleUserRouter = async (req, res) => {
         // 创建表单解析对象
         try {
             const {address, password, cMetadata, type} = req.body;
-
+            if(isEmpty(password).flag == false) {
+                return responseFun(500, "password 不能为空!", "");
+            }
             try {
                 let {err, flag} = validateAddress(address);
                 if (!flag) {
@@ -1585,6 +1599,9 @@ const handleUserRouter = async (req, res) => {
                     author,
                     authorDesc,
                 } = fields;
+                if(isEmpty(password).flag == false) {
+                    return responseFun(500, "password 不能为空!", "");
+                }
                 const result = accountSelectSelective(address);
 
                 // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
@@ -1860,7 +1877,9 @@ const handleUserRouter = async (req, res) => {
     // 通过个人身份转账接口
     if (req.method === "POST" && req.path === "/api/account/transfer_f") {
         const {address, password, amount, to, tokenId, rebackUrl, orderId} = req.body;
-
+        if(isEmpty(password).flag == false) {
+            return responseFun(500, "password 不能为空!", "");
+        }
         console.log({address, password, amount, to, tokenId});
         let collectAddress;
         try {

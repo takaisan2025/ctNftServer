@@ -23,7 +23,8 @@ const {
     isJson,
     stripHexPrefix,
     validateAddress,
-    checkURL
+    checkURL,
+    isEmpty
 } = require("../rules/rules");
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
@@ -210,6 +211,11 @@ const handleUserRouter = async (req, res) => {
             private_key: randomWallet.privateKey
 
         };
+
+        if(isEmpty(password).flag == false) {
+            return responseFun(500, "password 不能为空!", "");
+        }
+
         const result = accountInsertSelective(account);
         return result
             .then((ret) => {

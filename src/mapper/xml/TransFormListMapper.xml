@@ -20,21 +20,21 @@
         <include refid="Base_Column_List" />
         from trans_form_list
         where t_status = #{t_status}
-        limit 1000
+        limit 500
     </select>
     <select id="selectByStatusAndNoFrom" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List" />
         from trans_form_list
         where t_status = #{t_status} and t_from != #{t_from}
-        limit 1000
+        limit 500
     </select>
     <select id="selectByStatusAndNoCollectAddress" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List" />
         from trans_form_list
         where t_status = #{t_status} and collectAddress != #{collectAddress}
-        limit 1000
+        limit 500
     </select>
     <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select

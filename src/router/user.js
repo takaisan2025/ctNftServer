@@ -50,9 +50,9 @@ const ipfsNode = ipfsAPI({
 });
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider({
+    ...rpc
+}, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const {
@@ -265,16 +265,16 @@ const handleUserRouter = async (req, res) => {
                 return responseFun(500, {message: "账户不存在!"}, {});
                 return;
             }
-            if (ret.psd != password) {
-                throw "invalid password"
-            }
-            if (ret.private_key) {
-                return responseFun(200, "", {
-                    address: address,
-                    privateKey: ret.private_key,
-                });
-            } else {
-                try {
+            try {
+                if (ret.psd != password) {
+                    throw "invalid password"
+                }
+                if (ret.private_key) {
+                    return responseFun(200, "", {
+                        address: address,
+                        privateKey: ret.private_key,
+                    });
+                } else {
                     let wallet = await ethers.Wallet.fromEncryptedJson(
                         ret.keystore,
                         password
@@ -283,11 +283,13 @@ const handleUserRouter = async (req, res) => {
                         address: wallet.address,
                         privateKey: wallet.privateKey,
                     });
-                } catch (err) {
-                    return responseFun(500, {message: "invalid password"}, {});
-                }
-            }
 
+                }
+
+
+            } catch (err) {
+                return responseFun(500, {message: "invalid password"}, {});
+            }
         });
     }
     // 单NFT铸造(异步)
@@ -711,7 +713,7 @@ const handleUserRouter = async (req, res) => {
                 address,
                 collectAddress,
                 isFinish: 0,
-                premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
+                premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
                 status: 0, // 未上架
                 tokenId: tokenId,
                 owner: address,
@@ -880,7 +882,7 @@ const handleUserRouter = async (req, res) => {
                 address,
                 collectAddress,
                 isFinish: 0,
-                premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
+                premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
                 status: 0, // 未上架
                 tokenId: tokenId,
                 owner: address,
@@ -1130,7 +1132,7 @@ const handleUserRouter = async (req, res) => {
                     let nft = {
                         address,
                         isFinish: 0,
-                        premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
+                        premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
                         status: 0, // 未上架
                         supply,
                         tokenId: tokenId,
@@ -1328,7 +1330,7 @@ const handleUserRouter = async (req, res) => {
             let nft = {
                 address,
                 isFinish: 0,
-                premetadata: JSON.stringify(data).replace(/&quot;/g,'\\"'),
+                premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
                 status: 0, // 未上架
                 supply,
                 collectAddress,
@@ -1723,7 +1725,7 @@ const handleUserRouter = async (req, res) => {
                                                     tokenId: tokenId,
                                                     imgPath: data.image,
                                                     metaData: response[0].path,
-                                                    metaDataSource: JSON.stringify(data).replace(/&quot;/g,'\\"'),
+                                                    metaDataSource: JSON.stringify(data).replace(/&quot;/g, '\\"'),
                                                     author,
                                                     authorDesc,
                                                     owner: address,

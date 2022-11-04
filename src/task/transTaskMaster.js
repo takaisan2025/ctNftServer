@@ -67,7 +67,7 @@ async function main() {
             return err;
         });
 
-    let processedTransList = spArr(transList, 200);
+    let processedTransList = spArr(transList, 50);
 
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {

@@ -212,8 +212,8 @@ const handleUserRouter = async (req, res) => {
 
         };
 
-        if(isEmpty(password).flag == false) {
-            return responseFun(500, "password 不能为空!", "");
+        if (isEmpty(password).flag) {
+            return responseFun(500, {message: "password 不能为空!"}, "");
         }
 
         const result = accountInsertSelective(account);
@@ -264,8 +264,8 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/exportAccount") {
         const {address, password} = req.body;
         const result = accountSelectSelective(address);
-        if(isEmpty(password).flag == false) {
-            return responseFun(500, "password 不能为空!", "");
+        if (isEmpty(password).flag) {
+            return responseFun(500, {message: "password 不能为空!"}, "");
         }
         // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
         return result.then(async (ret) => {
@@ -584,8 +584,8 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/createctNftAsyncDivTokenId") {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, tokenId, rebackUrl} = req.body;
-        if(isEmpty(password).flag == false) {
-            return responseFun(500, "password 不能为空!", "");
+        if (isEmpty(password).flag) {
+            return responseFun(500, {message: "password 不能为空!"}, "");
         }
         try {
             //  判断参数是否满足规范
@@ -755,8 +755,8 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/createctNftAsync") {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, rebackUrl} = req.body;
-        if(isEmpty(password).flag == false) {
-            return responseFun(500, "password 不能为空!", "");
+        if (isEmpty(password).flag) {
+            return responseFun(500, {message: "password 不能为空!"}, "");
         }
         try {
 
@@ -952,8 +952,8 @@ const handleUserRouter = async (req, res) => {
             data,
             cMetadata,
         } = req.body;
-        if(isEmpty(password).flag == false) {
-            return responseFun(500, "password 不能为空!", "");
+        if (isEmpty(password).flag) {
+            return responseFun(500, {message: "password 不能为空!"}, "");
         }
         try {
 
@@ -1196,8 +1196,8 @@ const handleUserRouter = async (req, res) => {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, supply, rebackUrl} = req.body;
         let {} = req.body;
-        if(isEmpty(password).flag == false) {
-            return responseFun(500, "password 不能为空!", "");
+        if (isEmpty(password).flag) {
+            return responseFun(500, {message: "password 不能为空!"}, "");
         }
         try {
             //  判断参数是否满足规范
@@ -1393,8 +1393,8 @@ const handleUserRouter = async (req, res) => {
         // 创建表单解析对象
         try {
             const {address, password, cMetadata, type} = req.body;
-            if(isEmpty(password).flag == false) {
-                return responseFun(500, "password 不能为空!", "");
+            if (isEmpty(password).flag) {
+                return responseFun(500, {message: "password 不能为空!"}, "");
             }
             try {
                 let {err, flag} = validateAddress(address);
@@ -1599,8 +1599,8 @@ const handleUserRouter = async (req, res) => {
                     author,
                     authorDesc,
                 } = fields;
-                if(isEmpty(password).flag == false) {
-                    return responseFun(500, "password 不能为空!", "");
+                if (isEmpty(password).flag) {
+                    return responseFun(500, {message: "password 不能为空!"}, "");
                 }
                 const result = accountSelectSelective(address);
 
@@ -1877,8 +1877,8 @@ const handleUserRouter = async (req, res) => {
     // 通过个人身份转账接口
     if (req.method === "POST" && req.path === "/api/account/transfer_f") {
         const {address, password, amount, to, tokenId, rebackUrl, orderId} = req.body;
-        if(isEmpty(password).flag == false) {
-            return responseFun(500, "password 不能为空!", "");
+        if (isEmpty(password).flag) {
+            return responseFun(500, {message: "password 不能为空!"}, "");
         }
         console.log({address, password, amount, to, tokenId});
         let collectAddress;

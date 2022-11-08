@@ -104,6 +104,12 @@ async function fileUploadIpfs() {
         });
 
     for (let retKey in nftArr) {
+        try {
+
+        } catch (e) {
+            console.trace(e);
+            continue
+        }
         // console.log(nftArr[retKey]);
         const {id, premetadata, tokenId, serverPath, tempPath} = nftArr[retKey];
         // 这里上传IPFS资源文件
@@ -213,9 +219,7 @@ async function betchMint() {
             } = nftArr[retKey];
             let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
             let accountDetail = await execSql(sqlResult.result);
-            let accountItem = await accountDetail.then((result) => {
-                return result;
-            });
+            let accountItem = accountDetail;
             // try {
             let wallet;
 

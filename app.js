@@ -56,13 +56,13 @@ const getPostData = (req) => {
 const severHandle = (req, res) => {
     //日志打印
     // console.log("START!")
-    console.log("req.method", req.method);
+
 
     // 设置返回格式JSON
     res.setHeader("Content-type", "application/json");
     const url = req.url;
     req.path = url.split("?")[0];
-    console.log("req.path:", req.path);
+    console.log("req.method", req.method, ";req.path:", req.path,);
     // 解析query
     req.query = queryString.parse(url.split("?")[1]);
 
@@ -77,10 +77,20 @@ const severHandle = (req, res) => {
         req.body = postData;
         // console.log("req.body:", req.body)
         // console.log("OVER!");
+        try {
+            const response = await handleUserRouter(req, res);
+            if (response) {
+                res.end(JSON.stringify(response));
+                return;
+            }
 
-        const response = await handleUserRouter(req, res);
-        if (response) {
-            res.end(JSON.stringify(response));
+        } catch (e) {
+            console.trace(e)
+            if (e.message) {
+                res.end(JSON.stringify(e));
+            } else {
+                res.end(JSON.stringify(responseFun(500, {message: "process error!"}, "")));
+            }
             return;
         }
 

@@ -1,10 +1,5 @@
-const mybatisMapper = require("mybatis-mapper");
-// mybatisMapper.createMapper(["./xml/nft.xml"]);
-mybatisMapper.createMapper([
-  "./xml/collect.xml",
-  "./xml/nft.xml",
-  "./xml/TransFormListMapper.xml"
-]);
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+
 // SQL Parameters
 var param = {
   collectaddress: "appl",
@@ -13,10 +8,11 @@ var param = {
 
 // Get SQL Statement
 var format = { language: "sql", indent: "  " };
-var sql = mybatisMapper.getStatement("nft", "insertSelective", param, format);
-// var sql1 = mybatisMapper.getStatement('nft', 'selectByPrimaryKey', {id:10}, format);
-// var sql2 = mybatisMapper.getStatement('nft', 'updateByPrimaryKeySelective', {id:10}, format);
+var sql = getMysqlSqlByTabNameAndSqlNameAndParam("nft", "insertSelective", param, format).result;
+// var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam('nft', 'selectByPrimaryKey', {id:10}, format).result;
+// var sql2 = getMysqlSqlByTabNameAndSqlNameAndParam('nft', 'updateByPrimaryKeySelective', {id:10}, format).result;
 
 
-// console.log(sql1)
+console.log(sql)
 // console.log(sql2)
+// node src/mapper/nft.js

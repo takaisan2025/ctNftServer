@@ -1,11 +1,4 @@
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/collect.xml",
-    "src/mapper/xml/nft.xml",
-    "src/mapper/xml/TransFormListMapper.xml"
-]);
 const {
-    accountSelectSelective,
     execSql,
     execSqlAll,
     responseFun,
@@ -17,6 +10,7 @@ const Web3 = require("web3");
 let web3o = new Web3("http://ctblock.cn/blockChain");
 // let web3o = new Web3("https://exploder.coozw.com/blockChain");
 const fetch = require("node-fetch");
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 
 var format = {language: "sql", indent: "  "};
 
@@ -83,12 +77,12 @@ async function betchCallFund1() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
+                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp,
                     format
-                );
+                ).result;
                 let result = await execSql(sqlUp)
                     .then((ret) => {
                         return ret;
@@ -106,12 +100,12 @@ async function betchCallFund1() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
+                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp,
                     format
-                );
+                ).result;
                 let result = await execSql(sqlUp);
             } else {
                 console.log("回调接口失败,", orderId);
@@ -123,12 +117,12 @@ async function betchCallFund1() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
+                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp,
                     format
-                );
+                ).result;
                 let result = await execSql(sqlUp);
             }
         } catch (e) {

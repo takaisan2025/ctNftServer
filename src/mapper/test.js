@@ -1,93 +1,98 @@
-var format = {language: "sql", indent: "  "};
-
-const {exec, escape} = require("../db/mysqlPool");
-
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper(["src/mapper/xml/NftNonceMapper.xml"]);
 const ethers = require("ethers");
 
-async function queryNonce(address) {
-    // Get SQL Statement
-
-    var sql = mybatisMapper.getStatement(
-        "NftNonceMapper",
-        "selectByAddress",
-        {address: address},
-        format
-    );
-    return await exec(sql).then((rows) => {
-        return rows || [];
-    });
-}
-
-async function insertNonce(address, nonce) {
-    var sql = mybatisMapper.getStatement(
-        "NftNonceMapper",
-        "insertSelective",
-        {address: address, nonce: nonce},
-        format
-    );
-    return await exec(sql).then((rows) => {
-        return rows || null;
-    });
-}
-
-function updateNonce(address, nonce) {
-    var sql = mybatisMapper.getStatement(
-        "NftNonceMapper",
-        "updateByAddressSelective",
-        {address: address, nonce: nonce},
-        format
-    );
-    return exec(sql).then((rows) => {
-        return rows || null;
-    });
-}
-
-function delNonce(address) {
-    var sql = mybatisMapper.getStatement(
-        "NftNonceMapper",
-        "deleteByAddress",
-        {address: address},
-        format
-    );
-    return exec(sql).then((rows) => {
-        return rows || null;
-    });
-}
-
-async function main() {
-    console.log(process.env.a);
-    // let reesult = await insertNonce("0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E52", 0);
-    // let reesult = await updateNonce("0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D", 1);
-    let reesult = await queryNonce("0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D");
-    console.log(reesult[0].update_time.getTime());
-    console.log(new Date().getTime());
-    // let a = new Promise((resolve, reject) => {
-    //     resolve("haha")
-    // });
-    // a.then(r => console.log(r))
-    process.exit();
-}
-
-async function transferETH() {
-}
-
 function callback(progress) {
-    console.log("Encrypting: " + parseInt(progress * 100) + "% complete");
+    // console.log("Encrypting: " + parseInt(progress * 100) + "% complete");
 }
 
 const GlobalConfig = require("../config/GlobalConfig.json");
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
+let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[2];
 
-async function createAccount() {
-    // let password = "12345678"
-    // let randomWallet = ethers.Wallet.createRandom();
-    // let keystore = await randomWallet.encrypt(password, callback);
-    // console.log(keystore)
+const {
+    getPrivateKeyByAccountAndPassword
+} = require("../chain/accountProUtils");
 
+async function createAccountWeb3() {
+    let password = "12345678";
+    let startTime = new Date().getTime();
+    var Web3 = require("web3");
+    let web3o = new Web3("http://ctblock.cn/blockChain");
+    let a = web3o.eth.accounts.create();
+    let keystore = await a.encrypt(password);
+    let midDate = new Date().getTime();
+    console.log(midDate - startTime);
+    // console.log(keystore);
+    // password = "123456789";
+    let keystoreA;
+    try {
+        keystoreA = await web3o.eth.accounts.decrypt(JSON.parse(JSON.stringify(keystore).toLowerCase()), password);
+    } catch (e) {
+        console.log(e.toString())
+        return;
+    }
+    let midDate1 = new Date().getTime();
+    console.log(midDate1 - midDate);
+    console.log(keystoreA);
+}
+
+async function createAccountEthers() {
+    let password = "12345678";
+    let startTime = new Date().getTime();
+    let randomWallet = ethers.Wallet.createRandom();
+    let keystore = await randomWallet.encrypt(password, callback);
+    let midDate = new Date().getTime();
+    console.log(midDate - startTime);
+    // console.log(JSON.parse(keystore));
+    let keystoreA = await ethers.Wallet.fromEncryptedJson((keystore), password)
+    let midDate1 = new Date().getTime();
+    console.log(midDate1 - midDate);
+    console.log(keystoreA.address);
+
+}
+
+async function createAccountX() {
+    let password = "12345678";
+    let startTime = new Date().getTime();
+    let randomWallet = ethers.Wallet.createRandom();
+    let keystore = await randomWallet.encrypt(password, callback);
+    let midDate = new Date().getTime();
+    console.log(midDate - startTime);
+    // console.log(JSON.parse(keystore));
+    var Web3 = require("web3");
+    let web3o = new Web3("http://ctblock.cn/blockChain");
+    let keystoreA = await web3o.eth.accounts.decrypt(JSON.parse(JSON.stringify(keystore).toLowerCase()), password);
+    let midDate1 = new Date().getTime();
+    console.log(midDate1 - midDate);
+    console.log(keystoreA);
+
+}
+
+async function createAccountXX() {
+    let password = "12345678";
+    let startTime = new Date().getTime();
+    var Web3 = require("web3");
+    let web3o = new Web3("http://ctblock.cn/blockChain");
+    let a = web3o.eth.accounts.create();
+    let keystore = await a.encrypt(password);
+    let midDate = new Date().getTime();
+    console.log(midDate - startTime);
+    // console.log(JSON.parse(keystore));
+    let keystoreA = await ethers.Wallet.fromEncryptedJson(JSON.stringify(keystore), password)
+    let midDate1 = new Date().getTime();
+    console.log(midDate1 - midDate);
+    console.log(keystoreA);
+
+}
+
+createAccountWeb3();
+// createAccountEthers();
+// createAccountX();
+// createAccountXX();
+
+// judge mint node is't account can to transfer
+async function testMintNodeHasUnlockAccount() {
     var Web3 = require("web3");
 
+    let web3;
     if (typeof web3 !== "undefined") {
         web3 = new Web3(web3.currentProvider);
     } else {
@@ -95,7 +100,7 @@ async function createAccount() {
         // web3 = new Web3(new Web3.providers.HttpProvider("http://ctblock.cn/blockChain"));
         web3 = new Web3(
             new Web3.providers.HttpProvider(rpc.url, {
-                headers: rpc.headers
+                headers: rpc.headers,
             })
         );
     }
@@ -117,9 +122,9 @@ async function createAccount() {
 // main();
 
 // transferETH()
-// createAccount();
-console.log("草田分余额不足:", "0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D")
-noAddress = "草田分余额不足: 0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D".toString().trim().replace("草田分余额不足: ", '')
+
+// console.log("草田分余额不足:", "0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D")
+// noAddress = "草田分余额不足: 0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D".toString().trim().replace("草田分余额不足: ", '')
 // noAddress = noAddress.slice(0,42)
 // console.log(noAddress)
 // console.log(1200000000000000000 / 10045)

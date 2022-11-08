@@ -1,8 +1,3 @@
-const mybatisMapper = require("mybatis-mapper");
-// mybatisMapper.createMapper(["./xml/nft.xml"]);
-mybatisMapper.createMapper([
-    "src/mapper/xml/AppJifenRecordHistoryMapper.xml"
-]);
 const {
     nftUpdateSelectiveIsFinish,
     responseFun,
@@ -28,12 +23,13 @@ const TRANSACTION_RECEIPT_STATUS = {
 };
 const ScoreToken = require("../contract/ScoreToken.json");
 const ethers = require("ethers");
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider({
+    ...rpc
+}, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 
@@ -49,12 +45,12 @@ let isGasPrice = false;
 async function betchGive() {
     var format = {language: "sql", indent: "  "};
     var params = {status: 0};
-    var sql = mybatisMapper.getStatement(
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
         params,
         format
-    );
+    ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -164,12 +160,12 @@ async function betchGive() {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = mybatisMapper.getStatement(
+        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
             paramsUp,
             format
-        );
+        ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {
                 return ret;
@@ -191,12 +187,12 @@ async function betchGive() {
 async function betchHashQuery() {
     var format = {language: "sql", indent: "  "};
     var params = {status: 1};
-    var sql = mybatisMapper.getStatement(
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
         params,
         format
-    );
+    ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -235,12 +231,12 @@ async function betchHashQuery() {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = mybatisMapper.getStatement(
+        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
             paramsUp,
             format
-        );
+        ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {
                 return ret;

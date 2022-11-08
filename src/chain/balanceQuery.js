@@ -68,12 +68,6 @@ let from = "0xfE0E612A60e8A4477138faFfDE468488df42Ef1e";
 let tokenId =
     "0xfE0E612A60e8A4477138faFfDE468488df42Ef1ec12345678901665214165979";
 
-// balanceQuery(address, collectAddress, tokenId).then(r => console.log("余额:", r));
-queryBalanceAndTokenBalance(from, token, tokenId).then(r => {
-    console.log("余额:", r)
-    console.log("余额:", ethers.utils.formatEther(web3.utils.hexToNumberString(r.data.balance)))
-    console.log("余额:", web3.utils.hexToNumberString(r.data.tokenBalance))
-});
 module.exports = {
     balanceQuery,
     queryBalanceAndTokenBalance

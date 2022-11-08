@@ -14,7 +14,7 @@
     id, username, password, secret, token, create_time, update_time
   </sql>
   <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
-    select 
+    select
     <include refid="Base_Column_List" />
     from nft_user_acces_list
     where id = #{id}
@@ -30,11 +30,11 @@
     where id = #{id}
   </delete>
   <insert id="insert" keyColumn="id" keyProperty="id" parameterType="xx.NftUserAccesList" useGeneratedKeys="true">
-    insert into nft_user_acces_list (username, password, secret, 
+    insert into nft_user_acces_list (username, password, secret,
       token, create_time, update_time
       )
-    values (#{username,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR}, #{secret,jdbcType=VARCHAR}, 
-      #{token,jdbcType=VARCHAR}, #{create_time,jdbcType=TIMESTAMP}, #{update_time,jdbcType=TIMESTAMP}
+    values (#{username}, #{password}, #{secret},
+      #{token}, #{create_time,jdbcType=TIMESTAMP}, #{update_time,jdbcType=TIMESTAMP}
       )
   </insert>
   <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="xx.NftUserAccesList" useGeneratedKeys="true">
@@ -61,16 +61,16 @@
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="username != null">
-        #{username,jdbcType=VARCHAR},
+        #{username},
       </if>
       <if test="password != null">
-        #{password,jdbcType=VARCHAR},
+        #{password},
       </if>
       <if test="secret != null">
-        #{secret,jdbcType=VARCHAR},
+        #{secret},
       </if>
       <if test="token != null">
-        #{token,jdbcType=VARCHAR},
+        #{token},
       </if>
       <if test="create_time != null">
         #{create_time,jdbcType=TIMESTAMP},
@@ -84,16 +84,16 @@
     update nft_user_acces_list
     <set>
       <if test="username != null">
-        username = #{username,jdbcType=VARCHAR},
+        username = #{username},
       </if>
       <if test="password != null">
-        password = #{password,jdbcType=VARCHAR},
+        password = #{password},
       </if>
       <if test="secret != null">
-        secret = #{secret,jdbcType=VARCHAR},
+        secret = #{secret},
       </if>
       <if test="token != null">
-        token = #{token,jdbcType=VARCHAR},
+        token = #{token},
       </if>
       <if test="create_time != null">
         create_time = #{create_time,jdbcType=TIMESTAMP},
@@ -106,10 +106,10 @@
   </update>
   <update id="updateByPrimaryKey" parameterType="xx.NftUserAccesList">
     update nft_user_acces_list
-    set username = #{username,jdbcType=VARCHAR},
-      password = #{password,jdbcType=VARCHAR},
-      secret = #{secret,jdbcType=VARCHAR},
-      token = #{token,jdbcType=VARCHAR},
+    set username = #{username},
+      password = #{password},
+      secret = #{secret},
+      token = #{token},
       create_time = #{create_time,jdbcType=TIMESTAMP},
       update_time = #{update_time,jdbcType=TIMESTAMP}
     where id = #{id}

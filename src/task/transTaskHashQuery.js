@@ -1,28 +1,6 @@
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/collect.xml",
-    "src/mapper/xml/nft.xml",
-    "src/mapper/xml/TransFormListMapper.xml"
-]);
-const EventEmitter = require('events')
-EventEmitter.setMaxListeners(500)
 const {
-    graphiqlHashQuery
-} = require("../broapi/broapi");
-const {
-    queryNonce,
-    insertNonce,
-    updateNonce,
-    delNonce
-} = require("../mapper/NftNonceMapper");
-
-
-const {
-    accountSelectSelective,
     execSql,
     execSqlAll,
-    responseFun,
-    responseFunStr,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const FormData = require("form-data");
@@ -42,22 +20,22 @@ const ethers = require("ethers");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider({
+    ...rpc
+}, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const ethUtil = require("ethereumjs-util");
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 var format = {language: "sql", indent: "  "};
 
 async function betchHashQuery() {
     var params = {t_status: 5};
-    var sql = mybatisMapper.getStatement(
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "trans_form_list",
         "selectByStatus",
-        params,
-        format
-    );
+        params
+    ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -106,7 +84,6 @@ async function betchHashQuery() {
                     if (currTime - update_time.getTime() < 60000) {
                         continue;
                     } else {
-                        await delNonce(t_from);
                         t_statusStorage = 1;
                         console.log("查询hash结果false,", hash);
                     }
@@ -118,12 +95,11 @@ async function betchHashQuery() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 var paramsUp = trans_from_obj;
-                var sqlUp = mybatisMapper.getStatement(
+                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
-                );
+                    paramsUp
+                ).result;
                 await execSql(sqlUp);
 
             }

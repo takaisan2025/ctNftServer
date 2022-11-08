@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AccountMapper">
+    <resultMap id="BaseResultMap" type="cn.Account">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="address" jdbcType="VARCHAR" property="address"/>
+        <result column="keystore" jdbcType="VARCHAR" property="keystore"/>
+        <result column="psd" jdbcType="VARCHAR" property="psd"/>
+        <result column="status" jdbcType="INTEGER" property="status"/>
+        <result column="private_key" jdbcType="VARCHAR" property="private_key"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, address, keystore, psd, `status`, private_key
+    </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from account
+        where id = #{id}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from account
+        where id = #{id}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="cn.Account" useGeneratedKeys="true">
+        insert into account (address, keystore, psd,
+        `status`, private_key)
+        values (#{address}, #{keystore}, #{psd},
+        #{status}, #{private_key})
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="cn.Account" useGeneratedKeys="true">
+        insert into account
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="address != null">
+                address,
+            </if>
+            <if test="keystore != null">
+                keystore,
+            </if>
+            <if test="psd != null">
+                psd,
+            </if>
+            <if test="status != null">
+                `status`,
+            </if>
+            <if test="private_key != null">
+                private_key,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="address != null">
+                #{address},
+            </if>
+            <if test="keystore != null">
+                #{keystore},
+            </if>
+            <if test="psd != null">
+                #{psd},
+            </if>
+            <if test="status != null">
+                #{status},
+            </if>
+            <if test="private_key != null">
+                #{private_key},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="cn.Account">
+        update account
+        <set>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="keystore != null">
+                keystore = #{keystore},
+            </if>
+            <if test="psd != null">
+                psd = #{psd},
+            </if>
+            <if test="status != null">
+                `status` = #{status},
+            </if>
+            <if test="private_key != null">
+                private_key = #{private_key},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="cn.Account">
+        update account
+        set address = #{address},
+        keystore = #{keystore},
+        psd = #{psd},
+        `status` = #{status},
+        private_key = #{private_key}
+        where id = #{id}
+    </update>
+    <select id="selectByAddress" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from account
+        where address = #{address}
+    </select>
+</mapper>

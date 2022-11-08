@@ -1,12 +1,3 @@
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/collect.xml",
-    "src/mapper/xml/nft.xml",
-    "src/mapper/xml/TransFormListMapper.xml"
-]);
-
-const EventEmitter = require('events')
-EventEmitter.setMaxListeners(500)
 const {
     isJson,
     stripHexPrefix,
@@ -15,7 +6,6 @@ const {
     isEmpty
 } = require("../rules/rules");
 const {
-    accountSelectSelective,
     execSql,
     execSqlAll,
     responseFun,
@@ -44,6 +34,9 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const ethUtil = require("ethereumjs-util");
+const {PasswordError} = require("../chain/responseError");
+const {getPrivateKeyByAccountAndPassword} = require("../chain/accountProUtils");
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 var format = {language: "sql", indent: "  "};
 
 async function betchTransfer() {
@@ -65,14 +58,15 @@ async function betchTransfer() {
             update_time
         } = transList[retKey];
         try {
-            let accountDetail = accountSelectSelective(t_from);
+            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: t_from})
+            let accountDetail = await execSql(sqlResult.result);
             var params1 = {address: collectAddress};
-            var sql1 = mybatisMapper.getStatement(
+            var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "collect",
                 "selectByAddress",
                 params1,
                 format
-            );
+            ).result;
             let collectDetail = await execSql(sql1)
                 .then((ret) => {
                     return ret;
@@ -86,7 +80,8 @@ async function betchTransfer() {
             if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
                 contractAddressDetailAsync = accountDetail;
             } else {
-                contractAddressDetailAsync = accountSelectSelective(collectDetail.owner);
+                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: collectDetail.owner})
+                contractAddressDetailAsync = await execSql(sqlResult.result);
             }
             let contractAddressDetail = await contractAddressDetailAsync.then((result) => {
                 return result;
@@ -96,18 +91,15 @@ async function betchTransfer() {
             });
             // try {
             let wallet;
-            if (accountItem.private_key) {
-                wallet = new ethers.Wallet(accountItem.private_key, customHttpProvider);
-            } else {
-                wallet = await ethers.Wallet.fromEncryptedJson(
-                    accountItem.keystore,
-                    accountItem.psd
-                );
-                // address: wallet.address,
-                // privateKey: wallet.privateKey,
-                wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
 
+            let decWalletResult = await getPrivateKeyByAccountAndPassword(accountItem,  accountItem.psd);
+            if (decWalletResult.err != null) {
+                return PasswordError;
+            } else {
+                wallet = decWalletResult.result;
             }
+            wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+
 
             // 使用Provider 连接合约，将只有对合约的可读权限
             let transferTo = t_to;
@@ -292,12 +284,12 @@ async function betchTransfer() {
                     console.log("nftUpdateSelective:", trans_from_obj);
 
                     var paramsUp = trans_from_obj;
-                    var sqlUp = mybatisMapper.getStatement(
+                    var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
                         paramsUp,
                         format
-                    );
+                    ).result;
                     await execSql(sqlUp);
                 } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
                     // 计算手续费导致的错误, 稍后重试
@@ -309,12 +301,12 @@ async function betchTransfer() {
                     };
 
                     var paramsUp1 = trans_from_obj;
-                    var sqlUp1 = mybatisMapper.getStatement(
+                    var sqlUp1 = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
                         paramsUp1,
                         format
-                    );
+                    ).result;
                     await execSql(sqlUp1);
                 } else if ("replacement fee too low" == gasLimitRet.err) {
                 } else {
@@ -377,12 +369,12 @@ async function betchTransfer() {
                     console.log("nftUpdateSelective:", trans_from_obj);
 
                     var paramsUp = trans_from_obj;
-                    var sqlUp = mybatisMapper.getStatement(
+                    var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
                         paramsUp,
                         format
-                    );
+                    ).result;
                     let result = await execSql(sqlUp)
                         .then((ret) => {
                             return ret;
@@ -401,12 +393,12 @@ async function betchTransfer() {
                         console.log("nftUpdateSelective:", trans_from_obj);
 
                         var paramsUp = trans_from_obj;
-                        var sqlUp = mybatisMapper.getStatement(
+                        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                             "trans_form_list",
                             "updateByPrimaryKeySelective",
                             paramsUp,
                             format
-                        );
+                        ).result;
                         await execSql(sqlUp);
                         continue;
                     }
@@ -426,12 +418,12 @@ async function betchTransfer() {
                         };
 
                         var paramsUp1 = trans_from_obj;
-                        var sqlUp1 = mybatisMapper.getStatement(
+                        var sqlUp1 = getMysqlSqlByTabNameAndSqlNameAndParam(
                             "trans_form_list",
                             "updateByPrimaryKeySelective",
                             paramsUp1,
                             format
-                        );
+                        ).result;
                         await execSql(sqlUp1);
                         continue;
                     }

@@ -1,14 +1,9 @@
 const {
-    login,
-    accountSelectSelective,
-    accountInsertSelective,
     nftSelectSelective,
     execSql,
-    execSqlAll,
     nftSelectSelectiveCreator,
     nftInsertSelective,
     nftPreInsertSelective,
-    responseFun,
 } = require("../controller/ctnft");
 const {
     createCollectV1Erc1155,
@@ -42,6 +37,7 @@ const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
 const CtnftMToken = require("../contract/CtnftMToken.json");
 let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 const web3 = require("web3");
+let web3o = new web3("http://ctblock.cn/blockChain");
 const ipfsAPI = require("ipfs-api");
 const ipfsNode = ipfsAPI({
     host: GlobalConfig.IPFS[0].HOST,
@@ -56,29 +52,18 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
-const {
-    queryNonce,
-    insertNonce,
-    updateNonce,
-    delNonce
-} = require("../mapper/NftNonceMapper");
 
 const {
     balanceQuery,
     queryBalanceAndTokenBalance
 } = require("../chain/balanceQuery");
 
+const {
+    getPrivateKeyByAccountAndPassword
+} = require("../chain/accountProUtils");
+
 const fs = require("fs");
 const path = require("path");
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/collect.xml",
-    "src/mapper/xml/nft.xml",
-    "src/mapper/xml/TransFormListMapper.xml",
-    "src/mapper/xml/TransFormListMapper.xml",
-    "src/mapper/xml/NftUserAccesListMapper.xml",
-    "src/mapper/xml/NftUserAddressListMapper.xml",
-]);
 let result = null;
 // 非初始化合约地址设置
 const ERC721CtnftExample = "0x0F4b3B9EcfD11444cB139dB98DB9aB0Ec417705E";
@@ -92,6 +77,10 @@ let collectAddressExample = {
 let gasPrice = "5000100000000";
 let isGasPrice = false;
 var util = require('ethereumjs-util');
+const {responseFun} = require("../mapper/account");
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {PasswordEmpty} = require("../chain/responseError");
+const {PasswordError} = require("../chain/responseError");
 
 
 /**
@@ -158,14 +147,12 @@ const handleUserRouter = async (req, res) => {
     // if (!token) {
     //     token = "";
     // }
-    // var format = {language: "sql", indent: "  "};
     // var params = {token: token};
-    // var sql = mybatisMapper.getStatement(
+    // var sql =getMysqlSqlByTabNameAndSqlNameAndParam(
     //     "NftUserAccesListMapper",
     //     "selectByToken",
-    //     params,
-    //     format
-    // );
+    //     params
+    // ).result;
     // let accessList = await execSqlAll(sql)
     //     .then((ret) => {
     //         return ret;
@@ -200,23 +187,28 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/createAccount") {
         const {password} = req.body;
         //
-        let randomWallet = ethers.Wallet.createRandom();
+        // let randomWallet = ethers.Wallet.createRandom();
         // let keystore = await randomWallet.encrypt(password, callback);
+        let randomWallet = web3o.eth.accounts.create();
+        let keystore = await randomWallet.encrypt(password);
+
         //    save to db
         let account = {
-            keystore: "none",
+            keystore: keystore,
             address: randomWallet.address,
             status: 1,
             psd: password,
-            private_key: randomWallet.privateKey
+            private_key: ""
+            // private_key: randomWallet.private_key
 
         };
 
         if (isEmpty(password).flag) {
-            return responseFun(500, {message: "password 不能为空!"}, "");
+            return PasswordEmpty;
         }
 
-        const result = accountInsertSelective(account);
+        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "insert", account)
+        let result = execSql(sqlResult.result);
         return result
             .then((ret) => {
                 return responseFun(200, "", {
@@ -242,7 +234,8 @@ const handleUserRouter = async (req, res) => {
         } catch (e) {
             return responseFun(500, {message: e}, {});
         }
-        const result = accountSelectSelective(address);
+        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+        let result = execSql(sqlResult.result);
         return result
             .then((ret) => {
                 let isExit;
@@ -263,42 +256,30 @@ const handleUserRouter = async (req, res) => {
     // 导出账户 (同步)
     if (req.method === "POST" && req.path === "/api/account/exportAccount") {
         const {address, password} = req.body;
-        const result = accountSelectSelective(address);
+
         if (isEmpty(password).flag) {
-            return responseFun(500, {message: "password 不能为空!"}, "");
+            return PasswordEmpty;
         }
         // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
-        return result.then(async (ret) => {
-            if (ret == null) {
-                return responseFun(500, {message: "账户不存在!"}, {});
-                return;
-            }
-            try {
-                if (ret.psd != password) {
-                    throw "invalid password"
-                }
-                if (ret.private_key) {
-                    return responseFun(200, "", {
-                        address: address,
-                        privateKey: ret.private_key,
-                    });
-                } else {
-                    let wallet = await ethers.Wallet.fromEncryptedJson(
-                        ret.keystore,
-                        password
-                    );
-                    return responseFun(200, "", {
-                        address: wallet.address,
-                        privateKey: wallet.privateKey,
-                    });
+        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+        let ret = await execSql(sqlResult.result);
+        if (ret == null) {
+            return responseFun(500, {message: "账户不存在!"}, {});
+            return;
+        }
 
-                }
-
-
-            } catch (err) {
-                return responseFun(500, {message: "invalid password"}, {});
-            }
-        });
+        // let wallet = await web3o.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
+        let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+        let wallet;
+        if (decWalletResult.err != null) {
+            return PasswordError;
+        } else {
+            wallet = decWalletResult.result;
+            return responseFun(200, "", {
+                address: wallet.address,
+                privateKey: wallet.privateKey,
+            });
+        }
     }
     // 单NFT铸造(异步)
     if (
@@ -326,24 +307,28 @@ const handleUserRouter = async (req, res) => {
                     author,
                     authorDesc,
                 } = fields;
-                const result = accountSelectSelective(address);
-
+                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+                let result = await execSql(sqlResult.result);
                 // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
                 return result
                     .then(async (ret) => {
-                        let wallet;
                         if (ret == null) {
                             return responseFun(500, {message: "账户不存在!"}, {});
                             return;
                         }
-                        try {
-                            wallet = await ethers.Wallet.fromEncryptedJson(
-                                ret.keystore,
-                                password
-                            );
-                        } catch (e) {
-                            return responseFun(500, {message: "invalid password"}, {});
+
+                        let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+                        let wallet;
+                        if (decWalletResult.err != null) {
+                            return PasswordError;
+                        } else {
+                            wallet = decWalletResult.result;
+                            return responseFun(200, "", {
+                                address: wallet.address,
+                                privateKey: wallet.privateKey,
+                            });
                         }
+
                         try {
                             // address: wallet.address,
                             // privateKey: wallet.privateKey,
@@ -462,8 +447,8 @@ const handleUserRouter = async (req, res) => {
                 authorDesc,
                 file,
             } = req.body;
-            const result = accountSelectSelective(address);
-
+            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+            let result = execSql(sqlResult.result);
             // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
             return result
                 .then(async (ret) => {
@@ -473,15 +458,14 @@ const handleUserRouter = async (req, res) => {
                         return;
                     }
                     let wallet;
-                    try {
-                        wallet = await ethers.Wallet.fromEncryptedJson(
-                            ret.keystore,
-                            password
-                        );
-                    } catch (e) {
-                        resolve(responseFun(500, {message: "invalid password"}, {}));
-                        return;
+                    let decWalletResult = await getPrivateKeyByAccountAndPassword(ret,
+                        password);
+                    if (decWalletResult.err != null) {
+                        resolve(PasswordError);
+                    } else {
+                        wallet = decWalletResult.result
                     }
+
                     try {
                         // address: wallet.address,
                         // privateKey: wallet.privateKey,
@@ -585,7 +569,7 @@ const handleUserRouter = async (req, res) => {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, tokenId, rebackUrl} = req.body;
         if (isEmpty(password).flag) {
-            return responseFun(500, {message: "password 不能为空!"}, "");
+            return PasswordEmpty;
         }
         try {
             //  判断参数是否满足规范
@@ -618,43 +602,27 @@ const handleUserRouter = async (req, res) => {
             return responseFun(500, {message: e}, {});
         }
         //  判断参数是否满足规范
-        let ret = await accountSelectSelective(address)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                return responseFun(500, err, {});
-            });
+        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+        let ret = await execSql(sqlResult.result);
+
         console.log(ret);
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
         let wallet;
-
-        if (ret.private_key) {
-            wallet = new ethers.Wallet(ret.private_key, customHttpProvider);
+        let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+        if (decWalletResult.err != null) {
+            return PasswordError;
         } else {
-            try {
-                wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
-                wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
-                // if (ret.psd != password) {
-                //     throw "invalid password"
-                // }
-            } catch (e) {
-                return responseFun(500, {message: "invalid password"}, {});
-            }
+            wallet = decWalletResult.result;
         }
+        wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
 
         try {
             // 查询合约基本信息  type   == 10
-            var format = {language: "sql", indent: "  "};
-            var params = {address: collectAddress};
-            var sql = mybatisMapper.getStatement(
-                "collect",
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam("collect",
                 "selectByAddress",
-                params,
-                format
-            );
+                {address: collectAddress}).result
 
             let collectRet = await execSql(sql)
                 .then((ret) => {
@@ -756,7 +724,7 @@ const handleUserRouter = async (req, res) => {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, rebackUrl} = req.body;
         if (isEmpty(password).flag) {
-            return responseFun(500, {message: "password 不能为空!"}, "");
+            return PasswordEmpty;
         }
         try {
 
@@ -795,38 +763,30 @@ const handleUserRouter = async (req, res) => {
         }
 
         //  判断参数是否满足规范
-        let ret = await accountSelectSelective(address)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                return responseFun(500, err, {});
-            });
+        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+        let ret = await execSql(sqlResult.result);
+
         console.log(ret);
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
         let wallet;
-        try {
-            // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
-
-            if (ret.psd != password) {
-                throw "invalid password";
-            }
-
-        } catch (e) {
-            return responseFun(500, {message: "invalid password"}, {});
+        // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
+        let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+        if (decWalletResult.err != null) {
+            throw PasswordError;
+        } else {
+            wallet = decWalletResult.result
         }
+
         try {
             // 查询合约基本信息  type   == 10
-            var format = {language: "sql", indent: "  "};
             var params = {address: collectAddress};
-            var sql = mybatisMapper.getStatement(
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "collect",
                 "selectByAddress",
-                params,
-                format
-            );
+                params
+            ).result;
 
             let collectRet = await execSql(sql)
                 .then((ret) => {
@@ -911,13 +871,11 @@ const handleUserRouter = async (req, res) => {
 
             // 插入数据库
             // Get SQL Statement
-            var format = {language: "sql", indent: "  "};
-            var sql = mybatisMapper.getStatement(
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "nft",
                 "insertSelective",
-                nft,
-                format
-            );
+                nft
+            ).result;
             return await execSql(sql)
 
                 .then((ret) => {
@@ -953,7 +911,7 @@ const handleUserRouter = async (req, res) => {
             cMetadata,
         } = req.body;
         if (isEmpty(password).flag) {
-            return responseFun(500, {message: "password 不能为空!"}, "");
+            return PasswordEmpty;
         }
         try {
 
@@ -973,23 +931,21 @@ const handleUserRouter = async (req, res) => {
             return responseFun(500, {message: e}, {});
         }
         //  判断参数是否满足规范
-        let ret = await accountSelectSelective(address)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                return responseFun(500, err, {});
-            });
+        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+        let ret = await execSql(sqlResult.result);
+
         // console.log(ret)
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
+        let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
         let wallet;
-        try {
-            wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
-        } catch (e) {
-            return responseFun(500, {message: "invalid password"}, {});
+        if (decWalletResult.err != null) {
+            return PasswordError;
+        } else {
+            wallet = decWalletResult.result;
         }
+
         try {
             // TODO 这里需要先判断余额是否满足
             //查询需要的gas
@@ -1076,14 +1032,11 @@ const handleUserRouter = async (req, res) => {
                     create_address: wallet.address,
                     type: 1, // v1 1155
                 };
-                var format = {language: "sql", indent: "  "};
-                var sql = mybatisMapper.getStatement(
+                var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "collect",
                     "insertSelective",
-                    collect,
-                    format
-                );
-
+                    collect
+                ).result;
 
                 let collectRet = await execSql(sql)
                     .then((ret) => {
@@ -1163,12 +1116,10 @@ const handleUserRouter = async (req, res) => {
 
                     // 插入数据库
                     // Get SQL Statement
-                    var format = {language: "sql", indent: "  "};
-                    var sql = mybatisMapper.getStatement(
+                    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "nft",
                         "insertSelective",
-                        nft,
-                        format
+                        nft
                     );
                     return await execSql(sql)
                         .then((ret) => {
@@ -1197,7 +1148,7 @@ const handleUserRouter = async (req, res) => {
         const {address, password, collectAddress, file, data, supply, rebackUrl} = req.body;
         let {} = req.body;
         if (isEmpty(password).flag) {
-            return responseFun(500, {message: "password 不能为空!"}, "");
+            return PasswordEmpty;
         }
         try {
             //  判断参数是否满足规范
@@ -1234,43 +1185,39 @@ const handleUserRouter = async (req, res) => {
         } catch (e) {
             return responseFun(500, {message: e}, {});
         }
-
+        if (supply < 1) {
+            return responseFun(500, {message: "supply 必须大于0"}, {});
+        }
         // if (supply >= 100000) {
         //     return responseFun(500, {message: "supply must less than 100000"}, {});
         // }
 
         //  判断参数是否满足规范
-        let ret = await accountSelectSelective(address)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                return responseFun(500, err, {});
-            });
+        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+        let ret = await execSql(sqlResult.result);
+
         // console.log(ret);
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
         let wallet;
-        try {
-            // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
-            if (ret.psd != password) {
-                throw "invalid password"
-            }
-
-        } catch (e) {
-            return responseFun(500, {message: "invalid password"}, {});
+        // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
+        let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+        if (decWalletResult.err != null) {
+            return PasswordError;
+        } else {
+            wallet = decWalletResult.result
         }
+
         try {
             // 查询合约基本信息  type   == 10
-            var format = {language: "sql", indent: "  "};
+
             var params = {address: collectAddress};
-            var sql = mybatisMapper.getStatement(
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "collect",
                 "selectByAddress",
-                params,
-                format
-            );
+                params
+            ).result;
 
             let collectRet = await execSql(sql)
                 .then((ret) => {
@@ -1323,28 +1270,8 @@ const handleUserRouter = async (req, res) => {
                 .catch((err) => {
                     return responseFun(500, err, {});
                 });
-            var nonceResult = await queryNonce(address);
-            let currTime = new Date().getTime();
-            let transCount;
 
-            if (nonceResult.length == 0) {
-                transCount =
-                    await customHttpProvider.getTransactionCount(address, "latest");
-                await insertNonce(address, transCount);
-            }
-                // else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-                //     // 超时,重新获取nonce
-                //     console.log("超时,重新获取nonce.....................");
-                //     transCount =
-                //         await customHttpProvider.getTransactionCount(address, "latest");
-                //
-            // }
-            else {
-                transCount = nonceResult[0].nonce;
-            }
-            await updateNonce(address, transCount + 1);
             //    暂时插入数据库
-            console.log("insert...", transCount);
             let nft = {
                 address,
                 isFinish: 0,
@@ -1359,19 +1286,18 @@ const handleUserRouter = async (req, res) => {
                 fileName: originalFilename,
                 tempPath: file,
                 tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
-                nonce: transCount,
+                nonce: "0",
                 rebackUrl: rebackUrl
             };
 
             // 插入数据库
             // Get SQL Statement
-            var format = {language: "sql", indent: "  "};
-            var sql = mybatisMapper.getStatement(
+
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "nft",
                 "insertSelective",
-                nft,
-                format
-            );
+                nft
+            ).result;
             return await execSql(sql)
                 .then((ret) => {
                     // fileUploadIpfs();
@@ -1394,7 +1320,7 @@ const handleUserRouter = async (req, res) => {
         try {
             const {address, password, cMetadata, type} = req.body;
             if (isEmpty(password).flag) {
-                return responseFun(500, {message: "password 不能为空!"}, "");
+                return PasswordEmpty;
             }
             try {
                 let {err, flag} = validateAddress(address);
@@ -1417,17 +1343,13 @@ const handleUserRouter = async (req, res) => {
             }
 
             //  判断参数是否满足规范
-            let ret = await accountSelectSelective(address)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    return responseFun(500, err, {});
-                });
+            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+            let ret = await execSql(sqlResult.result);
+
             if (ret == null) {
                 return responseFun(500, {message: "账户不存在!"}, {});
             }
-            let wallet;
+
             if (ret.psd != password) {
                 throw {message: "invalid password"}
             }
@@ -1437,19 +1359,17 @@ const handleUserRouter = async (req, res) => {
             if (!cMetadata.tokenUrlPrefix.endsWith("/")) {
                 throw {message: "invalid tokenUrlPrefix endsWith /"};
             }
-            if (ret.private_key) {
-                wallet = new ethers.Wallet(ret.private_key, customHttpProvider);
+
+
+            let wallet;
+
+            let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+            if (decWalletResult.err != null) {
+                return PasswordError;
             } else {
-                try {
-                    wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
-                    wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
-                    // if (ret.psd != password) {
-                    //     throw "invalid password"
-                    // }
-                } catch (e) {
-                    return responseFun(500, {message: "invalid password"}, {});
-                }
+                wallet = decWalletResult.result;
             }
+            wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
 
             // 创建收藏夹
             //    查询创建合约的手续费
@@ -1485,7 +1405,7 @@ const handleUserRouter = async (req, res) => {
             let etherString = ethers.utils.formatEther(balance);
             console.log("Balance: ", etherString);
             // 计算初始化合约费用
-            console.log("余额是否充足:", Number(balance) < Number(necelibyTotal))
+            console.log("余额是否充足:", Number(balance) > Number(necelibyTotal))
             if (Number(etherString) < Number(necelibyTotal)) {
                 // if (true) {
                 //     let {err, hash} = await transfer(neceliby.toString(), address);
@@ -1552,13 +1472,12 @@ const handleUserRouter = async (req, res) => {
                 create_address: wallet.address,
                 type: type, // v1 1155
             };
-            var format = {language: "sql", indent: "  "};
-            var sql = mybatisMapper.getStatement(
+
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "collect",
                 "insertSelective",
-                collect,
-                format
-            );
+                collect
+            ).result;
 
             return await execSql(sql)
                 .then((ret) => {
@@ -1600,9 +1519,10 @@ const handleUserRouter = async (req, res) => {
                     authorDesc,
                 } = fields;
                 if (isEmpty(password).flag) {
-                    return responseFun(500, {message: "password 不能为空!"}, "");
+                    return PasswordEmpty;
                 }
-                const result = accountSelectSelective(address);
+                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+                let result = await execSql(sqlResult.result);
 
                 // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
                 return result.then(async (ret) => {
@@ -1610,15 +1530,14 @@ const handleUserRouter = async (req, res) => {
                         return responseFun(500, {message: "账户不存在!"}, {});
                         return;
                     }
-                    try {
-                        let wallet = await ethers.Wallet.fromEncryptedJson(
-                            ret.keystore,
-                            password
-                        );
-                    } catch (err) {
-                        resolve(responseFun(500, {message: "invalid password"}, {}));
-                        return;
+                    let wallet;
+                    let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+                    if (decWalletResult.err != null) {
+                        resolve(PasswordError);
+                    } else {
+                        wallet = decWalletResult.result
                     }
+
                     try {
                         // address: wallet.address,
                         // privateKey: wallet.privateKey,
@@ -1821,32 +1740,30 @@ const handleUserRouter = async (req, res) => {
             try {
 
                 //  判断参数是否满足规范
-                let ret = await accountSelectSelective(address)
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        return responseFun(500, err, {});
-                    });
+                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+                let ret = await execSql(sqlResult.result);
+
                 console.log(ret);
                 if (ret == null) {
                     return responseFun(500, {message: "账户不存在!"}, {});
                 }
-                let wallet = await ethers.Wallet.fromEncryptedJson(
-                    ret.keystore,
-                    password
-                );
+
+                let decWalletResult = await getPrivateKeyByAccountAndPassword(ret, password);
+                if (decWalletResult.err != null) {
+                    throw {message: "invalid password"}
+                } else {
+                    wallet = decWalletResult.result;
+                }
             } catch (err) {
                 throw {message: "invalid password"}
             }
-            var format = {language: "sql", indent: "  "};
+
             var params = {type: 11};  // 草田积分合约
-            var sql = mybatisMapper.getStatement(
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "collect",
                 "selectByType",
-                params,
-                format
-            );
+                params
+            ).result;
             let collectRet = await execSql(sql)
                 .then((ret) => {
                     return ret;
@@ -1878,7 +1795,7 @@ const handleUserRouter = async (req, res) => {
     if (req.method === "POST" && req.path === "/api/account/transfer_f") {
         const {address, password, amount, to, tokenId, rebackUrl, orderId} = req.body;
         if (isEmpty(password).flag) {
-            return responseFun(500, {message: "password 不能为空!"}, "");
+            return PasswordEmpty;
         }
         console.log({address, password, amount, to, tokenId});
         let collectAddress;
@@ -1902,48 +1819,39 @@ const handleUserRouter = async (req, res) => {
             //     throw {message: "transfer is owner!"}
             // }
 
-            let ret = await accountSelectSelective(address)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    return responseFun(500, err, {});
-                });
+            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
+            let ret = await execSql(sqlResult.result);
+
             console.log(ret);
             if (ret == null) {
                 return responseFun(500, {message: "账户不存在!"}, {});
             }
 
-            if (password != ret.psd) {
-                throw {message: "invalid password"};
-            }
 
             let checkURLRet = checkURL(rebackUrl);
             if (!checkURLRet.flag) {
                 throw checkURLRet.err
             }
 
-            try {
-
-                //
-                // wallet = await ethers.Wallet.fromEncryptedJson(
-                //     ret.keystore,
-                //     password
-                // );
-            } catch (err) {
-                throw {message: "invalid password"}
+            //
+            let decWalletResult = await getPrivateKeyByAccountAndPassword(
+                ret,
+                password
+            );
+            if (decWalletResult.err != null) {
+                return PasswordError;
+            } else {
+                wallet = decWalletResult.result
             }
-
 
             //这里直接查询合约地址
 
             var params = {tokenId: tokenId};
-            var sqlQueryByTokenId = mybatisMapper.getStatement(
+            var sqlQueryByTokenId = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "nft",
                 "selectByTokenId",
-                params,
-                format
-            );
+                params
+            ).result;
             console.log(sqlQueryByTokenId)
             let nftObj = await execSql(sqlQueryByTokenId)
                 .then((ret) => {
@@ -1960,14 +1868,13 @@ const handleUserRouter = async (req, res) => {
 
             let supply = nftObj['supply'];
             collectAddress = nftObj['collectAddress'];
-            var format = {language: "sql", indent: "  "};
+
             var params = {address: nftObj['collectAddress']};  // 草田积分合约
-            var sql = mybatisMapper.getStatement(
+            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "collect",
                 "selectByAddress",
-                params,
-                format
-            );
+                params
+            ).result;
             let collectDetail = await execSql(sql)
                 .then((ret) => {
                     return ret;
@@ -2038,12 +1945,11 @@ const handleUserRouter = async (req, res) => {
                         }
 
                         if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
-                            transObjFrom = await execSql(mybatisMapper.getStatement(
+                            transObjFrom = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                                 "trans_form_list",
                                 "selectByFormAndTokenId",
-                                {token_id: tokenId, t_from: address},
-                                format
-                            ))
+                                {token_id: tokenId, t_from: address}
+                            ).result)
                                 .then((ret) => {
                                     return ret;
                                 })
@@ -2051,12 +1957,11 @@ const handleUserRouter = async (req, res) => {
                                     console.log("ERR:", err);
                                     return err;
                                 });
-                            transObjTo = await execSql(mybatisMapper.getStatement(
+                            transObjTo = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                                 "trans_form_list",
                                 "selectByToAndTokenId",
-                                {token_id: tokenId, t_to: address},
-                                format
-                            ))
+                                {token_id: tokenId, t_to: address}
+                            ).result)
                                 .then((ret) => {
                                     return ret;
                                 })
@@ -2097,25 +2002,22 @@ const handleUserRouter = async (req, res) => {
                         }
 
                         // save db
-                        let trans_form_list_item = {
-                            t_from: address,
-                            t_to: to,
-                            collectAddress: collectAddress,
-                            amount: amount,
-                            reback_url: rebackUrl,
-                            token_id: tokenId,
-                            orderId: orderId,
-                            type: collectDetail['type'],
-                            t_status: 1,
-                        };
-
                         //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
-                        var sqlQueryByTokenIdAndForm = mybatisMapper.getStatement(
+                        var sqlQueryByTokenIdAndForm = getMysqlSqlByTabNameAndSqlNameAndParam(
                             "trans_form_list",
                             "insertSelective",
-                            trans_form_list_item,
-                            format
-                        );
+                            {
+                                t_from: address,
+                                t_to: to,
+                                collectAddress: collectAddress,
+                                amount: amount,
+                                reback_url: rebackUrl,
+                                token_id: tokenId,
+                                orderId: orderId,
+                                type: collectDetail['type'],
+                                t_status: 1,
+                            }
+                        ).result;
                         return await execSql(sqlQueryByTokenIdAndForm)
                             .then((ret) => {
                                 console.log("inset TransFotmList data:", ret);
@@ -2157,12 +2059,11 @@ const handleUserRouter = async (req, res) => {
 
                     // 数据库余额判断
                     //    数据库已有数据判断
-                    transObjFrom = await execSql(mybatisMapper.getStatement(
+                    transObjFrom = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "selectByFormAndTokenId",
-                        {token_id: tokenId, t_from: address},
-                        format
-                    ))
+                        {token_id: tokenId, t_from: address}
+                    ).result)
                         .then((ret) => {
                             return ret;
                         })
@@ -2170,12 +2071,11 @@ const handleUserRouter = async (req, res) => {
                             console.log("ERR:", err);
                             return err;
                         });
-                    transObjTo = await execSql(mybatisMapper.getStatement(
+                    transObjTo = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "selectByToAndTokenId",
-                        {token_id: tokenId, t_to: address},
-                        format
-                    ))
+                        {token_id: tokenId, t_to: address}
+                    ).result)
                         .then((ret) => {
                             return ret;
                         })
@@ -2217,7 +2117,7 @@ const handleUserRouter = async (req, res) => {
                     // save db
 
                     //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
-                    var sqlQueryByTokenIdAndForm1 = mybatisMapper.getStatement(
+                    var sqlQueryByTokenIdAndForm1 = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "insertSelective",
                         {
@@ -2230,9 +2130,8 @@ const handleUserRouter = async (req, res) => {
                             orderId: orderId,
                             type: collectDetail['type'],
                             t_status: 1,
-                        },
-                        format
-                    );
+                        }
+                    ).result;
                     return await execSql(sqlQueryByTokenIdAndForm1)
                         .then((ret) => {
                             console.log("inset TransFotmList data:", ret);
@@ -2266,6 +2165,54 @@ const handleUserRouter = async (req, res) => {
         // } catch (err) {
         //     return responseFun(500, err, null)
         // }
+    }
+
+    if (req.method === "GET" && req.path === "/api/private/dashboard") {
+
+        let resultNFT = {};
+        let resultTREANS = {};
+        let result = {};
+
+        // 等待上传ipfs
+        let sql1 = "SELECT count(0) from nft where `status` = 0;"
+        await execSql(sql1)
+        resultNFT['等待上传ipfs'] = await execSql(sql1)
+        // 等待上链
+        let sql2 = "SELECT count(0) from nft where `status` = 6;"
+        resultNFT['等待上链'] = await execSql(sql2)
+        // 等待hash查询
+        let sql3 = "SELECT count(0) from nft where `status` = 10;"
+        resultNFT['等待hash查询'] = await execSql(sql3)
+        // 上链成功
+        let sql4 = "SELECT count(0) from nft where `status` = 7;"
+        resultNFT['上链成功'] = await execSql(sql4)
+        // 上链失败
+        let sql5 = "SELECT count(0) from nft where `status` = 8;"
+        resultNFT['上链失败'] = await execSql(sql5)
+        // 回调失败
+        let sql6 = "SELECT count(0) from nft where `status` = 9;"
+        resultNFT['回调失败'] = await execSql(sql6)
+
+        // 等待上链
+        let sql7 = "SELECT count(0) from trans_form_list where `t_status` = 1;"
+        resultTREANS['等待上链'] = await execSql(sql7)
+        // 等待hash查询
+        let sql8 = "SELECT count(0) from trans_form_list where `t_status` = 5;"
+        resultTREANS['等待hash查询'] = await execSql(sql8)
+        // 上链成功
+        let sql9 = "SELECT count(0) from trans_form_list where `t_status` = 6;"
+        resultTREANS['上链成功'] = await execSql(sql9)
+        // 上链失败
+        let sql10 = "SELECT count(0) from trans_form_list where `t_status` = 7;"
+        resultTREANS['上链失败'] = await execSql(sql10)
+        // 回调失败
+        let sql11 = "SELECT count(0) from trans_form_list where `t_status` = 8;"
+        resultTREANS['回调失败'] = await execSql(sql11)
+        result = {
+            NFT: resultNFT,
+            TRANS: resultTREANS
+        };
+        return responseFun(200, null, result);
     }
 };
 

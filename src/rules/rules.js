@@ -51,7 +51,7 @@ function validateAddressBalanceEnough(address) {
 
 function isEmpty(value) {
 
-    if (!value || value == "" || value == null) {
+    if (!value || value == "" || value == null || value.trim() == "") {
         return {err: null, flag: true}
     } else {
         return {err: "参数为空", flag: false};

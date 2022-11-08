@@ -16,21 +16,21 @@
     id, `name`, key_name, key_value, address, sys_user_id, `password`, create_time, update_time
   </sql>
   <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
-    select 
+    select
     <include refid="Base_Column_List" />
     from nft_user_address_list
-    where id = #{id,jdbcType=INTEGER}
+    where id = #{id}
   </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
     delete from nft_user_address_list
-    where id = #{id,jdbcType=INTEGER}
+    where id = #{id}
   </delete>
   <insert id="insert" keyColumn="id" keyProperty="id" parameterType="xx.NftUserAddressList" useGeneratedKeys="true">
-    insert into nft_user_address_list (`name`, key_name, key_value, 
-      address, sys_user_id, `password`, 
+    insert into nft_user_address_list (`name`, key_name, key_value,
+      address, sys_user_id, `password`,
       create_time, update_time)
-    values (#{name,jdbcType=VARCHAR}, #{key_name,jdbcType=VARCHAR}, #{key_value,jdbcType=VARCHAR}, 
-      #{address,jdbcType=VARCHAR}, #{sys_user_id,jdbcType=INTEGER}, #{password,jdbcType=VARCHAR}, 
+    values (#{name}, #{key_name}, #{key_value},
+      #{address}, #{sys_user_id}, #{password},
       #{create_time,jdbcType=TIMESTAMP}, #{update_time,jdbcType=TIMESTAMP})
   </insert>
   <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="xx.NftUserAddressList" useGeneratedKeys="true">
@@ -63,22 +63,22 @@
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="name != null">
-        #{name,jdbcType=VARCHAR},
+        #{name},
       </if>
       <if test="key_name != null">
-        #{key_name,jdbcType=VARCHAR},
+        #{key_name},
       </if>
       <if test="key_value != null">
-        #{key_value,jdbcType=VARCHAR},
+        #{key_value},
       </if>
       <if test="address != null">
-        #{address,jdbcType=VARCHAR},
+        #{address},
       </if>
       <if test="sys_user_id != null">
-        #{sys_user_id,jdbcType=INTEGER},
+        #{sys_user_id},
       </if>
       <if test="password != null">
-        #{password,jdbcType=VARCHAR},
+        #{password},
       </if>
       <if test="create_time != null">
         #{create_time,jdbcType=TIMESTAMP},
@@ -92,22 +92,22 @@
     update nft_user_address_list
     <set>
       <if test="name != null">
-        `name` = #{name,jdbcType=VARCHAR},
+        `name` = #{name},
       </if>
       <if test="key_name != null">
-        key_name = #{key_name,jdbcType=VARCHAR},
+        key_name = #{key_name},
       </if>
       <if test="key_value != null">
-        key_value = #{key_value,jdbcType=VARCHAR},
+        key_value = #{key_value},
       </if>
       <if test="address != null">
-        address = #{address,jdbcType=VARCHAR},
+        address = #{address},
       </if>
       <if test="sys_user_id != null">
-        sys_user_id = #{sys_user_id,jdbcType=INTEGER},
+        sys_user_id = #{sys_user_id},
       </if>
       <if test="password != null">
-        `password` = #{password,jdbcType=VARCHAR},
+        `password` = #{password},
       </if>
       <if test="create_time != null">
         create_time = #{create_time,jdbcType=TIMESTAMP},
@@ -116,18 +116,18 @@
         update_time = #{update_time,jdbcType=TIMESTAMP},
       </if>
     </set>
-    where id = #{id,jdbcType=INTEGER}
+    where id = #{id}
   </update>
   <update id="updateByPrimaryKey" parameterType="xx.NftUserAddressList">
     update nft_user_address_list
-    set `name` = #{name,jdbcType=VARCHAR},
-      key_name = #{key_name,jdbcType=VARCHAR},
-      key_value = #{key_value,jdbcType=VARCHAR},
-      address = #{address,jdbcType=VARCHAR},
-      sys_user_id = #{sys_user_id,jdbcType=INTEGER},
-      `password` = #{password,jdbcType=VARCHAR},
+    set `name` = #{name},
+      key_name = #{key_name},
+      key_value = #{key_value},
+      address = #{address},
+      sys_user_id = #{sys_user_id},
+      `password` = #{password},
       create_time = #{create_time,jdbcType=TIMESTAMP},
       update_time = #{update_time,jdbcType=TIMESTAMP}
-    where id = #{id,jdbcType=INTEGER}
+    where id = #{id}
   </update>
 </mapper>

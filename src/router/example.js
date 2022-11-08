@@ -1,14 +1,4 @@
 const {
-  login,
-  accountSelectSelective,
-  accountInsertSelective,
-  nftSelectSelective,
-  nftSelectSelectiveCreator,
-  nftInsertSelective,
-  nftPreInsertSelective,
-  nftUpdateSelective,
-  nftUpdateSelectiveStatus,
-  nftUpdateSelectiveIsFinish,
   responseFun,
 } = require("../controller/ctnft");
 const ethers = require("ethers");

@@ -1,8 +1,3 @@
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/AppJifenRecordHistoryMapper.xml",
-    "src/mapper/xml/AppUserMapper.xml"
-]);
 const {
     writeFile,
     readFile
@@ -19,7 +14,7 @@ const ethers = require("ethers");
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let blockNumberCreate = 1090551;   // 合约的创建区块号
 let blockNumberCurr = 0;   // 当前最新区块号
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
+let customHttpProvider = new ethers.providers.JsonRpcProvider({
     ...rpc
 }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,

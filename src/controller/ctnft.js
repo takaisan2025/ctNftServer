@@ -1,38 +1,5 @@
 const {exec, escape} = require("../db/mysqlPool");
 const xss = require("xss");
-const mybatisMapper = require('mybatis-mapper');
-const responseFun = (code, err, result) => {
-    if (code == 500) {
-        console.error(err)
-    }
-    if (err == null || err == "") {
-        return {
-            code: code,
-            message: null,
-            result: result,
-        };
-    }
-    return {
-        code: code,
-        message: err.message,
-        result: result,
-    };
-};
-
-const responseFunStr = (code, err, result) => {
-    if (err == null || err == "") {
-        return JSON.stringify({
-            code: code,
-            message: null,
-            result: result,
-        });
-    }
-    return JSON.stringify({
-        code: code,
-        message: err.message,
-        result: result,
-    });
-};
 
 const login = (username, password) => {
     username = escape(username);
@@ -55,20 +22,6 @@ const execSql = (sql) => {
 const execSqlAll = (sql) => {
     return exec(sql).then((rows) => {
         return rows || [];
-    });
-};
-
-const accountInsertSelective = (account) => {
-    // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
-    const sql = `insert into account (keystore,address,psd,private_key,status) values ('${xss(
-    account.keystore
-  )}',
-'${xss(account.address)}',
-'${xss(account.psd)}',
-'${xss(account.private_key)}',
-'${xss(account.status)}' )`;
-    return exec(sql).then((rows) => {
-        return rows[0] || null;
     });
 };
 
@@ -214,14 +167,6 @@ ${xss(JSON.stringify(nft.serverPath))},
     });
 };
 
-const accountSelectSelective = (address) => {
-    // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
-    const sql = ` select * from account where address = '${xss(address)}'`;
-    return exec(sql).then((rows) => {
-        return rows[0] || null;
-    });
-};
-
 const nftSelectSelective = (tokenIds) => {
     let tokenIdsStr = JSON.stringify(tokenIds);
     tokenIdsStr = tokenIdsStr.replace('[', '')
@@ -256,9 +201,6 @@ const nftSelectSelectiveCreator = (creator) => {
 
 module.exports = {
     login,
-    responseFun,
-    accountSelectSelective,
-    accountInsertSelective,
     nftSelectSelective,
     nftSelectSelectiveStatus,
     nftInsertSelective,
@@ -267,7 +209,6 @@ module.exports = {
     nftUpdateSelective,
     nftUpdateSelectiveIsFinish,
     nftSelectSelectiveCreator,
-    responseFunStr,
     execSql,
     execSqlAll,
     accountUpdateSelective,

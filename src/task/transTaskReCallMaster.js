@@ -1,10 +1,5 @@
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/collect.xml",
-    "src/mapper/xml/nft.xml",
-    "src/mapper/xml/TransFormListMapper.xml"
-]);
 const child_process = require('child_process');
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 const {
     isJson,
     stripHexPrefix,
@@ -23,7 +18,6 @@ function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一
 
 var format = {language: "sql", indent: "  "};
 const {
-    accountSelectSelective,
     execSql,
     execSqlAll,
     responseFun,
@@ -34,12 +28,12 @@ async function main() {
     console.log("betchTransferThread Start !!")
     let countTh = 0;
     var params = {t_status: 6};
-    var sql = mybatisMapper.getStatement(
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "trans_form_list",
         "selectByStatus",
         params,
         format
-    );
+    ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;

@@ -1,8 +1,3 @@
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/AppJifenRecordHistoryMapper.xml",
-    "src/mapper/xml/AppUserMapper.xml"
-]);
 const {
     writeFile,
     readFile
@@ -15,13 +10,14 @@ const {
 const GlobalConfig = require("../config/GlobalConfig.json");
 const scoreTokenAddress = GlobalConfig.SCORE_ADDRESS;
 const ethers = require("ethers");
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let blockNumberCreate = 1090551;   // 合约的创建区块号
 let blockNumberCurr = 0;   // 当前最新区块号
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider({
+    ...rpc
+}, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 
@@ -119,28 +115,26 @@ async function processResult(result) {
             if (from.toString().toLowerCase() != scoreTokenAddress && from.toString().toLowerCase() != to.toString().toLowerCase()) {  // 转增交易, 存入数据库
                 console.log(from, to, value, blockNumber, transactionHash);
                 /* 插入数据库*/
-                let resultFrom = await execSql(mybatisMapper.getStatement(
+                let resultFrom = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                     "AppUserMapper",
                     "selectByAddress",
                     {
                         address: from
-                    },
-                    format
-                ))
+                    }
+                ).result)
                     .then((ret) => {
                         return ret;
                     })
                     .catch((err) => {
                         console.error(err);
                     });
-                let resultTo = await execSql(mybatisMapper.getStatement(
+                let resultTo = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                     "AppUserMapper",
                     "selectByAddress",
                     {
                         address: to
-                    },
-                    format
-                ))
+                    }
+                ).result)
                     .then((ret) => {
                         return ret;
                     })
@@ -149,15 +143,14 @@ async function processResult(result) {
                     });
 
                 // 双向数据插入
-                let resultExistFrom = await execSql(mybatisMapper.getStatement(
+                let resultExistFrom = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                     "AppJifenRecordHistoryMapper",
                     "selectByAddressAndHash",
                     {
                         wallet_address: from,
                         hash: transactionHash
-                    },
-                    format
-                ))
+                    }
+                ).result)
                     .then((ret) => {
                         return ret;
                     })
@@ -167,7 +160,7 @@ async function processResult(result) {
                 console.log("resultExistFrom == null:", resultExistFrom == null)
                 if (resultExistFrom == null) {
                     //    isfrom
-                    var sqlFrom = mybatisMapper.getStatement(
+                    var sqlFrom = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "AppJifenRecordHistoryMapper",
                         "insert",
                         {
@@ -180,9 +173,8 @@ async function processResult(result) {
                             contract_address: scoreTokenAddress,
                             remark: "",
                             user_id: resultFrom == null ? "" : resultFrom.id
-                        },
-                        format
-                    );
+                        }
+                    ).result;
                     await execSql(sqlFrom)
                         .then((ret) => {
                             return ret;
@@ -193,15 +185,14 @@ async function processResult(result) {
                         });
 
                 }
-                let resultExistTo = await execSql(mybatisMapper.getStatement(
+                let resultExistTo = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
                     "AppJifenRecordHistoryMapper",
                     "selectByAddressAndHash",
                     {
                         wallet_address: to,
                         hash: transactionHash
-                    },
-                    format
-                ))
+                    }
+                ).result)
                     .then((ret) => {
                         return ret;
                     })
@@ -212,7 +203,7 @@ async function processResult(result) {
 
                 if (resultExistTo == null) {
                     //    !isfrom
-                    var sqlTo = mybatisMapper.getStatement(
+                    var sqlTo = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "AppJifenRecordHistoryMapper",
                         "insert",
                         {
@@ -225,9 +216,8 @@ async function processResult(result) {
                             contract_address: scoreTokenAddress,
                             remark: "",
                             user_id: resultTo == null ? "" : resultTo.id
-                        },
-                        format
-                    );
+                        }
+                    ).result;
                     await execSql(sqlTo)
                         .then((ret) => {
                             return ret;
@@ -245,12 +235,11 @@ async function processResult(result) {
     return;
     var format = {language: "sql", indent: "  "};
     var params = {status: 0};
-    var sql = mybatisMapper.getStatement(
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
-        params,
-        format
-    );
+        params
+    ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
             return ret;
@@ -272,12 +261,11 @@ async function processResult(result) {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = mybatisMapper.getStatement(
+        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
-            paramsUp,
-            format
-        );
+            paramsUp
+        ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {
                 return ret;

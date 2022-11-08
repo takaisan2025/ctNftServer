@@ -1,41 +1,37 @@
 const {exec, escape} = require("../db/mysqlPool");
 
-
-const mybatisMapper = require("mybatis-mapper");
-mybatisMapper.createMapper([
-    "src/mapper/xml/NftNonceMapper.xml"
-]);
+const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 
 // Get SQL Statement
 var format = {language: "sql", indent: "  "};
 
 function queryNonce(address) {
-    var sql = mybatisMapper.getStatement('NftNonceMapper', 'selectByAddress',
-        {address: address}, format);
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam('NftNonceMapper', 'selectByAddress',
+        {address: address}, format).result;
     return exec(sql).then((rows) => {
         return rows || [];
     });
 }
 
 async function insertNonce(address, nonce) {
-    var sql = mybatisMapper.getStatement("NftNonceMapper", "insertSelective",
-        {address: address, nonce: nonce}, format);
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam("NftNonceMapper", "insertSelective",
+        {address: address, nonce: nonce}, format).result;
     return await exec(sql).then((rows) => {
         return rows || null;
     });
 }
 
 function updateNonce(address, nonce) {
-    var sql = mybatisMapper.getStatement("NftNonceMapper", "updateByAddressSelective",
-        {address: address, nonce: nonce}, format);
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam("NftNonceMapper", "updateByAddressSelective",
+        {address: address, nonce: nonce}, format).result;
     return exec(sql).then((rows) => {
         return rows || null;
     });
 }
 
 function delNonce(address) {
-    var sql = mybatisMapper.getStatement("NftNonceMapper", "deleteByAddress",
-        {address: address}, format);
+    var sql = getMysqlSqlByTabNameAndSqlNameAndParam("NftNonceMapper", "deleteByAddress",
+        {address: address}, format).result;
     return exec(sql).then((rows) => {
         return rows || null;
     });
@@ -48,6 +44,7 @@ async function main() {
     console.log((reesult[0].update_time.getTime()));
     console.log((new Date().getTime()));
 }
+
 // main();
 
 module.exports = {

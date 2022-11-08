@@ -65,7 +65,7 @@ const severHandle = (req, res) => {
     // console.log("START!")
     const clientIp = requestIp.getClientIp(req);
     if (iPBlackList.includes(clientIp)) {
-        console.error({message: "request denied!"})
+        console.error({message: "request denied!", clientIp: clientIp})
         res.end(JSON.stringify(responseFun(403, {message: "request denied!"}, "")));
         return;
 

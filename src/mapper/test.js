@@ -83,7 +83,7 @@ async function createAccountXX() {
 
 }
 
-createAccountWeb3();
+// createAccountWeb3();
 // createAccountEthers();
 // createAccountX();
 // createAccountXX();
@@ -134,3 +134,5 @@ async function testMintNodeHasUnlockAccount() {
 //     console.trace(e.stack)
 // }
 // node src/mapper/test.js
+const searchRegExp = new RegExp("\\\\\"", 'g') // // 抛出 SyntaxError 异常
+console.log('{\\"title\\":\\"WFT藏品\\",\\"description\\":\\"藏品描述\\",\\"author\\":\\"jia\\",\\"authorDesc\\":\\"jiajiajiajia\\",\\"toSkyDate\\":\\"自定义字段\\"}'.replace(searchRegExp, '"'))

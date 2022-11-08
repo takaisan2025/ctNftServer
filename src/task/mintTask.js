@@ -6,7 +6,6 @@ const {
     nftUpdateSelective,
     nftUpdateSelectiveIsFinish,
     responseFun,
-    responseFunStr,
 } = require("../controller/ctnft");
 const fs = require("fs");
 const ipfsAPI = require("ipfs-api");
@@ -38,6 +37,7 @@ const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
 const CtnftMToken = require("../contract/CtnftMToken.json");
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const ethers = require("ethers");
+const {responseFunStr} = require("../mapper/account");
 const {getPrivateKeyByAccountAndPassword} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
 const {execSql} = require("../controller/ctnft");
@@ -111,7 +111,9 @@ async function fileUploadIpfs() {
             continue
         }
         // console.log(nftArr[retKey]);
-        const {id, premetadata, tokenId, serverPath, tempPath} = nftArr[retKey];
+        let {id, premetadata, tokenId, serverPath, tempPath} = nftArr[retKey];
+        const searchRegExp = new RegExp("\\\\\"", 'g') // // 抛出 SyntaxError 异常
+        premetadata = premetadata.replace(searchRegExp, '"')
         // 这里上传IPFS资源文件
         // 图片资源上传ipfs
         let data = await fs.readFileSync(serverPath);

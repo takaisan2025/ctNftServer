@@ -24,9 +24,9 @@
     </delete>
     <insert id="insert" keyColumn="id" keyProperty="id" parameterType="cn.Account" useGeneratedKeys="true">
         insert into account (address, keystore, psd,
-        `status`, private_key)
+        `status`, private_key, remark)
         values (#{address}, #{keystore}, #{psd},
-        #{status}, #{private_key})
+        #{status}, #{private_key}, #{remark})
     </insert>
     <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="cn.Account" useGeneratedKeys="true">
         insert into account

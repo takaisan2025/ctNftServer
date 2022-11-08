@@ -5,6 +5,7 @@ const {
     nftInsertSelective,
     nftPreInsertSelective,
 } = require("../controller/ctnft");
+const requestIp = require('request-ip');
 const {
     createCollectV1Erc1155,
     createCollectV1Erc1155Call,
@@ -186,6 +187,9 @@ const handleUserRouter = async (req, res) => {
     // 创建账户
     if (req.method === "POST" && req.path === "/api/account/createAccount") {
         const {password} = req.body;
+        const clientIp = requestIp.getClientIp(req);
+
+
         //
         // let randomWallet = ethers.Wallet.createRandom();
         // let keystore = await randomWallet.encrypt(password, callback);
@@ -198,7 +202,8 @@ const handleUserRouter = async (req, res) => {
             address: randomWallet.address,
             status: 1,
             psd: password,
-            private_key: ""
+            private_key: "",
+            remark: clientIp
             // private_key: randomWallet.private_key
 
         };
@@ -452,7 +457,7 @@ const handleUserRouter = async (req, res) => {
             // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
             return result
                 .then(async (ret) => {
-                    console.log(ret);
+
                     if (ret == null) {
                         resolve(responseFun(500, {message: "账户不存在!"}, {}));
                         return;
@@ -605,7 +610,7 @@ const handleUserRouter = async (req, res) => {
         let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
         let ret = await execSql(sqlResult.result);
 
-        console.log(ret);
+
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
@@ -766,7 +771,7 @@ const handleUserRouter = async (req, res) => {
         let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
         let ret = await execSql(sqlResult.result);
 
-        console.log(ret);
+
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
@@ -832,25 +837,8 @@ const handleUserRouter = async (req, res) => {
 
             // 这里查询数据库有没有交易记录, 有的话,使用数据库的, 没有就查询链上
             // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
-            let retNft = await nftSelectSelectiveCreator(address)
-                .then((retNft) => {
-                    return retNft;
-                })
-                .catch((err) => {
-                    return responseFun(500, err, {});
-                });
-
-            let transCount;
-            if (retNft == null) {
-                transCount = await customHttpProvider.getTransactionCount(
-                    address
-                );
-            } else {
-                transCount = retNft.nonce + 1;
-            }
 
             //    暂时插入数据库
-            console.log("insert...", transCount);
             let nft = {
                 address,
                 collectAddress,
@@ -864,7 +852,7 @@ const handleUserRouter = async (req, res) => {
                 fileName: originalFilename,
                 tempPath: file,
                 tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
-                nonce: transCount,
+                nonce: "0",
                 rebackUrl: rebackUrl
             };
 
@@ -934,7 +922,7 @@ const handleUserRouter = async (req, res) => {
         let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
         let ret = await execSql(sqlResult.result);
 
-        // console.log(ret)
+        //
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
@@ -997,7 +985,6 @@ const handleUserRouter = async (req, res) => {
                             let recept1 = await customHttpProvider.waitForTransaction(
                                 txTransfer.hash
                             );
-                            console.log("recept1:", recept1);
                             if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
                                 throw {message: "Transaction Reverted"};
                             }
@@ -1196,7 +1183,7 @@ const handleUserRouter = async (req, res) => {
         let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
         let ret = await execSql(sqlResult.result);
 
-        // console.log(ret);
+        //
         if (ret == null) {
             return responseFun(500, {message: "账户不存在!"}, {});
         }
@@ -1682,7 +1669,6 @@ const handleUserRouter = async (req, res) => {
 
                                                 return result
                                                     .then((ret) => {
-                                                        console.log("inset NFT data:", ret);
                                                         resolve(responseFun(200, "", {hash: tx.hash}));
                                                         return;
                                                     })
@@ -1728,14 +1714,12 @@ const handleUserRouter = async (req, res) => {
     // 回调  TODO 这个可能需要考虑是否需要回调
     if (req.method === "POST" && req.path === "/api/account/callFun") {
         const {tokenId, status, key} = req.body;
-        console.log("callFun:", tokenId, status, key);
         return {code: 0};
     }
     // 积分相关接口
     if (req.method === "POST" && req.path === "/api/account/rcti") {
         const {address, password, type, amount} = req.body;
         // 2 注册积分    1  消费积分
-        console.log({address, password, type, amount})
         try {
             try {
 
@@ -1743,7 +1727,6 @@ const handleUserRouter = async (req, res) => {
                 let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
                 let ret = await execSql(sqlResult.result);
 
-                console.log(ret);
                 if (ret == null) {
                     return responseFun(500, {message: "账户不存在!"}, {});
                 }
@@ -1797,7 +1780,6 @@ const handleUserRouter = async (req, res) => {
         if (isEmpty(password).flag) {
             return PasswordEmpty;
         }
-        console.log({address, password, amount, to, tokenId});
         let collectAddress;
         try {
 
@@ -1822,7 +1804,6 @@ const handleUserRouter = async (req, res) => {
             let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
             let ret = await execSql(sqlResult.result);
 
-            console.log(ret);
             if (ret == null) {
                 return responseFun(500, {message: "账户不存在!"}, {});
             }
@@ -1852,7 +1833,6 @@ const handleUserRouter = async (req, res) => {
                 "selectByTokenId",
                 params
             ).result;
-            console.log(sqlQueryByTokenId)
             let nftObj = await execSql(sqlQueryByTokenId)
                 .then((ret) => {
                     return ret;
@@ -1861,7 +1841,6 @@ const handleUserRouter = async (req, res) => {
                     console.log("ERR:", err);
                     return err;
                 });
-            console.log("nftObj:", nftObj)
             if (nftObj == null) {
                 throw {message: "nft is not exist!"};
             }
@@ -2020,7 +1999,6 @@ const handleUserRouter = async (req, res) => {
                         ).result;
                         return await execSql(sqlQueryByTokenIdAndForm)
                             .then((ret) => {
-                                console.log("inset TransFotmList data:", ret);
                                 // betchTransfer();
                                 return responseFun(200, "", {ret: ret});
 
@@ -2134,7 +2112,7 @@ const handleUserRouter = async (req, res) => {
                     ).result;
                     return await execSql(sqlQueryByTokenIdAndForm1)
                         .then((ret) => {
-                            console.log("inset TransFotmList data:", ret);
+                            // console.log("inset TransFotmList data:", ret);
                             return responseFun(200, "", {ret: ret});
 
                         })

@@ -20,7 +20,8 @@
     "mybatis-mapper": "git+https://github.com/Coozw/mybatis-mapper.git#7e8ad71dc277b9c24dd5abccb02050b1cb1a6749",
     "mybatis-node": "^1.0.2",
     "randombytes": "^2.1.0",
-    "redis": "^3.1.2"
+    "redis": "^3.1.2",
+    "request-ip": "^3.3.0"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

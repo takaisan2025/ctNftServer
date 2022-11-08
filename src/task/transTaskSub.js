@@ -83,12 +83,8 @@ async function betchTransfer() {
                 let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: collectDetail.owner})
                 contractAddressDetailAsync = await execSql(sqlResult.result);
             }
-            let contractAddressDetail = await contractAddressDetailAsync.then((result) => {
-                return result;
-            });
-            let accountItem = await accountDetail.then((result) => {
-                return result;
-            });
+            let contractAddressDetail = contractAddressDetailAsync;
+            let accountItem = accountDetail;
             // try {
             let wallet;
 

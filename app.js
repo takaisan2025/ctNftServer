@@ -43,6 +43,7 @@ const getPostData = (req) => {
                 return;
             }
             try {
+                // postData = postData.replace(/\\/g, "\\\\")
                 resolve(JSON.parse(postData));
             } catch (err) {
                 resolve({});

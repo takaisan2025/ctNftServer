@@ -69,8 +69,22 @@ async function processResult(result) {
 }
 
 async function main() {
-    let response = await betGetHistory(0, 1895565);
-    console.log(response);
+    // let response = await betGetHistory(0, 1895565);
+    // console.log(response);
+
+    let data = "0x00000000000000000000000000000000000000000000000000000000000004d20000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000162e0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000b48656c6c6f20576f726c64000000000000000000000000000000000000000000";
+// [
+//   { BigNumber: "1234" },
+//   [
+//     { BigNumber: "5678" },
+//     'Hello World'
+//   ]
+// ]
+
+// Decoding complex structs; named parameters allows positional
+// or keyword access to values
+    let v = ethers.utils.defaultAbiCoder.decode(["uint a", "tuple(uint256 b, string c) d"], data);
+    console.log(v)
 }
 
 main()

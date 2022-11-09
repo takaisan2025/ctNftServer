@@ -17,8 +17,18 @@
   "BLOCK_CHAIN": {
     "RPC_CHAIN_ID": 27,
     "RPC_URL": [
-      "http://ctblock.cn/blockChain",
-      "http://ctblock.cn/blockChainLKJdstgdflfdsgljkjlklkkretoiio"
+      {
+        "url": "http://ctblock.cn/blockChain",
+        "user": "",
+        "password": "",
+        "headers": []
+      },
+      {
+        "url": "http://ctblock.cn/blockChainLKJdstgdflfdsgljkjlklkkretoiio",
+        "user": "",
+        "password": "",
+        "headers": []
+      }
     ]
   },
   "TRANSFER_ACCOUNT": {

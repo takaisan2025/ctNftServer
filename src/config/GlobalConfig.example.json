@@ -18,16 +18,10 @@
     "RPC_CHAIN_ID": 27,
     "RPC_URL": [
       {
-        "url": "http://ctblock.cn/blockChain",
-        "user": "",
-        "password": "",
-        "headers": []
+        "url": "http://ctblock.cn/blockChain"
       },
       {
-        "url": "http://ctblock.cn/blockChainLKJdstgdflfdsgljkjlklkkretoiio",
-        "user": "",
-        "password": "",
-        "headers": []
+        "url": "http://ctblock.cn/blockChainLKJdstgdflfdsgljkjlklkkretoiio"
       }
     ]
   },

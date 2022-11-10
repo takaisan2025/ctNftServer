@@ -83,7 +83,7 @@ async function createAccountXX() {
 
 }
 
-createAccountWeb3();
+// createAccountWeb3();
 // createAccountEthers();
 // createAccountX();
 // createAccountXX();
@@ -136,3 +136,36 @@ async function testMintNodeHasUnlockAccount() {
 // node src/mapper/test.js
 // const searchRegExp = new RegExp("\\\\\"", 'g') // // 抛出 SyntaxError 异常
 // console.log('{\\"title\\":\\"WFT藏品\\",\\"description\\":\\"藏品描述\\",\\"author\\":\\"jia\\",\\"authorDesc\\":\\"jiajiajiajia\\",\\"toSkyDate\\":\\"自定义字段\\"}'.replace(searchRegExp, '"'))
+const fetch = require("node-fetch");
+
+async function haha() {
+    const FormData = require("form-data");
+    var formdata = new FormData();
+    formdata.append("key", "qianyidata");
+    // console.log(tokenId)
+    formdata.append("status", "true");
+    var requestOptions = {
+        method: "POST",
+        body: formdata,
+        redirect: "follow",
+    };
+
+    let url = "http://www.xingchengwlkj.com/api/notify/nftgoods"
+    let responseRet = await fetch(url, requestOptions)
+        .then((response) => {
+            console.log("回调返回原始内容status:", response.status);
+            console.log("回调返回原始内容statusText:", response.statusText);
+            return response.json();
+        })
+        .then((response) => {
+            console.log("回调返回处理结果:", response);
+            return {data: response};
+        })
+        .catch((err) => {
+            console.trace("回调错误:", err, ",tokenId", tokenId);
+            return {data: null, err: err};
+        });
+    console.log(responseRet)
+}
+
+haha();

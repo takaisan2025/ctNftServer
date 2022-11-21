@@ -68,7 +68,7 @@ async function betchCallFund1() {
             //处理响应结果
             console.log(response);
 
-            if (response != null && response.status == 1) {
+            if (response != null && (response.status == 1 || response.status == 200)) {
 
                 let trans_from_obj = {
                     t_status: 4, // 上链成功

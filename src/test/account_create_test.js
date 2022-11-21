@@ -10,7 +10,8 @@ let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[2];
 const {
     getPrivateKeyByAccountAndPassword
 } = require("../chain/accountProUtils");
-
+var Web3 = require("web3");
+let web3o = new Web3("http://ctblock.cn/blockChain");
 async function createAccountWeb3() {
     let password = "12345678";
     let startTime = new Date().getTime();
@@ -139,33 +140,54 @@ async function testMintNodeHasUnlockAccount() {
 const fetch = require("node-fetch");
 
 async function haha() {
-    const FormData = require("form-data");
-    var formdata = new FormData();
-    formdata.append("key", "qianyidata");
-    // console.log(tokenId)
-    formdata.append("status", "true");
-    var requestOptions = {
-        method: "POST",
-        body: formdata,
-        redirect: "follow",
-    };
 
-    let url = "http://www.xingchengwlkj.com/api/notify/nftgoods"
-    let responseRet = await fetch(url, requestOptions)
-        .then((response) => {
-            console.log("回调返回原始内容status:", response.status);
-            console.log("回调返回原始内容statusText:", response.statusText);
-            return response.json();
-        })
-        .then((response) => {
-            console.log("回调返回处理结果:", response);
-            return {data: response};
-        })
-        .catch((err) => {
-            console.trace("回调错误:", err, ",tokenId", tokenId);
-            return {data: null, err: err};
-        });
-    console.log(responseRet)
+    // console.log("0xDD3ab80BC8C40ea5bF1cb4ef4f072026C2B221bAc12345678901667291169058")
+    // let a = web3o.utils.hexToNumberString("0xDD3ab80BC8C40ea5bF1cb4ef4f072026C2B221bAc12345678901667291169058")
+    // console.log(a)
+
+    let result = ethers.utils.defaultAbiCoder.encode(
+        [
+            "address",
+        ],
+       [ "0xcEBcbF16494EDbAd87d7FEAb0260ADe82c571E5D"]
+    );
+    // 0x0000000000000000000000009771a512c1a17b6f61d661c37ba9797236493ce7
+    // 0x000000000000000000000000cebcbf16494edbad87d7feab0260ade82c571e5d
+    console.log(result)
+   let aa =  ethers.utils.stripHexPrefix("0x000000000000000000000000cebcbf16494edbad87d7feab0260ade82c571e5d");
+    console.log(aa)
+    // const FormData = require("form-data");
+    // var formdata = new FormData();
+    // formdata.append("key", "qianyidata");
+    // // console.log(tokenId)
+    // formdata.append("status", "true");
+    // var requestOptions = {
+    //     method: "POST",
+    //     body: formdata,
+    //     redirect: "follow",
+    //     headers: {
+    //         'Accept':'application/json'
+    //     }
+    // };
+    //
+    // let url = "http://www.xingchengwlkj.com/api/notify/nftgoods"
+    // let responseRet = await fetch(url, requestOptions)
+    //     .then((response) => {
+    //         console.log("回调返回原始内容status:", response.status);
+    //         console.log("回调返回原始内容statusText:", response.statusText);
+    //         console.log("回调返回原始内容statusText:", response.headers);
+    //         return response.json();
+    //     })
+    //     .then((response) => {
+    //         console.log("回调返回处理结果:", response);
+    //         return {data: response};
+    //     })
+    //     .catch((err) => {
+    //         console.trace("回调错误:", err, ",tokenId");
+    //         return {data: null, err: err};
+    //     });
+    // console.log(responseRet)
 }
 
 haha();
+// setInterval(haha, 3000)

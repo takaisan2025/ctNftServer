@@ -16,7 +16,6 @@ function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一
     return newArr
 }
 
-var format = {language: "sql", indent: "  "};
 const {
     execSql,
     execSqlAll,
@@ -31,8 +30,7 @@ async function main() {
     var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "trans_form_list",
         "selectByStatus",
-        params,
-        format
+        params
     ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {

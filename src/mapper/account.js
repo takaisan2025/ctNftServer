@@ -1,30 +1,28 @@
 const {exec, escape} = require("../db/mysqlPool");
 const xss = require("xss");
-const responseFun = (code, err, result) => {
+const responseFun = (code, message, result) => {
     if (code == 500) {
-        console.trace(err);
+        console.trace(message);
     }
-    if (err == null || err == "") {
-        err = {
-            message: "null",
-        };
+    if (message == null || message == "") {
+        message = "null";
     }
     return {
         code: code,
-        message: err.message,
+        message: message,
         result: result,
     };
 };
 
-const responseFunStr = (code, err, result) => {
-    if (err == null || err == "") {
-        err = {
+const responseFunStr = (code, message, result) => {
+    if (message == null || message == "") {
+        message = {
             message: "null",
         };
     }
     return JSON.stringify({
         code: code,
-        message: err.message,
+        message: message,
         result: result,
     });
 };

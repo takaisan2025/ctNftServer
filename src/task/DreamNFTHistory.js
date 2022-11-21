@@ -81,7 +81,6 @@ async function getNftHistory(fromBlock, toBlock) {
 }
 
 async function processResult(result) {
-    var format = {language: "sql", indent: "  "};
     for (let resultKey in result) {
         let tempObj = result[resultKey];
         if (!tempObj.removed) {  // 非失败交易
@@ -102,8 +101,8 @@ async function processResult(result) {
                     "selectByAddress",
                     {
                         address: from
-                    },
-                    format
+                    }
+
                 ).result)
                     .then((ret) => {
                         return ret;
@@ -116,8 +115,8 @@ async function processResult(result) {
                     "selectByAddress",
                     {
                         address: to
-                    },
-                    format
+                    }
+
                 ).result)
                     .then((ret) => {
                         return ret;
@@ -133,8 +132,8 @@ async function processResult(result) {
                     {
                         wallet_address: from,
                         hash: transactionHash
-                    },
-                    format
+                    }
+
                 ).result)
                     .then((ret) => {
                         return ret;
@@ -158,8 +157,8 @@ async function processResult(result) {
                             contract_address: scoreTokenAddress,
                             remark: "",
                             user_id: resultFrom == null ? "" : resultFrom.id
-                        },
-                        format
+                        }
+
                     ).result;
                     await execSql(sqlFrom)
                         .then((ret) => {
@@ -177,8 +176,8 @@ async function processResult(result) {
                     {
                         wallet_address: to,
                         hash: transactionHash
-                    },
-                    format
+                    }
+
                 ).result)
                     .then((ret) => {
                         return ret;
@@ -203,8 +202,8 @@ async function processResult(result) {
                             contract_address: scoreTokenAddress,
                             remark: "",
                             user_id: resultTo == null ? "" : resultTo.id
-                        },
-                        format
+                        }
+
                     ).result;
                     await execSql(sqlTo)
                         .then((ret) => {
@@ -221,13 +220,12 @@ async function processResult(result) {
     }
 
     return;
-    var format = {language: "sql", indent: "  "};
     var params = {status: 0};
     var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
-        params,
-        format
+        params
+
     ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
@@ -253,8 +251,8 @@ async function processResult(result) {
         var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
-            paramsUp,
-            format
+            paramsUp
+
         ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {

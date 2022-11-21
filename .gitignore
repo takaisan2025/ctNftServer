@@ -12,7 +12,7 @@ node_modules
 test.js
 gen_test.js
 src/mapper/test.js
-test
+test/
 .gitignore
 public
 db.js
@@ -20,3 +20,4 @@ dbPhp.js
 GlobalConfig.json
 ctServer.zip
 备注.txt
+.idea/

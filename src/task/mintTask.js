@@ -361,7 +361,7 @@ async function betchMint() {
                             //     });
                             // console.log(recept);
                             // if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                            //     throw {message: "Transaction Reverted"};
+                            //     throw  "Transaction Reverted";
                             // }
 
                             // let recept1 = await tx.wait();
@@ -517,7 +517,7 @@ async function betchMint() {
                         //     });
                         // console.log(recept);
                         // if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                        //     throw {message: "Transaction Reverted"};
+                        //     throw  "Transaction Reverted";
                         // }
 
                         // let recept1 = await tx.wait();
@@ -593,7 +593,7 @@ async function transfer(value, toAddress) {
         let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
         console.log("recept1:", recept1);
         if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-            throw {message: "Transaction Reverted"};
+            throw  "Transaction Reverted";
         }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {

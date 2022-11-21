@@ -84,7 +84,7 @@ async function createAccountXX() {
 
 }
 
-// createAccountWeb3();
+createAccountWeb3();
 // createAccountEthers();
 // createAccountX();
 // createAccountXX();
@@ -189,5 +189,5 @@ async function haha() {
     // console.log(responseRet)
 }
 
-haha();
+// haha();
 // setInterval(haha, 3000)

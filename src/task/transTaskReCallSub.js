@@ -12,8 +12,6 @@ let web3o = new Web3("http://ctblock.cn/blockChain");
 const fetch = require("node-fetch");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 
-var format = {language: "sql", indent: "  "};
-
 async function betchCallFund1() {
     let transList = JSON.parse(process.env.spTransList);
     for (let retKey in transList) {
@@ -80,8 +78,7 @@ async function betchCallFund1() {
                 var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
+                    paramsUp
                 ).result;
                 let result = await execSql(sqlUp)
                     .then((ret) => {
@@ -103,8 +100,7 @@ async function betchCallFund1() {
                 var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
+                    paramsUp
                 ).result;
                 let result = await execSql(sqlUp);
             } else {
@@ -120,8 +116,7 @@ async function betchCallFund1() {
                 var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
-                    paramsUp,
-                    format
+                    paramsUp
                 ).result;
                 let result = await execSql(sqlUp);
             }

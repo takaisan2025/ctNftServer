@@ -29,7 +29,6 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 });
 
 async function betchTransfer() {
-    var format = {language: "sql", indent: "  "};
     var params = {t_status: 1, is_pay: 1};
     var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "NftChargeListMapper",
@@ -124,7 +123,6 @@ async function betchTransfer() {
 }
 
 async function betchHashQuery() {
-    var format = {language: "sql", indent: "  "};
     var params = {t_status: 5, is_pay: 1};
     var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "NftChargeListMapper",
@@ -162,7 +160,7 @@ async function betchHashQuery() {
             continue;
         } else {
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                console.log({message: "Transaction Reverted"});
+                console.log("Transaction Reverted");
             }
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
                 t_statusStorage = 7;
@@ -181,8 +179,7 @@ async function betchHashQuery() {
         var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
             "NftChargeListMapper",
             "updateByPrimaryKeySelective",
-            paramsUp,
-            format
+            paramsUp
         ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {

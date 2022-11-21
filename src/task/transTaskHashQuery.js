@@ -27,7 +27,6 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 });
 const ethUtil = require("ethereumjs-util");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
-var format = {language: "sql", indent: "  "};
 
 async function betchHashQuery() {
     var params = {t_status: 5};
@@ -143,7 +142,7 @@ async function transfer(privateKey, value, toAddress) {
         let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
         console.log("recept1:", recept1);
         if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-            throw {message: "Transaction Reverted"};
+            throw "Transaction Reverted";
         }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {

@@ -43,13 +43,12 @@ let gasPrice = "5000100000000";
 let isGasPrice = false;
 
 async function betchGive() {
-    var format = {language: "sql", indent: "  "};
     var params = {status: 0};
     var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
-        params,
-        format
+        params
+
     ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
@@ -163,8 +162,8 @@ async function betchGive() {
         var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
-            paramsUp,
-            format
+            paramsUp
+
         ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {
@@ -185,13 +184,13 @@ async function betchGive() {
 }
 
 async function betchHashQuery() {
-    var format = {language: "sql", indent: "  "};
+
     var params = {status: 1};
     var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
-        params,
-        format
+        params
+
     ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
@@ -219,7 +218,7 @@ async function betchHashQuery() {
             // t_statusStorage = 4;
             continue;
         } else if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-            console.log({message: "Transaction Reverted"});
+            console.log("Transaction Reverted");
             t_statusStorage = 3;
         } else {
             t_statusStorage = 2;
@@ -234,8 +233,8 @@ async function betchHashQuery() {
         var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
-            paramsUp,
-            format
+            paramsUp
+
         ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {

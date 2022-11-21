@@ -44,7 +44,6 @@ async function betGetHistory(fromBlock, toBlock) {
 }
 
 async function processResult(result) {
-    var format = {language: "sql", indent: "  "};
     for (let resultKey in result.result) {
         let tempObj = result.result[resultKey];
         // console.log(tempObj);

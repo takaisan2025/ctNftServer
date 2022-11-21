@@ -37,7 +37,6 @@ const ethUtil = require("ethereumjs-util");
 const {PasswordError} = require("../chain/responseError");
 const {getPrivateKeyByAccountAndPassword} = require("../chain/accountProUtils");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
-var format = {language: "sql", indent: "  "};
 
 async function betchTransfer() {
     let transList = JSON.parse(process.env.spTransList);
@@ -64,8 +63,7 @@ async function betchTransfer() {
             var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam(
                 "collect",
                 "selectByAddress",
-                params1,
-                format
+                params1
             ).result;
             let collectDetail = await execSql(sql1)
                 .then((ret) => {
@@ -283,8 +281,7 @@ async function betchTransfer() {
                     var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
-                        paramsUp,
-                        format
+                        paramsUp
                     ).result;
                     await execSql(sqlUp);
                 } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
@@ -300,8 +297,7 @@ async function betchTransfer() {
                     var sqlUp1 = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
-                        paramsUp1,
-                        format
+                        paramsUp1
                     ).result;
                     await execSql(sqlUp1);
                 } else if ("replacement fee too low" == gasLimitRet.err) {
@@ -368,8 +364,7 @@ async function betchTransfer() {
                     var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
-                        paramsUp,
-                        format
+                        paramsUp
                     ).result;
                     let result = await execSql(sqlUp)
                         .then((ret) => {
@@ -392,8 +387,7 @@ async function betchTransfer() {
                         var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                             "trans_form_list",
                             "updateByPrimaryKeySelective",
-                            paramsUp,
-                            format
+                            paramsUp
                         ).result;
                         await execSql(sqlUp);
                         continue;
@@ -417,8 +411,7 @@ async function betchTransfer() {
                         var sqlUp1 = getMysqlSqlByTabNameAndSqlNameAndParam(
                             "trans_form_list",
                             "updateByPrimaryKeySelective",
-                            paramsUp1,
-                            format
+                            paramsUp1
                         ).result;
                         await execSql(sqlUp1);
                         continue;
@@ -468,7 +461,7 @@ async function transfer(privateKey, value, toAddress) {
         // let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
         // console.log("recept1:", recept1);
         // if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-        //     throw {message: "Transaction Reverted"};
+        //     throw "Transaction Reverted";
         // }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {

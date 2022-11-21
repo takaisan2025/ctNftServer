@@ -93,7 +93,7 @@ async function setSettleTask() {
         });
     console.log(recept);
     if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-        throw {message: "Transaction Reverted"};
+        throw "Transaction Reverted";
     }
 
     console.log("setSettleTask All Done!");
@@ -173,7 +173,7 @@ async function resetTask() {
         });
     console.log(recept);
     if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-        throw {message: "Transaction Reverted"};
+        throw "Transaction Reverted";
     }
     console.log("resetTask All Done!");
 }

@@ -271,7 +271,7 @@ async function collectInit(
                 });
             // console.log(recept);
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                throw {message: "Transaction Reverted"};
+                throw "Transaction Reverted";
             }
 
             return {err: null, hash: tx.hash};
@@ -305,7 +305,7 @@ async function collectInit(
                 });
             // console.log(recept);
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                throw {message: "Transaction Reverted"};
+                throw "Transaction Reverted";
             }
 
             return {err: null, hash: tx.hash};
@@ -340,7 +340,7 @@ async function collectInit(
                 });
             console.log(recept);
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                throw {message: "Transaction Reverted"};
+                throw "Transaction Reverted";
             }
 
             return {err: null, hash: tx.hash};
@@ -443,7 +443,7 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
             });
         console.log(recept);
         if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-            throw {message: "Transaction Reverted"};
+            throw "Transaction Reverted";
         }
 
         return {err: null, hash: tx.hash};

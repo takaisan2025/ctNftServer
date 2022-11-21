@@ -66,8 +66,8 @@ const severHandle = (req, res) => {
     // console.log("START!")
     const clientIp = requestIp.getClientIp(req);
     if (iPBlackList.includes(clientIp)) {
-        console.error({message: "request denied!", clientIp: clientIp})
-        res.end(JSON.stringify(responseFun(403, {message: "request denied!"}, "")));
+        console.error({info: "request denied!", clientIp: clientIp})
+        res.end(JSON.stringify(responseFun(403, "request denied!", "")));
         return;
 
     } else {
@@ -84,8 +84,8 @@ const severHandle = (req, res) => {
 
         getPostData(req).then(async (postData) => {
             if (req.path.indexOf('private') == -1 && JSON.stringify(postData) === '{}') {
-                console.log(JSON.stringify(responseFun(400, {message: "参数错误"}, "")));
-                res.end(JSON.stringify(responseFun(400, {message: "参数错误"}, "")));
+                console.log(JSON.stringify(responseFun(400, "参数错误", "")));
+                res.end(JSON.stringify(responseFun(400, "参数错误", "")));
                 return;
             }
             req.body = postData;
@@ -103,7 +103,7 @@ const severHandle = (req, res) => {
                 if (e.message) {
                     res.end(JSON.stringify(e));
                 } else {
-                    res.end(JSON.stringify(responseFun(500, {message: "process error!"}, "")));
+                    res.end(JSON.stringify(responseFun(500, "process error!", "")));
                 }
                 return;
             }

@@ -1,8 +1,5 @@
 const {
     execSql,
-    execSqlAll,
-    responseFun,
-    responseFunStr,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const FormData = require("form-data");
@@ -10,6 +7,7 @@ const Web3 = require("web3");
 let web3o = new Web3("http://ctblock.cn/blockChain");
 // let web3o = new Web3("https://exploder.coozw.com/blockChain");
 const fetch = require("node-fetch");
+const {responseFun} = require("../mapper/account");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 
 async function betchCallFund1() {
@@ -41,7 +39,7 @@ async function betchCallFund1() {
             }
             formdata.append("hash", hash);
             // console.log("formdata:", formdata)
-            var requestOptions = {
+            const requestOptions = {
                 method: "POST",
                 body: formdata,
                 redirect: "follow",

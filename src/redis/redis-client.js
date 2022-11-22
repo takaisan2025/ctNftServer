@@ -1,6 +1,7 @@
 // redis-client.js
 // 引用redisClient对象
 const redisClient = require('./redis')
+const redisPrefix = require('./redis-prefix.json')
 /**
  * redis setString function
  * @param key
@@ -8,6 +9,7 @@ const redisClient = require('./redis')
  * @param expire
  */
 const setString = (key, value, expire) => {
+    key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.set(key, value, function (err, result) {
             if (err) {
@@ -27,6 +29,7 @@ const setString = (key, value, expire) => {
  * @param key
  */
 const getString = (key) => {
+    key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.get(key, function (err, result) {
             if (err) {
@@ -42,6 +45,7 @@ const getString = (key) => {
  * @param key
  */
 const removeString = (key) => {
+    key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.get(key, function (err, result) {
             if (err) {
@@ -55,6 +59,7 @@ const removeString = (key) => {
 
 // rpush 将给定值推入列表的右端 返回值 当前列表长度
 const rpush = (key, token) => {
+    key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.rpush(key, [token], function (err, result) {
             if (err) {
@@ -66,6 +71,7 @@ const rpush = (key, token) => {
 }
 // 查询list的值
 const lrange = (key, startIndex = 0, stopIndex = -1) => {
+    key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.lrange(key, startIndex, stopIndex, function (err, result) {
             if (err) {
@@ -77,6 +83,7 @@ const lrange = (key, startIndex = 0, stopIndex = -1) => {
 }
 // 清除list中n个值为value的项
 const lrem = (key, n = 1, value) => {
+    key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.lrem(key, n, value, function (err, result) {
             if (err) {

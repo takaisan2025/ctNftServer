@@ -1,15 +1,8 @@
 const {
-    isJson,
-    stripHexPrefix,
-    validateAddress,
-    checkURL,
     isEmpty
 } = require("../rules/rules");
 const {
     execSql,
-    execSqlAll,
-    responseFun,
-    responseFunStr,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const gasConfig = require("../config/gasConfig.json");
@@ -34,6 +27,7 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const ethUtil = require("ethereumjs-util");
+const {responseFun} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
 const {getPrivateKeyByAccountAndPassword} = require("../chain/accountProUtils");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
@@ -86,7 +80,7 @@ async function betchTransfer() {
             // try {
             let wallet;
 
-            let decWalletResult = await getPrivateKeyByAccountAndPassword(accountItem,  accountItem.psd);
+            let decWalletResult = await getPrivateKeyByAccountAndPassword(accountItem, accountItem.psd);
             if (decWalletResult.err != null) {
                 return PasswordError;
             } else {

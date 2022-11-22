@@ -3,13 +3,9 @@ const {
     execSqlAll,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
-const FormData = require("form-data");
 const Web3 = require("web3");
 let web3o = new Web3("http://ctblock.cn/blockChain");
-// let web3o = new Web3("https://exploder.coozw.com/blockChain");
 let web3 = web3o;
-const fetch = require("node-fetch");
-let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
@@ -29,8 +25,8 @@ const ethUtil = require("ethereumjs-util");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 
 async function betchHashQuery() {
-    var params = {t_status: 5};
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    let params = {t_status: 5};
+    let sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "trans_form_list",
         "selectByStatus",
         params
@@ -48,16 +44,6 @@ async function betchHashQuery() {
         console.log(transList[retKey]);
         const {
             id,
-            t_from,
-            t_to,
-            amount,
-            reback_url,
-            token_id,
-            type,
-            orderId,
-            collectAddress,
-            t_status,
-            create_time,
             update_time,
             hash
         } = transList[retKey];
@@ -93,8 +79,8 @@ async function betchHashQuery() {
                 };
                 console.log("nftUpdateSelective:", trans_from_obj);
 
-                var paramsUp = trans_from_obj;
-                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                let paramsUp = trans_from_obj;
+                let sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp

@@ -7,7 +7,6 @@ const {
 const {
     execSql,
     execSqlAll,
-    responseFun,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const web3 = require("web3");
@@ -18,6 +17,7 @@ const TRANSACTION_RECEIPT_STATUS = {
     REVERTED: 0,
 };
 const ethers = require("ethers");
+const {responseFun} = require("../mapper/account");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];

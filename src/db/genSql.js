@@ -11,6 +11,10 @@ mybatisMapper.createMapper([
 ]);
 var format = {language: "mysql", indent: " ", linesBetweenQueries: 1, uppercase: true};
 let getMysqlSqlByTabNameAndSqlNameAndParam = function (tabName, sqlName, params) {
+
+    // 这里接入redis
+
+
     try {
         var sql = mybatisMapper.getStatement(
             tabName,

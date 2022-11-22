@@ -26,8 +26,18 @@ const TRANSACTION_RECEIPT_STATUS = {
   SUCCESS: 1,
   REVERTED: 0,
 };
-
+// const {
+//   getString,
+//   setString,
+//   removeString,
+//   rpush,
+//   lrange,
+//   lrem,
+// } = require("../redis/redis-client");
 // const gasConfig = require("../config/gasConfig.json");
+const pino = require("pino");
+// const expressPino = require('express-pino-logger');
+const logger = pino({ level: process.env.LOG_LEVEL || "debug" });
 const xss = require("xss");
 const ethers = require("ethers");
 const fetch = require("node-fetch");
@@ -39,8 +49,6 @@ const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
 const CtnftMToken = require("../contract/CtnftMToken.json");
 let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 const web3 = require("web3");
-const web3Utils = require("web3-utils");
-const web3Eth = require("web3-eth");
 let web3o = new web3("http://ctblock.cn/blockChain");
 const ipfsAPI = require("ipfs-api");
 const ipfsNode = ipfsAPI({
@@ -1309,6 +1317,12 @@ const handleUserRouter = async (req, res) => {
           return responseFun(RESPONSE_STATUS.ERROR, err, {});
         });
 
+      // await setString(
+      //   "WALLET_ACCOUNT_" + address,
+      //   JSON.stringify(decWalletResult.result),
+      //   600000
+      // );
+
       //    暂时插入数据库
       let nft = {
         address,
@@ -2026,64 +2040,64 @@ const handleUserRouter = async (req, res) => {
               throw "藏品库存不足";
             }
 
-            if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
-              transObjFrom = await execSql(
-                getMysqlSqlByTabNameAndSqlNameAndParam(
-                  "trans_form_list",
-                  "selectByFormAndTokenId",
-                  { token_id: tokenId, t_from: address }
-                ).result
-              )
-                .then((ret) => {
-                  return ret;
-                })
-                .catch((err) => {
-                  console.log("ERR:", err);
-                  return err;
-                });
-              transObjTo = await execSql(
-                getMysqlSqlByTabNameAndSqlNameAndParam(
-                  "trans_form_list",
-                  "selectByToAndTokenId",
-                  { token_id: tokenId, t_to: address }
-                ).result
-              )
-                .then((ret) => {
-                  return ret;
-                })
-                .catch((err) => {
-                  console.log("ERR:", err);
-                  return err;
-                });
-
-              juAmount = 0;
-              if (transObjFrom && transObjFrom["sumAmount"]) {
-                juAmount -= Number(transObjFrom["sumAmount"]);
-              }
-
-              if (transObjTo && transObjTo["sumAmount"]) {
-                juAmount += Number(transObjTo["sumAmount"]);
-              }
-              // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
-              //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
-              //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
-
-              //这里对余额进行判断
-              //判断是否是发行方,然后根据发行量进行判断
-              if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
-                // if (supply > 0) {   // 这里再判断一次, 按理12是都是大于0的
-                if (Number(supply) - Number(juAmount) <= 0) {
-                  throw "db balance is enough!";
-                }
-                // }
-              } else {
-                // 根据数据库的转账数量来判断
-                // 不是发行方,根据数据库转入转出记录判断
-                if (Number(juAmount) <= 0) {
-                  throw "db balance is enough!";
-                }
-              }
-            }
+            // if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
+            //     transObjFrom = await execSql(
+            //         getMysqlSqlByTabNameAndSqlNameAndParam(
+            //             "trans_form_list",
+            //             "selectByFormAndTokenId",
+            //             {token_id: tokenId, t_from: address}
+            //         ).result
+            //     )
+            //         .then((ret) => {
+            //             return ret;
+            //         })
+            //         .catch((err) => {
+            //             console.log("ERR:", err);
+            //             return err;
+            //         });
+            //     transObjTo = await execSql(
+            //         getMysqlSqlByTabNameAndSqlNameAndParam(
+            //             "trans_form_list",
+            //             "selectByToAndTokenId",
+            //             {token_id: tokenId, t_to: address}
+            //         ).result
+            //     )
+            //         .then((ret) => {
+            //             return ret;
+            //         })
+            //         .catch((err) => {
+            //             console.log("ERR:", err);
+            //             return err;
+            //         });
+            //
+            //     juAmount = 0;
+            //     if (transObjFrom && transObjFrom["sumAmount"]) {
+            //         juAmount -= Number(transObjFrom["sumAmount"]);
+            //     }
+            //
+            //     if (transObjTo && transObjTo["sumAmount"]) {
+            //         juAmount += Number(transObjTo["sumAmount"]);
+            //     }
+            //     // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
+            //     //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
+            //     //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
+            //
+            //     //这里对余额进行判断
+            //     //判断是否是发行方,然后根据发行量进行判断
+            //     if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
+            //         // if (supply > 0) {   // 这里再判断一次, 按理12是都是大于0的
+            //         if (Number(supply) - Number(juAmount) <= 0) {
+            //             throw "db balance is enough!";
+            //         }
+            //         // }
+            //     } else {
+            //         // 根据数据库的转账数量来判断
+            //         // 不是发行方,根据数据库转入转出记录判断
+            //         if (Number(juAmount) <= 0) {
+            //             throw "db balance is enough!";
+            //         }
+            //     }
+            // }
 
             // save db
             //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
@@ -2298,6 +2312,7 @@ const handleUserRouter = async (req, res) => {
     return responseFun(RESPONSE_STATUS.SUCCESS, null, result);
   }
 };
+
 function callback(progress) {
   console.log("Encrypting: " + parseInt(progress * 100) + "% complete");
 }

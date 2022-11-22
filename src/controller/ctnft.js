@@ -25,14 +25,6 @@ const execSqlAll = (sql) => {
     });
 };
 
-const accountSelectByKeyStore = (key) => {
-    // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
-    const sql = ` select * from account where address = '${xss(address)}'`;
-    return exec(sql).then((rows) => {
-        return rows[0] || null;
-    });
-};
-
 const accountUpdateSelective = (keystore) => {
     // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
     const sql = `update account set

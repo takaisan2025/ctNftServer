@@ -20,8 +20,6 @@ function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一
 const {
     execSql,
     execSqlAll,
-    responseFun,
-    responseFunStr,
 } = require("../controller/ctnft");
 let noAddress = null
 

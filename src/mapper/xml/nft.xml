@@ -20,12 +20,12 @@
         where tokenId = #{tokenId}
     </select>
     <delete id="deleteByPrimaryKey">
-        
+
         delete from nft
         where id = ${id}
     </delete>
     <insert id="insert" keyColumn="id" keyProperty="id" useGeneratedKeys="true">
-        
+
         insert into nft (collectAddress, address, premetadata,
         imgPath, metaData, metaDataSource,
         isFinish, owner, creator,
@@ -254,7 +254,7 @@
         where id = ${id}
     </update>
     <update id="updateByPrimaryKey">
-        
+
         update nft
         set collectAddress = #{collectAddress},
         address = #{address},

@@ -1,8 +1,4 @@
 const {
-    nftUpdateSelectiveIsFinish,
-    responseFun,
-} = require("../controller/ctnft");
-const {
     queryNonce,
     insertNonce,
     updateNonce
@@ -23,6 +19,7 @@ const TRANSACTION_RECEIPT_STATUS = {
 };
 const ScoreToken = require("../contract/ScoreToken.json");
 const ethers = require("ethers");
+const {responseFun} = require("../mapper/account");
 const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
@@ -48,7 +45,6 @@ async function betchGive() {
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
         params
-
     ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
@@ -163,7 +159,6 @@ async function betchGive() {
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
             paramsUp
-
         ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {
@@ -190,7 +185,6 @@ async function betchHashQuery() {
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
         params
-
     ).result;
     let transList = await execSqlAll(sql)
         .then((ret) => {
@@ -234,7 +228,6 @@ async function betchHashQuery() {
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
             paramsUp
-
         ).result;
         let result = await execSql(sqlUp)
             .then((ret) => {

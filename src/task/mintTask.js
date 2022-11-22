@@ -15,6 +15,14 @@ const ipfsNode = ipfsAPI({
     port: GlobalConfig.IPFS[1].PORT,
     protocol: GlobalConfig.IPFS[1].PROTOCOL,
 });
+// const {
+//     getString,
+//     setString,
+//     removeString,
+//     rpush,
+//     lrange,
+//     lrem,
+// } = require('../redis/redis-client');
 const {
     graphiqlHashQuery
 } = require("../broapi/broapi");
@@ -94,6 +102,7 @@ function Mint1155Data(
  */
 
 async function fileUploadIpfs() {
+    // let nftSql = getMysqlSqlByTabNameAndSqlNameAndParam("nft","");
     let nfts = nftSelectSelectiveStatus(0); // 资源未上链ipfs的条目
     let nftArr = await nfts
         .then((ret) => {

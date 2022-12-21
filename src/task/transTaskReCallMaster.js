@@ -39,7 +39,7 @@ async function main() {
             return err;
         });
 
-    let processedTransList = spArr(transList, 200);
+    let processedTransList = spArr(transList, 250);
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {
         var workerProcess = child_process.spawn('node', ['src/task/transTaskReCallSub.js', i], {

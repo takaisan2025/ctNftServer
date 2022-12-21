@@ -195,7 +195,7 @@ const handleUserRouter = async (req, res) => {
   }
 
   // 管理用户相关开口开始
-  // 管理用户相关接口结束
+  // 管理用户相关接口Over
 
   // 创建账户
   if (req.method === "POST" && req.path === "/api/account/createAccount") {
@@ -1884,6 +1884,7 @@ const handleUserRouter = async (req, res) => {
   }
   // 通过个人身份转账接口
   if (req.method === "POST" && req.path === "/api/account/transfer_f") {
+    logger.debug("In :%s",new Date().getTime())
     const { address, password, amount, to, tokenId, rebackUrl, orderId } =
       req.body;
     if (isEmpty(password).flag) {
@@ -1908,14 +1909,14 @@ const handleUserRouter = async (req, res) => {
       // if (address.toLowerCase() == to.toLowerCase()) {
       //     throw  "transfer is owner!"
       // }
-
+      logger.debug("Start Query Account:%s",new Date().getTime())
       let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
         "AccountMapper",
         "selectByAddress",
         { address: address }
       );
       let ret = await execSql(sqlResult.result);
-
+      logger.debug("Over Query Account:%s",new Date().getTime())
       if (ret == null) {
         return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
       }
@@ -1926,10 +1927,12 @@ const handleUserRouter = async (req, res) => {
       }
 
       //
+      logger.debug("Start dec account:%s",new Date().getTime())
       let decWalletResult = await getPrivateKeyByAccountAndPassword(
         ret,
         password
       );
+      logger.debug("Dec Over Query 账户:%s",new Date().getTime())
       if (decWalletResult.err != null) {
         return PasswordError;
       } else {
@@ -1938,6 +1941,7 @@ const handleUserRouter = async (req, res) => {
 
       //这里直接查询合约地址
 
+      logger.debug("Start Query NFT:%s",new Date().getTime())
       var params = { tokenId: tokenId };
       var sqlQueryByTokenId = getMysqlSqlByTabNameAndSqlNameAndParam(
         "nft",
@@ -1955,11 +1959,12 @@ const handleUserRouter = async (req, res) => {
       if (nftObj == null) {
         throw "nft is not exist!";
       }
-
+      logger.debug("Over Query NFT:%s",new Date().getTime())
       let supply = nftObj["supply"];
       collectAddress = nftObj["collectAddress"];
 
       var params = { address: nftObj["collectAddress"] }; // 草田积分合约
+      logger.debug("开始Query Contract:%s",new Date().getTime())
       var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
         "collect",
         "selectByAddress",
@@ -1973,6 +1978,7 @@ const handleUserRouter = async (req, res) => {
           console.log("ERR:", err);
           return err;
         });
+      logger.debug("Over Query Contract:%s",new Date().getTime())
       if (collectDetail == null) {
         throw "collectAddress is error";
       }
@@ -2015,11 +2021,13 @@ const handleUserRouter = async (req, res) => {
           // TODO 这里要进行余额判断
           // 这里对藏品余额进行判断
           // 这里对手续费余额进行判断
+          logger.debug("Start Query Balance:%s",new Date().getTime())
           var balanceRet = await queryBalanceAndTokenBalance(
             address,
             collectAddress,
             tokenId
           );
+          logger.debug("Over Query Balance:%s",new Date().getTime())
           if (balanceRet.err != null) {
             throw err;
           } else {
@@ -2120,6 +2128,7 @@ const handleUserRouter = async (req, res) => {
             return await execSql(sqlQueryByTokenIdAndForm)
               .then((ret) => {
                 // betchTransfer();
+                logger.debug("Out:%s",new Date().getTime())
                 return responseFun(RESPONSE_STATUS.SUCCESS, "", { ret: ret });
               })
               .catch((err) => {
@@ -2134,7 +2143,7 @@ const handleUserRouter = async (req, res) => {
             ERC721Ctnft.abi, // 10 和 12 是同一个abi
             customHttpProvider
           );
-          //    查询协议tokenId的总发行
+          //    Query 协议tokenId的总发行
           supply = 1;
 
           //    对用户余额做判断, 这里会存在线程安全问题, 所以采用两种方式串行来确保将安全问题降到最小

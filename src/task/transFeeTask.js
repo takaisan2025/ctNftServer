@@ -1,8 +1,8 @@
-const {
-    queryNonce,
-    insertNonce,
-    updateNonce
-} = require("../mapper/NftNonceMapper");
+// const {
+//     queryNonce,
+//     insertNonce,
+//     updateNonce
+// } = require("../mapper/NftNonceMapper");
 
 const {
     execSql,
@@ -57,27 +57,12 @@ async function betchTransfer() {
         let transactionCount1Mint;
 
         let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
-        var nonceResult = await queryNonce(walletSys.address);
-        let currTime = new Date().getTime();
-        if (nonceResult.length == 0) {
-            transactionCount1Mint =
-                await customHttpProvider.getTransactionCount(walletSys.address, "latest");
-            await insertNonce(walletSys.address, transactionCount1Mint);
-        } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-            // 超时,重新获取nonce
-            console.log("超时,重新获取nonce.....................");
-            transactionCount1Mint =
-                await customHttpProvider.getTransactionCount(walletSys.address, "latest");
-            await updateNonce(walletSys.address, transactionCount1Mint);
-        } else {
-            transactionCount1Mint = nonceResult[0].nonce;
-        }
 
         let txs = {
             to: t_to,
             // ... or supports ENS names
             // to: "ricmoo.firefly.eth"
-            nonce: transactionCount1Mint,
+            // nonce: transactionCount1Mint,
             // We must pass in the amount as wei (1 ether = 1e18 wei), so we
             // use this convenience function to convert ether to wei.
             gasPrice: web3.utils.numberToHex(0),
@@ -111,7 +96,6 @@ async function betchTransfer() {
                 console.error(responseFun(500, err, ""), id);
             });
         console.log("update TransFrom data:", result);
-        await updateNonce(walletSys.address, transactionCount1Mint + 1);
 
     }
     console.log("betchTransfer All Done!");

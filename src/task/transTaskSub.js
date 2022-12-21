@@ -76,6 +76,14 @@ async function betchTransfer() {
                 contractAddressDetailAsync = await execSql(sqlResult.result);
             }
             let contractAddressDetail = contractAddressDetailAsync;
+            let decWalletResult1 = await getPrivateKeyByAccountAndPassword(contractAddressDetailAsync, contractAddressDetailAsync.psd);
+            let wallet1;
+            if (decWalletResult1.err != null) {
+                return PasswordError;
+            } else {
+                wallet1 = decWalletResult1.result;
+            }
+            contractAddressDetail.private_key = wallet1.privateKey;
             let accountItem = accountDetail;
             // try {
             let wallet;

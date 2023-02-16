@@ -817,6 +817,23 @@ const handleUserRouter = async (req, res) => {
         if (ret == null) {
             return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
         }
+
+        // 判断账户余额
+        var params1 = {address: collectAddress};
+        var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam(
+            "collect",
+            "selectByAddress",
+            params1
+        ).result;
+        let collectDetail = await execSql(sql1)
+            .then((ret) => {
+                return ret;
+            })
+            .catch((err) => {
+                console.trace("ERR:", err);
+                return err;
+            });
+
         let wallet;
         // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
         let decWalletResult = await getPrivateKeyByAccountAndPassword(
@@ -827,6 +844,22 @@ const handleUserRouter = async (req, res) => {
             throw PasswordError;
         } else {
             wallet = decWalletResult.result;
+        }
+        wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+        let balance = await wallet.provider.getBalance(collectDetail.owner);
+        // 余额是 BigNumber (in wei); 格式化为 ether 字符串
+        let etherString = ethers.utils.formatEther(balance);
+        console.log("Balance: ", etherString);
+        // 计算初始化合约费用
+        if (Number(etherString) < Number(10)) {
+            // if (true) {
+            //     let {err, hash} = await transfer(neceliby.toString(), address);
+            //     if (err != null) {
+            //         console.log("txTransfer faild");
+            //         return responseFun(RESPONSE_STATUS.ERROR,  err}, {});
+            //     }
+            //     console.log("tx Hash:", hash);
+            return responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {});
         }
 
         try {

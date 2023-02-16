@@ -446,17 +446,21 @@ async function betchMint() {
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number("10")) {
-                        //    赠送手续费 20
-                        let neceliby1 = ethers.utils.parseEther(String(20));
-
-                        let {err, hash} = await transfer(neceliby1 + "", address);
-                        if (err != null) {
-                            //
-                            console.log("txTransfer faild");
-                            continue;
-                        }
-                        console.log("tx Hash:", hash);
+                    if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
+                        console.log("合约持有者余额不足, 请进行充值!", address);
+                        // await delNonce(address);
+                        continue;
+                    // if (Number(etherString) < Number("10")) {
+                    //     //    赠送手续费 20
+                    //     let neceliby1 = ethers.utils.parseEther(String(20));
+                    //
+                    //     let {err, hash} = await transfer(neceliby1 + "", address);
+                    //     if (err != null) {
+                    //         //
+                    //         console.log("txTransfer faild");
+                    //         continue;
+                    //     }
+                    //     console.log("tx Hash:", hash);
                     }
                     // console.log("nonce: " + nonce);
                     // console.log("nonce: " + transactionCount1Mint);

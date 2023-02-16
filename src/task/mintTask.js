@@ -1,4 +1,7 @@
 const {
+    isEmpty
+} = require("../rules/rules");
+const {
     nftUpdateSelectiveStatus,
     nftSelectSelectiveStatus,
     nftSelectSelectiveCreator,
@@ -446,10 +449,57 @@ async function betchMint() {
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
-                        console.log("合约持有者余额不足, 请进行充值!", address);
-                        // await delNonce(address);
-                        continue;
+                    var params1 = {address: collectAddress};
+                    if (Number(etherString) < Number(String(1))) {
+                        var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam(
+                            "collect",
+                            "selectByAddress",
+                            params1
+                        ).result;
+                        let collectDetail = await execSql(sql1)
+                            .then((ret) => {
+                                return ret;
+                            })
+                            .catch((err) => {
+                                console.trace("ERR:", err);
+                                return err;
+                            });
+                        let contractAddressDetailAsync;
+
+                        if (collectDetail.owner.toLowerCase() == address.toLowerCase()) {
+                            contractAddressDetailAsync = accountDetail;
+                        } else {
+                            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: collectDetail.owner})
+                            contractAddressDetailAsync = await execSql(sqlResult.result);
+                        }
+                        let contractAddressDetail = contractAddressDetailAsync;
+                        let decWalletResult1 = await getPrivateKeyByAccountAndPassword(contractAddressDetailAsync, contractAddressDetailAsync.psd);
+                        let wallet1;
+                        if (decWalletResult1.err != null) {
+                            return PasswordError;
+                        } else {
+                            wallet1 = decWalletResult1.result;
+                        }
+                        contractAddressDetail.private_key = wallet1.privateKey;
+
+                        let privateKeyA = contractAddressDetail.private_key;
+                        if (isEmpty(privateKeyA).flag) {
+                            continue;
+                        } else {
+                            let {err, hash} = await transfer(privateKeyA, ethers.utils.parseEther(String(1)), address);
+                            if (err != null) {
+                                console.log("txTransfer faild");
+                                continue;
+                            }
+                            console.log("tx Hash:", hash);
+                            continue;
+                        }
+
+                    }
+                    // if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
+                    //     console.log("合约持有者余额不足, 请进行充值!", address);
+                    //     // await delNonce(address);
+                    //     continue;
                     // if (Number(etherString) < Number("10")) {
                     //     //    赠送手续费 20
                     //     let neceliby1 = ethers.utils.parseEther(String(20));
@@ -461,7 +511,7 @@ async function betchMint() {
                     //         continue;
                     //     }
                     //     console.log("tx Hash:", hash);
-                    }
+                    // }
                     // console.log("nonce: " + nonce);
                     // console.log("nonce: " + transactionCount1Mint);
                     let overrides = {
@@ -588,9 +638,8 @@ async function betchMint() {
     }, 2000)
 }
 
-async function transfer(value, toAddress) {
-    let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
-    // console.log("nonce: " + nonce);
+async function transfer(privateKey, value, toAddress) {
+    let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
     let tx = {
         to: toAddress,
         // ... or supports ENS names
@@ -603,17 +652,44 @@ async function transfer(value, toAddress) {
     let txTransfer = await walletSys.sendTransaction(tx);
     console.log("txTransfer: :", txTransfer.hash);
     try {
-        let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
-        console.log("recept1:", recept1);
-        if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-            throw  "Transaction Reverted";
-        }
+        // let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
+        // console.log("recept1:", recept1);
+        // if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
+        //     throw "Transaction Reverted";
+        // }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {
         console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
         return {err, hash: null};
     }
 }
+//
+// async function transfer(value, toAddress) {
+//     let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
+//     // console.log("nonce: " + nonce);
+//     let tx = {
+//         to: toAddress,
+//         // ... or supports ENS names
+//         // to: "ricmoo.firefly.eth"
+//         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
+//         // use this convenience function to convert ether to wei.
+//         value: web3.utils.toHex(value),
+//     };
+//
+//     let txTransfer = await walletSys.sendTransaction(tx);
+//     console.log("txTransfer: :", txTransfer.hash);
+//     try {
+//         let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
+//         console.log("recept1:", recept1);
+//         if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
+//             throw  "Transaction Reverted";
+//         }
+//         return {err: null, hash: txTransfer.hash};
+//     } catch (err) {
+//         console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
+//         return {err, hash: null};
+//     }
+// }
 
 async function betchCallFund() {
     let nfts = nftSelectSelectiveStatus(7); // 上链成功  没有回调的

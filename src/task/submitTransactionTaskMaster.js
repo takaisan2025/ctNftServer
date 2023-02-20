@@ -24,35 +24,25 @@ const {
 let noAddress = null
 
 async function main() {
-    console.log("betchTransferThread Start !!")
+    console.log("betchSubmitTransferThread Start !!")
     let countTh = 0;
 
     var sql
     var params;
-    if (noAddress == null) {
-        params = {t_status: 1};
-        sql = get_mysql(
-            "trans_form_list",
-            "selectByStatus",
-            params
-        ).result;
-    } else {
-        params = {t_status: 1, t_from: noAddress};
-        // params = {t_status: 1, collectAddress: noAddress};
-        sql = get_mysql(
-            "trans_form_list",
-            "selectByStatusAndNoFrom",
-            params
-        ).result;
-    }
-    sql = sql.replace("! =", "!=")
+    params = {status: 0};
+    sql = get_mysql(
+        "NftTransactionMapper",
+        "selectByStatus",
+        params
+    ).result;
+
     // console.log("betchTransferThread", sql)
-    let transList_ret = await exec_sql_all(sql)
-    let transList = []
-    if (transList_ret.err != null) {
-        console.trace("ERR:", transList_ret.err);
+    let transList_ret01 = await exec_sql_all(sql);
+    if (transList_ret01.err != null) {
+        console.trace("ERR:", transList_ret01.err);
+        return transList_ret01.err;
     }
-    transList = transList_ret.result
+    let transList = transList_ret01.result
     let processedTransList = spArr(transList, 250);
 
     // console.log(processedTransList[0])
@@ -60,7 +50,7 @@ async function main() {
         // if (i == 0) {
         //     noAddress = null;
         // }
-        var workerProcess = child_process.spawn('node', ['src/task/transTaskSub.js', i], {
+        var workerProcess = child_process.spawn('node', ['src/task/submitTransactionTaskSub.js', i], {
             env: {
                 spTransList: JSON.stringify(processedTransList[i]),
                 PATH: process.env.PATH
@@ -93,7 +83,7 @@ async function main() {
             }
         });
     }
-    console.log("betchTransferThread End !!")
+    console.log("betchSubmitTransferThread End !!")
     if (processedTransList.length == 0) {
         setTimeout(() => {
             main()

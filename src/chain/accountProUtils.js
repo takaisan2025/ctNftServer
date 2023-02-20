@@ -18,7 +18,7 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 
-async function getPrivateKeyByAccountAndPassword(account, password) {
+async function getPriKey(account, password) {
     try {
 
         if (isEmpty(account.private_key).flag == true) {
@@ -45,5 +45,5 @@ async function getPrivateKeyByAccountAndPassword(account, password) {
 }
 
 module.exports = {
-    getPrivateKeyByAccountAndPassword
+    getPriKey
 };

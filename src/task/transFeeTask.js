@@ -5,11 +5,11 @@
 // } = require("../mapper/NftNonceMapper");
 
 const {
-    execSql,
-    execSqlAll,
+    exec_sql,
+    exec_sql_all,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
-const web3 = require("web3");
+const Web3 = require("web3");
 let privateKeySys = GlobalConfig.MINT_ACCOUNT.private_key; // mint pri
 
 const TRANSACTION_RECEIPT_STATUS = {
@@ -18,7 +18,7 @@ const TRANSACTION_RECEIPT_STATUS = {
 };
 const ethers = require("ethers");
 const {responseFun} = require("../mapper/account");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 
@@ -30,20 +30,18 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 
 async function betchTransfer() {
     var params = {t_status: 1, is_pay: 1};
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    var sql = get_mysql(
         "NftChargeListMapper",
         "selectByStatusAndPay",
         params
     ).result;
-    let transList = await execSqlAll(sql)
-        .then((ret) => {
-            return ret;
-        })
-        .catch((err) => {
-            console.log("ERR:", err);
-            return err;
-        });
+    let transList = []
+    let transList_ret = await exec_sql_all(sql);
+    if (transList_ret.err != null) {
+        console.log("ERR:", transList_ret.err);
+    }
 
+    transList = transList_ret.result
     for (let retKey in transList) {
         // console.log(ret[retKey]);
         const {
@@ -65,7 +63,7 @@ async function betchTransfer() {
             // nonce: transactionCount1Mint,
             // We must pass in the amount as wei (1 ether = 1e18 wei), so we
             // use this convenience function to convert ether to wei.
-            gasPrice: web3.utils.numberToHex(0),
+            // gasPrice: Web3.utils.numberToHex(0),
             value: ethers.utils.parseEther((pay_amount * rate).toString()),
         };
 
@@ -83,19 +81,18 @@ async function betchTransfer() {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+        var sqlUp = get_mysql(
             "NftChargeListMapper",
             "updateByPrimaryKeySelective",
             paramsUp
         ).result;
-        let result = await execSql(sqlUp)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                console.error(responseFun(500, err, ""), id);
-            });
-        console.log("update TransFrom data:", result);
+        let result02 = await exec_sql(sqlUp);
+        if (result02.err != null) {
+            console.error(responseFun(500, err, ""), id);
+        } else {
+            return result02.result;
+        }
+        console.log("update TransFrom data:", result02.result);
 
     }
     console.log("betchTransfer All Done!");
@@ -108,20 +105,19 @@ async function betchTransfer() {
 
 async function betchHashQuery() {
     var params = {t_status: 5, is_pay: 1};
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    var sql = get_mysql(
         "NftChargeListMapper",
         "selectByStatusAndPay",
         params
     ).result;
-    let transList = await execSqlAll(sql)
-        .then((ret) => {
-            return ret;
-        })
-        .catch((err) => {
-            console.log("ERR:", err);
-            return err;
-        });
 
+    let transList = []
+    let transList_ret = await exec_sql_all(sql);
+    if (transList_ret.err != null) {
+        console.log("ERR:", transList_ret.err);
+    }
+
+    transList = transList_ret.result
     for (let retKey in transList) {
         console.log(transList[retKey]);
         const {
@@ -132,7 +128,6 @@ async function betchHashQuery() {
             hash
         } = transList[retKey];
         let recept = await customHttpProvider.getTransactionReceipt(hash);
-        console.log(recept);
 
         // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
         // save db
@@ -160,18 +155,17 @@ async function betchHashQuery() {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+        var sqlUp = get_mysql(
             "NftChargeListMapper",
             "updateByPrimaryKeySelective",
             paramsUp
         ).result;
-        let result = await execSql(sqlUp)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                console.error(responseFun(500, err, ""), id);
-            });
+        let result03 = await exec_sql(sqlUp);
+        if (result03.err != null) {
+            console.error(responseFun(500, result03.err, ""), id);
+        } else {
+            return result03.result;
+        }
     }
     console.log("betchHashQuery All Done!");
     setTimeout(() => {

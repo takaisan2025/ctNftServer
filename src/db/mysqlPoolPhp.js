@@ -24,13 +24,13 @@ var exec = function (sql) {
 
 };
 
-const execSql = (sql) => {
+const exec_sql = (sql) => {
     return exec(sql).then((rows) => {
         return rows[0] || null;
     });
 };
 
-const execSqlAll = (sql) => {
+const exec_sql_all = (sql) => {
     return exec(sql).then((rows) => {
         return rows || [];
     });
@@ -38,7 +38,7 @@ const execSqlAll = (sql) => {
 
 module.exports = {
     exec,
-    execSqlAll,
+    exec_sql_all,
     escape: mysql.escape,
-    execSql
+    exec_sql
 };

@@ -1,6 +1,6 @@
 const {
-    execSql,
-    execSqlAll,
+    exec_sql,
+    exec_sql_all,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const Web3 = require("web3");
@@ -22,24 +22,21 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 const ethUtil = require("ethereumjs-util");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 
 async function betchHashQuery() {
     let params = {t_status: 5};
-    let sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    let sql = get_mysql(
         "trans_form_list",
         "selectByStatus",
         params
     ).result;
-    let transList = await execSqlAll(sql)
-        .then((ret) => {
-            return ret;
-        })
-        .catch((err) => {
-            console.trace("ERR:", err);
-            return err;
-        });
-
+    let transList_ret = await exec_sql_all(sql)
+    let transList = []
+    if (transList_ret.err != null) {
+        console.trace("ERR:", transList_ret.err);
+    }
+    transList = transList_ret.result
     for (let retKey in transList) {
         console.log(transList[retKey]);
         const {
@@ -80,12 +77,12 @@ async function betchHashQuery() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 let paramsUp = trans_from_obj;
-                let sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                let sqlUp = get_mysql(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp
                 ).result;
-                await execSql(sqlUp);
+                await exec_sql(sqlUp);
 
             }
         } catch (e) {

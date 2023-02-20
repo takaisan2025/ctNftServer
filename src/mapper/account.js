@@ -1,9 +1,10 @@
 const {exec, escape} = require("../db/mysqlPool");
 const xss = require("xss");
+const pino = require("pino");
+// const expressPino = require('express-pino-logger');
+const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 const responseFun = (code, message, result) => {
-    if (code == 500) {
-        console.trace(message);
-    }
+    console.trace(message)
     if (message == null || message == "") {
         message = "null";
     }
@@ -20,23 +21,9 @@ const responseFunStr = (code, message, result) => {
             message: "null",
         };
     }
-    return JSON.stringify({
-        code: code,
-        message: message,
-        result: result,
-    });
-};
-
-const login = (username, password) => {
-    username = escape(username);
-    password = escape(password);
-    // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
-    const sql = `select username, realName from users where username='${xss(
-    username
-  )}' and password=${password}`;
-    return exec(sql).then((rows) => {
-        return rows[0] || null;
-    });
+    return JSON.stringify(responseFun(code,
+        message,
+        result));
 };
 
 const nftInsertSelective = (nft) => {
@@ -200,7 +187,6 @@ const nftSelectSelectiveCreator = (creator) => {
 };
 
 module.exports = {
-    login,
     responseFun,
     nftSelectSelective,
     nftSelectSelectiveStatus,

@@ -8,12 +8,12 @@ mybatisMapper.createMapper([
     "src/mapper/xml/NftUserAddressListMapper.xml",
     "src/mapper/xml/AccountMapper.xml",
     "src/mapper/xml/NftChargeListMapper.xml",
+    "src/mapper/xml/NftTransactionMapper.xml",
 ]);
 var format = {language: "mysql", indent: " ", linesBetweenQueries: 1, uppercase: true};
-let getMysqlSqlByTabNameAndSqlNameAndParam = function (tabName, sqlName, params) {
-
+let get_mysql = function (tabName, sqlName, params) {
+    // get_mysql
     // 这里接入redis
-
 
     try {
         var sql = mybatisMapper.getStatement(
@@ -31,5 +31,5 @@ let getMysqlSqlByTabNameAndSqlNameAndParam = function (tabName, sqlName, params)
 }
 module.exports =
     {
-        getMysqlSqlByTabNameAndSqlNameAndParam
+        get_mysql
     };

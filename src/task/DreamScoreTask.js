@@ -7,10 +7,10 @@ const {
 
 const GlobalConfig = require("../config/GlobalConfig.json");
 const {
-    execSql,
-    execSqlAll
+    exec_sql,
+    exec_sql_all
 } = require("../db/mysqlPoolPhp");
-const web3 = require("web3");
+const Web3 = require("web3");
 let privateKeySys = GlobalConfig.SCORE_ACCOUNT.private_key; // score pri
 
 const TRANSACTION_RECEIPT_STATUS = {
@@ -20,7 +20,7 @@ const TRANSACTION_RECEIPT_STATUS = {
 const ScoreToken = require("../contract/ScoreToken.json");
 const ethers = require("ethers");
 const {responseFun} = require("../mapper/account");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 
@@ -41,12 +41,12 @@ let isGasPrice = false;
 
 async function betchGive() {
     var params = {status: 0};
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    var sql = get_mysql(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
         params
     ).result;
-    let transList = await execSqlAll(sql)
+    let transList = await exec_sql_all(sql)
         .then((ret) => {
             return ret;
         })
@@ -115,9 +115,9 @@ async function betchGive() {
 
         let overrides = {
             // The maximum units of gas for the transaction to use
-            gasLimit: web3.utils.numberToHex(gasLimit),
+            gasLimit: Web3.utils.numberToHex(gasLimit),
             // The price (in wei) per unit of gas
-            gasPrice: web3.utils.numberToHex(gasPrice),
+            gasPrice: Web3.utils.numberToHex(gasPrice),
             // The nonce to use in the transaction
             // nonce: nonce,
             nonce: transactionCount1Mint,
@@ -155,12 +155,12 @@ async function betchGive() {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+        var sqlUp = get_mysql(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
             paramsUp
         ).result;
-        let result = await execSql(sqlUp)
+        let result = await exec_sql(sqlUp)
             .then((ret) => {
                 return ret;
             })
@@ -181,12 +181,12 @@ async function betchGive() {
 async function betchHashQuery() {
 
     var params = {status: 1};
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    var sql = get_mysql(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
         params
     ).result;
-    let transList = await execSqlAll(sql)
+    let transList = await exec_sql_all(sql)
         .then((ret) => {
             return ret;
         })
@@ -224,12 +224,12 @@ async function betchHashQuery() {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+        var sqlUp = get_mysql(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
             paramsUp
         ).result;
-        let result = await execSql(sqlUp)
+        let result = await exec_sql(sqlUp)
             .then((ret) => {
                 return ret;
             })

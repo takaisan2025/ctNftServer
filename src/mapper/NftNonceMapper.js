@@ -1,9 +1,9 @@
 const {exec, escape} = require("../db/mysqlPool");
 
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 
 function queryNonce(address) {
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam('NftNonceMapper', 'selectByAddress',
+    var sql = get_mysql('NftNonceMapper', 'selectByAddress',
         {address: address}).result;
     return exec(sql).then((rows) => {
         return rows || [];
@@ -11,7 +11,7 @@ function queryNonce(address) {
 }
 
 async function insertNonce(address, nonce) {
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam("NftNonceMapper", "insertSelective",
+    var sql = get_mysql("NftNonceMapper", "insertSelective",
         {address: address, nonce: nonce}).result;
     return await exec(sql).then((rows) => {
         return rows || null;
@@ -19,7 +19,7 @@ async function insertNonce(address, nonce) {
 }
 
 function updateNonce(address, nonce) {
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam("NftNonceMapper", "updateByAddressSelective",
+    var sql = get_mysql("NftNonceMapper", "updateByAddressSelective",
         {address: address, nonce: nonce}).result;
     return exec(sql).then((rows) => {
         return rows || null;
@@ -27,7 +27,7 @@ function updateNonce(address, nonce) {
 }
 
 function delNonce(address) {
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam("NftNonceMapper", "deleteByAddress",
+    var sql = get_mysql("NftNonceMapper", "deleteByAddress",
         {address: address}).result;
     return exec(sql).then((rows) => {
         return rows || null;

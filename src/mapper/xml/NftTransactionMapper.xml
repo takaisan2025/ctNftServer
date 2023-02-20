@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="NftTransactionMapper">
+    <resultMap id="BaseResultMap" type="NftTransaction">
+
+        <!--@Table nft_transaction -->
+        <!-- generated on Sat Feb 18 19:29:08 AWST 2023 -->
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="from" jdbcType="VARCHAR" property="from"/>
+        <result column="to" jdbcType="VARCHAR" property="to"/>
+        <result column="data" jdbcType="VARCHAR" property="data"/>
+        <result column="status" jdbcType="VARCHAR" property="status"/>
+        <result column="hash" jdbcType="VARCHAR" property="hash"/>
+        <result column="block_number" jdbcType="INTEGER" property="block_number"/>
+        <result column="type" jdbcType="INTEGER" property="type"/>
+        <result column="reback_url" jdbcType="VARCHAR" property="reback_url"/>
+        <result column="is_reback" jdbcType="INTEGER" property="is_reback"/>
+        <result column="order_id" jdbcType="VARCHAR" property="order_id"/>
+        <result column="vm_err" jdbcType="VARCHAR" property="vm_err"/>
+        <result column="value" jdbcType="VARCHAR" property="value"/>
+        <result column="origin_data" jdbcType="VARCHAR" property="origin_data"/>
+        <result column="contract_address" jdbcType="VARCHAR" property="contract_address"/>
+        <result column="method" jdbcType="VARCHAR" property="method"/>
+        <result column="origin_value" jdbcType="VARCHAR" property="origin_value"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+
+        id, `from`, `to`, `data`, `status`, hash, block_number, `type`, reback_url, is_reback,
+        order_id, vm_err, `value`, origin_data, contract_address, `method`, origin_value,
+        remark
+    </sql>
+    <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from nft_transaction
+        where status = #{status}
+        limit 500
+    </select>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+
+        select
+        <include refid="Base_Column_List"/>
+        from nft_transaction
+        where id = #{id}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+
+        delete from nft_transaction
+        where id = #{id}
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="NftTransaction" useGeneratedKeys="true">
+
+        insert into nft_transaction (`from`, `to`, `data`,
+        `status`, hash, block_number,
+        `type`, reback_url, is_reback,
+        order_id, vm_err, `value`,
+        origin_data, contract_address, `method`,
+        origin_value, remark)
+        values (#{from}, #{to}, #{data},
+        #{status}, #{hash}, #{block_number},
+        #{type}, #{reback_url}, #{is_reback},
+        #{order_id}, #{vm_err}, #{value},
+        #{origin_data}, #{contract_address}, #{method},
+        #{origin_value}, #{remark})
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="NftTransaction"
+            useGeneratedKeys="true">
+
+        insert into nft_transaction
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="from != null">
+                `from`,
+            </if>
+            <if test="to != null">
+                `to`,
+            </if>
+            <if test="data != null">
+                `data`,
+            </if>
+            <if test="status != null">
+                `status`,
+            </if>
+            <if test="hash != null">
+                hash,
+            </if>
+            <if test="block_number != null">
+                block_number,
+            </if>
+            <if test="type != null">
+                `type`,
+            </if>
+            <if test="reback_url != null">
+                reback_url,
+            </if>
+            <if test="is_reback != null">
+                is_reback,
+            </if>
+            <if test="order_id != null">
+                order_id,
+            </if>
+            <if test="vm_err != null">
+                vm_err,
+            </if>
+            <if test="value != null">
+                `value`,
+            </if>
+            <if test="origin_data != null">
+                origin_data,
+            </if>
+            <if test="contract_address != null">
+                contract_address,
+            </if>
+            <if test="method != null">
+                `method`,
+            </if>
+            <if test="origin_value != null">
+                origin_value,
+            </if>
+            <if test="remark != null">
+                remark,
+            </if>
+
+            remark)
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="from != null">
+                #{from},
+            </if>
+            <if test="to != null">
+                #{to},
+            </if>
+            <if test="data != null">
+                #{data},
+            </if>
+            <if test="status != null">
+                #{status},
+            </if>
+            <if test="hash != null">
+                #{hash},
+            </if>
+            <if test="block_number != null">
+                #{block_number},
+            </if>
+            <if test="type != null">
+                #{type},
+            </if>
+            <if test="reback_url != null">
+                #{reback_url},
+            </if>
+            <if test="is_reback != null">
+                #{is_reback},
+            </if>
+            <if test="order_id != null">
+                #{order_id},
+            </if>
+            <if test="vm_err != null">
+                #{vm_err},
+            </if>
+            <if test="value != null">
+                #{value},
+            </if>
+            <if test="origin_data != null">
+                #{origin_data},
+            </if>
+            <if test="contract_address != null">
+                #{contract_address},
+            </if>
+            <if test="method != null">
+                #{method},
+            </if>
+            <if test="origin_value != null">
+                #{origin_value},
+            </if>
+            <if test="remark != null">
+                #{remark},
+            </if>
+        </trim>
+        "")
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="NftTransaction">
+
+        update nft_transaction
+        <set>
+            <if test="from != null">
+                `from` = #{from},
+            </if>
+            <if test="to != null">
+                `to` = #{to},
+            </if>
+            <if test="data != null">
+                `data` = #{data},
+            </if>
+            <if test="status != null">
+                `status` = #{status},
+            </if>
+            <if test="hash != null">
+                hash = #{hash},
+            </if>
+            <if test="block_number != null">
+                block_number = #{block_number},
+            </if>
+            <if test="type != null">
+                `type` = #{type},
+            </if>
+            <if test="reback_url != null">
+                reback_url = #{reback_url},
+            </if>
+            <if test="is_reback != null">
+                is_reback = #{is_reback},
+            </if>
+            <if test="order_id != null">
+                order_id = #{order_id},
+            </if>
+            <if test="vm_err != null">
+                vm_err = #{vm_err},
+            </if>
+            <if test="value != null">
+                `value` = #{value},
+            </if>
+            <if test="origin_data != null">
+                origin_data = #{origin_data},
+            </if>
+            <if test="contract_address != null">
+                contract_address = #{contract_address},
+            </if>
+            <if test="method != null">
+                `method` = #{method},
+            </if>
+            <if test="origin_value != null">
+                origin_value = #{origin_value},
+            </if>
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="NftTransaction">
+
+        update nft_transaction
+        set `from` = #{from},
+        `to` = #{to},
+        `data` = #{data},
+        `status` = #{status},
+        hash = #{hash},
+        block_number = #{block_number},
+        `type` = #{type},
+        reback_url = #{reback_url},
+        is_reback = #{is_reback},
+        order_id = #{order_id},
+        vm_err = #{vm_err},
+        `value` = #{value},
+        origin_data = #{origin_data},
+        contract_address = #{contract_address},
+        `method` = #{method},
+        origin_value = #{origin_value},
+        remark = #{remark}
+        where id = #{id}
+    </update>
+</mapper>

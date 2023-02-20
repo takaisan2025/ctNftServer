@@ -1,5 +1,5 @@
 const {
-    execSql,
+    exec_sql,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const FormData = require("form-data");
@@ -8,7 +8,7 @@ let web3o = new Web3("http://ctblock.cn/blockChain");
 // let web3o = new Web3("https://exploder.coozw.com/blockChain");
 const fetch = require("node-fetch");
 const {responseFun} = require("../mapper/account");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 
 async function betchCallFund1() {
     let transList = JSON.parse(process.env.spTransList);
@@ -73,12 +73,12 @@ async function betchCallFund1() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 var paramsUp = trans_from_obj;
-                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                var sqlUp = get_mysql(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp
                 ).result;
-                let result = await execSql(sqlUp)
+                await exec_sql(sqlUp)
                     .then((ret) => {
                         return ret;
                     })
@@ -95,12 +95,12 @@ async function betchCallFund1() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 var paramsUp = trans_from_obj;
-                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                var sqlUp = get_mysql(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp
                 ).result;
-                let result = await execSql(sqlUp);
+                await exec_sql(sqlUp);
             } else {
                 console.log("回调接口失败,", orderId);
                 //
@@ -111,12 +111,12 @@ async function betchCallFund1() {
                 console.log("nftUpdateSelective:", trans_from_obj);
 
                 var paramsUp = trans_from_obj;
-                var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                var sqlUp = get_mysql(
                     "trans_form_list",
                     "updateByPrimaryKeySelective",
                     paramsUp
                 ).result;
-                let result = await execSql(sqlUp);
+                await exec_sql(sqlUp);
             }
         } catch (e) {
             console.error(e)

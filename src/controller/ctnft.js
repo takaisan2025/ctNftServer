@@ -1,27 +1,22 @@
 const {exec, escape} = require("../db/mysqlPool");
 const xss = require("xss");
 
-const login = (username, password) => {
-    username = escape(username);
-    password = escape(password);
-    // 用xss函数包裹一下传入的变量就好了，但是要注意，包裹之后的变量外面需要加一层引号，可以对比一下password和username两个地方
-    const sql = `select username, realName from users where username='${xss(
-    username
-  )}' and password=${password}`;
-    return exec(sql).then((rows) => {
-        return rows[0] || null;
-    });
+const exec_sql = (sql) => {
+    return exec(sql)
+        .then((rows) => {
+            return {err: null, result: (rows[0] || null)}
+        }).catch((error) => {
+            console.log("error", error.code)
+            return {err: error.code, result: null}
+        });
 };
 
-const execSql = (sql) => {
+const exec_sql_all = (sql) => {
     return exec(sql).then((rows) => {
-        return rows[0] || null;
-    });
-};
-
-const execSqlAll = (sql) => {
-    return exec(sql).then((rows) => {
-        return rows || [];
+        return {err: null, result: (rows || [])}
+    }).catch((error) => {
+        console.log("error", error)
+        return {err: error.code, result: null}
     });
 };
 
@@ -31,7 +26,7 @@ const accountUpdateSelective = (keystore) => {
     keystore = ${xss(
     account.keystore
   )}   where
-    id =  ${xss(id)} and  keystore = 'none'` ;
+    id =  ${xss(id)} and  keystore = 'none'`;
     return exec(sql).then((rows) => {
         return rows[0] || null;
     });
@@ -192,7 +187,6 @@ const nftSelectSelectiveCreator = (creator) => {
 };
 
 module.exports = {
-    login,
     nftSelectSelective,
     nftSelectSelectiveStatus,
     nftInsertSelective,
@@ -201,7 +195,7 @@ module.exports = {
     nftUpdateSelective,
     nftUpdateSelectiveIsFinish,
     nftSelectSelectiveCreator,
-    execSql,
-    execSqlAll,
+    exec_sql,
+    exec_sql_all,
     accountUpdateSelective,
 };

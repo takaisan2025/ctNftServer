@@ -4,8 +4,8 @@ const {
 } = require("../file/fileWriteReadUtils");
 const fetch = require("node-fetch");
 const {
-    execSql,
-    execSqlAll
+    exec_sql,
+    exec_sql_all
 } = require("../db/mysqlPoolPhp");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const scoreTokenAddress = "0xefb454e89efff1e734432060e34d536dfa8eed65";

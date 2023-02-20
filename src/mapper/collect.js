@@ -1,4 +1,4 @@
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 // SQL Parameters
 var param = {
   category: "appl",
@@ -7,5 +7,5 @@ var param = {
 
 // Get SQL Statement
 var format = { language: "sql", indent: "" };
-var sql = getMysqlSqlByTabNameAndSqlNameAndParam("collect", "selectByPrimaryKey", param, format).result;
+var sql = get_mysql("collect", "selectByPrimaryKey", param, format).result;
 

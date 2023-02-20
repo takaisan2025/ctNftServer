@@ -8,7 +8,7 @@ const GlobalConfig = require("../config/GlobalConfig.json");
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[2];
 
 const {
-    getPrivateKeyByAccountAndPassword,
+    getPriKey,
 } = require("../chain/accountProUtils");
 var Web3 = require("web3");
 let web3o = new Web3("http://ctblock.cn/blockChain");
@@ -199,3 +199,5 @@ async function haha() {
 
 // haha();
 // setInterval(haha, 3000)
+let a = [1,2]
+console.log(a)

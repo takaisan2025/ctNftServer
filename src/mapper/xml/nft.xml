@@ -13,6 +13,16 @@
         from nft
         where id = ${id}
     </select>
+    <select id="selectByStatus">
+        select
+        nft.*, collect.type
+        from nft
+        RIGHT JOIN collect ON nft.collectAddress = collect.address
+        where status = ${status}
+        AND
+        collectAddress != '0xb47d88ffd09575bfe174ef1f91d0a7d483f066ad'
+        limit 50
+    </select>
     <select id="selectByTokenId">
         select
         <include refid="Base_Column_List" />

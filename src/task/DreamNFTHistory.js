@@ -4,13 +4,13 @@ const {
 } = require("../file/fileWriteReadUtils");
 
 const {
-    execSql,
-    execSqlAll
+    exec_sql,
+    exec_sql_all
 } = require("../db/mysqlPoolPhp");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const scoreTokenAddress = GlobalConfig.SCORE_ADDRESS;
 const ethers = require("ethers");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let blockNumberCreate = 1090551;   // 合约的创建区块号
@@ -96,7 +96,7 @@ async function processResult(result) {
             if (from.toString().toLowerCase() != scoreTokenAddress && from.toString().toLowerCase() != to.toString().toLowerCase()) {  // 转增交易, 存入数据库
                 console.log(from, to, value, blockNumber, transactionHash);
                 /* 插入数据库*/
-                let resultFrom = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
+                let resultFrom = await exec_sql(get_mysql(
                     "AppUserMapper",
                     "selectByAddress",
                     {
@@ -110,7 +110,7 @@ async function processResult(result) {
                     .catch((err) => {
                         console.error(err);
                     });
-                let resultTo = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
+                let resultTo = await exec_sql(get_mysql(
                     "AppUserMapper",
                     "selectByAddress",
                     {
@@ -126,7 +126,7 @@ async function processResult(result) {
                     });
 
                 // 双向数据插入
-                let resultExistFrom = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
+                let resultExistFrom = await exec_sql(get_mysql(
                     "AppJifenRecordHistoryMapper",
                     "selectByAddressAndHash",
                     {
@@ -144,7 +144,7 @@ async function processResult(result) {
                 console.log("resultExistFrom == null:", resultExistFrom == null)
                 if (resultExistFrom == null) {
                     //    isfrom
-                    var sqlFrom = getMysqlSqlByTabNameAndSqlNameAndParam(
+                    var sqlFrom = get_mysql(
                         "AppJifenRecordHistoryMapper",
                         "insert",
                         {
@@ -160,7 +160,7 @@ async function processResult(result) {
                         }
 
                     ).result;
-                    await execSql(sqlFrom)
+                    await exec_sql(sqlFrom)
                         .then((ret) => {
                             return ret;
                         })
@@ -170,7 +170,7 @@ async function processResult(result) {
                         });
 
                 }
-                let resultExistTo = await execSql(getMysqlSqlByTabNameAndSqlNameAndParam(
+                let resultExistTo = await exec_sql(get_mysql(
                     "AppJifenRecordHistoryMapper",
                     "selectByAddressAndHash",
                     {
@@ -189,7 +189,7 @@ async function processResult(result) {
 
                 if (resultExistTo == null) {
                     //    !isfrom
-                    var sqlTo = getMysqlSqlByTabNameAndSqlNameAndParam(
+                    var sqlTo = get_mysql(
                         "AppJifenRecordHistoryMapper",
                         "insert",
                         {
@@ -205,7 +205,7 @@ async function processResult(result) {
                         }
 
                     ).result;
-                    await execSql(sqlTo)
+                    await exec_sql(sqlTo)
                         .then((ret) => {
                             return ret;
                         })
@@ -221,13 +221,13 @@ async function processResult(result) {
 
     return;
     var params = {status: 0};
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    var sql = get_mysql(
         "AppJifenRecordHistoryMapper",
         "selectByStatus",
         params
 
     ).result;
-    let transList = await execSqlAll(sql)
+    let transList = await exec_sql_all(sql)
         .then((ret) => {
             return ret;
         })
@@ -248,13 +248,13 @@ async function processResult(result) {
         console.log("nftUpdateSelective:", trans_from_obj);
 
         var paramsUp = trans_from_obj;
-        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+        var sqlUp = get_mysql(
             "AppJifenRecordHistoryMapper",
             "updateByPrimaryKeySelective",
             paramsUp
 
         ).result;
-        let result = await execSql(sqlUp)
+        let result = await exec_sql(sqlUp)
             .then((ret) => {
                 return ret;
             })

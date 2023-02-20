@@ -8,10 +8,10 @@ var exec = function (sql) {
                 reject(err);
                 return;
             } else {
-                conn.query(sql, function (err, result, fields) {
+                conn.query(sql, function (err1, result, fields) {
                     //事件驱动回调
-                    if (err) {
-                        reject(err);
+                    if (err1) {
+                        reject(err1);
                         return;
                     }
                     resolve(result);

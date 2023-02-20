@@ -15,6 +15,7 @@
     "dotenv": "^16.0.0",
     "ecdh": "^0.1.1",
     "eth-crypto": "^1.3.3",
+    "eth-sig-util": "^3.0.1",
     "express": "^4.16.4",
     "express-pino-logger": "^7.0.0",
     "forever": "^1.0.0",

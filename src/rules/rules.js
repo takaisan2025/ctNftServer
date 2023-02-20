@@ -1,5 +1,4 @@
-const web3 = require("web3");
-let web3o = new web3("http://ctblock.cn/blockChain");
+const Web3 = require("web3");
 
 function isJson(obj) {
     var is_json = (typeof (obj) == "object") &&
@@ -27,12 +26,9 @@ function checkURL(URL) {
     }
 }
 
-function stripHexPrefix(address) {
-    return web3o.utils.stripHexPrefix(address)
-}
-
-function validateAddress(address) {
-    const regex = /^(0x[0-9a-fA-F]{40})$/;
+function validateOederid(orderId) {
+    let ret = Web3.utils.isAddress("0x3059e2b513893A3241b7A750B8aA48ed4bC9FFAA")
+    const regex = /^(0x)?([0-9a-fA-F]{40})$/;
     if (address === "" || !regex.test(address)) {
         return {err: "地址格式错误", flag: false}
     } else {
@@ -40,9 +36,18 @@ function validateAddress(address) {
     }
 }
 
+function validateAddress(address) {
+    let isAddress = Web3.utils.isAddress(address)
+    if (!isAddress) {
+        return {err: "地址格式错误", flag: false}
+    } else {
+        return {err: null, flag: isAddress};
+    }
+}
+
 function validateAddressBalanceEnough(address) {
-    const regex = /^(草田分余额不足: 0x[0-9a-fA-F]{40})$/;
-    if (address === "" || !regex.test(address)) {
+    let isAddress = Web3.utils.isAddress(address)
+    if (!isAddress) {
         return {err: "草田分余额不足地址格式错误", flag: false}
     } else {
         return {err: null, flag: true};
@@ -52,15 +57,14 @@ function validateAddressBalanceEnough(address) {
 function isEmpty(value) {
 
     if (!value || value == "" || value == null || value.trim() == "") {
-        return {err: null, flag: true}
+        return {err: "参数为空", flag: true}
     } else {
-        return {err: "参数为空", flag: false};
+        return {err: null, flag: false};
     }
 }
 
 module.exports = {
     isJson,
-    stripHexPrefix,
     validateAddress,
     validateAddressBalanceEnough,
     checkURL,

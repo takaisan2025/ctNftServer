@@ -4,9 +4,9 @@ let web3 = web3o;
 const ethers = require("ethers");
 const GlobalConfig = require("../config/GlobalConfig.json");
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
+let customHttpProvider = new ethers.providers.JsonRpcProvider({
+    ...rpc
+}, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
 

@@ -1,10 +1,17 @@
+const EIP712 = require("./EIP712");
+const sigUtil = require("eth-sig-util");
+const ethUtil = require("ethereumjs-util");
 const {
     nftSelectSelective,
-    execSql,
+    exec_sql,
     nftSelectSelectiveCreator,
     nftInsertSelective,
     nftPreInsertSelective,
 } = require("../controller/ctnft");
+const {
+    contract_call,
+    contract_static_call,
+} = require("../contract/ChainCall");
 const requestIp = require("request-ip");
 const {
     createCollectV1Erc1155,
@@ -43,13 +50,10 @@ const ethers = require("ethers");
 const fetch = require("node-fetch");
 const formidable = require("formidable");
 const GlobalConfig = require("../config/GlobalConfig.json");
-const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
-const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
-const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
-const CtnftMToken = require("../contract/CtnftMToken.json");
+const ABI_const = require("../contract/ABI_const.js");
 let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
-const web3 = require("web3");
-let web3o = new web3("http://ctblock.cn/blockChain");
+const Web3 = require("web3");
+let web3 = new Web3("http://ctblock.cn/blockChain");
 const ipfsAPI = require("ipfs-api");
 const ipfsNode = ipfsAPI({
     host: GlobalConfig.IPFS[0].HOST,
@@ -73,9 +77,7 @@ const {
     queryBalanceAndTokenBalance,
 } = require("../chain/balanceQuery");
 
-const {
-    getPrivateKeyByAccountAndPassword,
-} = require("../chain/accountProUtils");
+const {getPriKey} = require("../chain/accountProUtils");
 
 const fs = require("fs");
 const path = require("path");
@@ -93,7 +95,7 @@ let gasPrice = "5000100000000";
 let isGasPrice = false;
 var util = require("ethereumjs-util");
 const {responseFun} = require("../mapper/account");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
@@ -162,12 +164,12 @@ const handleUserRouter = async (req, res) => {
     //     token = "";
     // }
     // var params = {token: token};
-    // var sql =getMysqlSqlByTabNameAndSqlNameAndParam(
+    // var sql =get_mysql(
     //     "NftUserAccesListMapper",
     //     "selectByToken",
     //     params
     // ).result;
-    // let accessList = await execSqlAll(sql)
+    // let accessList = await exec_sql_all(sql)
     //     .then((ret) => {
     //         return ret;
     //     })
@@ -181,30 +183,461 @@ const handleUserRouter = async (req, res) => {
     //     return responseFun(401,  "没有权限访问!", {});
     // }
 
-    //测试接口
-    if (req.method === "POST" && req.path === "/api/user/login") {
-        // 创建表单解析对象
-        const form = formidable({});
-        form.parse(req, (err, fields, files) => {
-            if (err) {
-                return responseFun(RESPONSE_STATUS.ERROR, err, "");
+    // 创建实名账户
+    if (req.path === "/api/account/createUser") {
+        let {s_user, s_pass, password, expand_data, orderId} = req.body;
+
+        s_user = Web3.utils.toChecksumAddress(s_user);
+        if (!validateAddress(s_user).flag) {
+            return responseFun(500, validateAddress(s_pass).err, {});
+        }
+        if (isEmpty(password).flag) {
+            return PasswordEmpty;
+        }
+        if (isEmpty(s_pass).flag) {
+            return PasswordEmpty;
+        }
+        if (isEmpty(expand_data).flag) {
+            return responseFun(500, isEmpty(expand_data).err, {});
+        }
+
+        if (isEmpty(orderId).flag) {
+            return responseFun(500, isEmpty(orderId).err, {});
+        }
+
+        let orderIdEcc = `0x${ethUtil
+            .keccak256(Buffer.from(orderId))
+            .toString("hex")}`;
+        // 判断用户名密码
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: s_user,
+        });
+        let result01 = await exec_sql(sqlResult.result);
+        if (result01.result == null) {
+            return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
+        }
+
+        // let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
+        let decWalletResult = await getPriKey(result01.result, s_pass);
+        let wallet;
+        if (decWalletResult.err != null) {
+            return PasswordError;
+        } else {
+            wallet = decWalletResult.result;
+
+            const clientIp = requestIp.getClientIp(req);
+
+            // 判断商家身份
+            let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+            let authData = await contract_static_call(
+                ethers,
+                GlobalConfig.AUTH_CONTROLLER_ADDRESS,
+                ABI_const["AuthController"].abi,
+                "parentauths",
+                customHttpProvider,
+                [s_user, s_user]
+            );
+
+            if (authData.err != null) {
+                return responseFun(500, "操作失败,请重试!", {});
             }
-            const file = files.file;
-            saveFile(file);
+
+            if (
+                Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
+                authData.data.isAuth == true
+            ) {
+                // let randomWallet = ethers.Wallet.createRandom();
+                // let keystore = await randomWallet.encrypt(password, callback);
+                let randomWallet = web3.eth.accounts.create();
+                let keystore = await randomWallet.encrypt(password);
+
+                // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
+                //等待其它程序处理上链
+                let sender = s_user;
+                let authTime = 1766841499; // 没有用的参数
+                let authExpiry = Date.now() + 1 * 60 * 60 * 24 * 180; // 六个月
+                let isAuth = true;
+                let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
+                let expandData = expand_data;
+                let caddress = randomWallet.address;
+                // 计算签名
+                let auth = {
+                    caddress,
+                    sender,
+                    authTime,
+                    authExpiry,
+                    isAuth,
+                    authLevel,
+                    expandData,
+                };
+                // let orderId = `0x${ethUtil
+                //     .keccak256(Buffer.from(new Date().getTime() + ""))
+                //     .toString("hex")}`;
+
+                let privateKeyStr = randomWallet.privateKey;
+                let verifyingContract = contractAddress;
+                privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+
+                const privateKey = Buffer.from(privateKeyStr, "hex");
+
+                // uint256 orderId,
+                // address caddress,
+                // address sender,
+                // bool isAuth,
+                // string expandData
+
+                const Types = {
+                    Authentication: [
+                        {type: "uint256", name: "orderId"},
+                        {type: "address", name: "caddress"},
+                        {type: "address", name: "sender"},
+                        {type: "bool", name: "isAuth"},
+                    ],
+                };
+
+                const data = EIP712.createTypeData(
+                    {
+                        name: "Authentication",
+                        version: "1",
+                        chainId: "27",
+                        verifyingContract,
+                    },
+                    "Authentication",
+                    {
+                        orderId: orderIdEcc,
+                        caddress: auth.caddress,
+                        sender: auth.sender,
+                        isAuth: auth.isAuth,
+                    },
+                    Types
+                );
+
+                let signature = sigUtil.signTypedData_v4(privateKey, {data: data});
+                auth.signature = signature;
+
+                let origin_data_json = [auth, orderIdEcc];
+                // 存储上链数据
+                let nft_transaction_aql = get_mysql(
+                    "NftTransactionMapper",
+                    "insertSelective",
+                    {
+                        from: s_user,
+                        to: contractAddress,
+                        status: 0,
+                        // "hash": "",
+                        // "block_number": "",
+                        type: 1,
+                        is_reback: 0,
+                        order_id: orderId,
+                        value: "0",
+                        // "origin_data": JSON.stringify(origin_data_json),
+                        origin_data: origin_data_json,
+                        contract_address: contractAddress,
+                        method:
+                            ABI_const["AuthController"].contractName + "#" + "authentication",
+                        origin_value: "0",
+                    }
+                );
+                let nft_transaction_aql_result = await exec_sql(
+                    nft_transaction_aql.result
+                );
+                if (nft_transaction_aql_result.err != null) {
+                    if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
+                        return responseFun(500, "OrderId 冲突!", {});
+                    } else {
+                        return responseFun(500, "操作失败,请重试!", {});
+                    }
+                }
+                //    save to db
+                let account = {
+                    keystore: keystore,
+                    address: randomWallet.address,
+                    status: 1,
+                    psd: password,
+                    private_key: "",
+                    remark: clientIp,
+                    // private_key: randomWallet.private_key
+                };
+
+                let sqlResult = get_mysql("AccountMapper", "insert", account);
+                let result = await exec_sql(sqlResult.result);
+                return responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
+                    keystore: keystore,
+                    privateKey: randomWallet.privateKey,
+                    publicKey: randomWallet.publicKey,
+                    address: randomWallet.address,
+                });
+            } else {
+                return responseFun(500, "s_user信息未认证或者未更新,请稍后重试!", {});
+            }
+        }
+    }
+
+    // 创建实名账户
+    if (req.path === "/api/account/authUser") {
+        let {s_user, s_pass, c_user, password, expand_data, orderId} = req.body;
+        s_user = Web3.utils.toChecksumAddress(s_user);
+        c_user = Web3.utils.toChecksumAddress(c_user);
+        if (!validateAddress(s_user).flag) {
+            return responseFun(500, validateAddress(s_user).err, {});
+        }
+        if (!validateAddress(c_user).flag) {
+            return responseFun(500, validateAddress(c_user).err, {});
+        }
+        if (isEmpty(password).flag) {
+            return PasswordEmpty;
+        }
+        if (isEmpty(s_pass).flag) {
+            return PasswordEmpty;
+        }
+        if (isEmpty(expand_data).flag) {
+            return responseFun(500, isEmpty(expand_data).err, {});
+        }
+
+        if (isEmpty(orderId).flag) {
+            return responseFun(500, isEmpty(expand_data).err, {});
+        }
+
+        let orderIdEcc = `0x${ethUtil
+            .keccak256(Buffer.from(orderId))
+            .toString("hex")}`;
+
+        // 判断接入方用户名密码
+        let s_sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: s_user,
+        });
+        let s_ret01 = await exec_sql(s_sqlResult.result);
+        if (s_ret01.result == null) {
+            return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
+        }
+
+        // let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
+        let s_decWalletResult = await getPriKey(s_ret01.result, s_pass);
+        let s_wallet;
+        if (s_decWalletResult.err != null) {
+            return PasswordError;
+        } else {
+            s_wallet = s_decWalletResult.result;
+
+            // 判断用户密码是否正确
+            // 判断接入方用户名密码
+            let c_sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                address: c_user,
+            });
+            let c_ret01 = await exec_sql(c_sqlResult.result);
+            if (c_ret01.result == null) {
+                return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
+            }
+
+            // let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
+            let c_decWalletResult = await getPriKey(c_ret01.result, password);
+            let c_wallet;
+            if (c_decWalletResult.err != null) {
+                return PasswordError;
+            } else {
+                c_wallet = c_decWalletResult.result;
+                const clientIp = requestIp.getClientIp(req);
+
+                // 判断商家身份
+                let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                let authData = await contract_static_call(
+                    ethers,
+                    GlobalConfig.AUTH_CONTROLLER_ADDRESS,
+                    ABI_const["AuthController"].abi,
+                    "parentauths",
+                    customHttpProvider,
+                    [s_user, s_user]
+                );
+
+                if (authData.err != null) {
+                    return responseFun(500, "操作失败,请重试!", {});
+                }
+
+                if (
+                    Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
+                    authData.data.isAuth == true
+                ) {
+                    // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
+                    //等待其它程序处理上链
+                    let sender = s_user;
+                    let authTime = 1766841499; // 没有用的参数
+                    let authExpiry = Date.now() + 1 * 60 * 60 * 24 * 180; // 六个月
+                    let isAuth = true;
+                    let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
+                    let expandData = expand_data;
+                    let caddress = c_wallet.address;
+                    // 计算签名
+                    let auth = {
+                        caddress,
+                        sender,
+                        authTime,
+                        authExpiry,
+                        isAuth,
+                        authLevel,
+                        expandData,
+                    };
+
+                    let privateKeyStr = c_wallet.privateKey;
+                    let verifyingContract = contractAddress;
+                    privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+
+                    const privateKey = Buffer.from(privateKeyStr, "hex");
+
+                    // uint256 orderId,
+                    // address caddress,
+                    // address sender,
+                    // bool isAuth,
+                    // string expandData
+
+                    const Types = {
+                        Authentication: [
+                            {type: "uint256", name: "orderId"},
+                            {type: "address", name: "caddress"},
+                            {type: "address", name: "sender"},
+                            {type: "bool", name: "isAuth"},
+                        ],
+                    };
+
+                    const data = EIP712.createTypeData(
+                        {
+                            name: "Authentication",
+                            version: "1",
+                            chainId: "27",
+                            verifyingContract,
+                        },
+                        "Authentication",
+                        {
+                            orderId: orderIdEcc,
+                            caddress: auth.caddress,
+                            sender: auth.sender,
+                            isAuth: auth.isAuth,
+                        },
+                        Types
+                    );
+
+                    let signature = sigUtil.signTypedData_v4(privateKey, {data: data});
+                    auth.signature = signature;
+
+                    let origin_data_json = [auth, orderIdEcc];
+                    // 存储上链数据
+
+                    let nft_transaction_aql = get_mysql(
+                        "NftTransactionMapper",
+                        "insertSelective",
+                        {
+                            from: s_user,
+                            to: contractAddress,
+                            status: 0,
+                            // "hash": "",
+                            // "block_number": "",
+                            type: 1,
+                            is_reback: 0,
+                            order_id: orderId,
+                            value: "0",
+                            // "origin_data": JSON.stringify(origin_data_json),
+                            origin_data: origin_data_json,
+                            contract_address: contractAddress,
+                            method:
+                                ABI_const["AuthController"].contractName +
+                                "#" +
+                                "authentication",
+                            origin_value: "0",
+                        }
+                    );
+                    let nft_transaction_aql_result = await exec_sql(
+                        nft_transaction_aql.result
+                    );
+                    if (nft_transaction_aql_result.err != null) {
+                        if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
+                            return responseFun(500, "OrderId 冲突!", {});
+                        } else {
+                            return responseFun(500, "操作失败,请重试!", {});
+                        }
+                    }
+                    return responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
+                        s_user: s_user,
+                        c_user: c_user,
+                        orderId: orderId,
+                    });
+                } else {
+                    return responseFun(500, "s_user信息未认证或者未更新,请稍后重试!", {});
+                }
+            }
+        }
+    }
+
+    // 查询实名账户
+    if (req.path === "/api/account/queryAuthUser") {
+        const {s_user, user} = req.body;
+
+        if (!validateAddress(s_user).flag) {
+            return responseFun(500, validateAddress(s_user).err, {});
+        }
+
+        if (!validateAddress(user).flag) {
+            return responseFun(500, validateAddress(user).err, {});
+        }
+
+        const clientIp = requestIp.getClientIp(req);
+
+        // 判断商家身份
+        let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+        let authData = await contract_static_call(
+            ethers,
+            contractAddress,
+            ABI_const["AuthController"].abi,
+            "parentauths",
+            customHttpProvider,
+            [user, s_user]
+        );
+
+        console.log(authData);
+        return responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+            authData: {
+                caddress: authData.data.caddress,
+                sender: authData.data.sender,
+                authTime: Web3.utils.hexToNumberString(authData.data.authTime),
+                authExpiry: Web3.utils.hexToNumberString(authData.data.authExpiry),
+                isAuth: authData.data.isAuth,
+                authLevel: Web3.utils.hexToNumberString(authData.data.authLevel),
+                expandData: authData.data.expandData,
+            },
+            s_user: s_user,
+            user: user,
         });
     }
 
-    // 管理用户相关开口开始
-    // 管理用户相关接口Over
+    // 查询庄户注册状态
+    if (req.path === "/api/account/checkAccount") {
+        const {address} = req.body;
+        //
+        //  判断参数是否满足规范
+        let {err, flag} = validateAddress(address);
+        if (!flag) {
+            return responseFun(RESPONSE_STATUS.ERROR, err, {});
+        }
+
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: address,
+        });
+        let result = await exec_sql(sqlResult.result);
+        let isExit = result == null;
+
+        return responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+            address: address,
+            isExit,
+            isCreated: isExit,
+        });
+    }
 
     // 创建账户
-    if (req.method === "POST" && req.path === "/api/account/createAccount") {
+    if (req.path === "/api/account/createAccount") {
         const {password} = req.body;
         const clientIp = requestIp.getClientIp(req);
 
         // let randomWallet = ethers.Wallet.createRandom();
         // let keystore = await randomWallet.encrypt(password, callback);
-        let randomWallet = web3o.eth.accounts.create();
+        let randomWallet = web3.eth.accounts.create();
         let keystore = await randomWallet.encrypt(password);
 
         //    save to db
@@ -222,12 +655,8 @@ const handleUserRouter = async (req, res) => {
             return PasswordEmpty;
         }
 
-        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "AccountMapper",
-            "insert",
-            account
-        );
-        let result = await execSql(sqlResult.result);
+        let sqlResult = get_mysql("AccountMapper", "insert", account);
+        let result = await exec_sql(sqlResult.result);
         return responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
             keystore: keystore,
             privateKey: randomWallet.privateKey,
@@ -236,7 +665,7 @@ const handleUserRouter = async (req, res) => {
         });
     }
     // 查询庄户注册状态
-    if (req.method === "POST" && req.path === "/api/account/checkAccount") {
+    if (req.path === "/api/account/checkAccount") {
         const {address} = req.body;
         //
         //  判断参数是否满足规范
@@ -245,12 +674,10 @@ const handleUserRouter = async (req, res) => {
             return responseFun(RESPONSE_STATUS.ERROR, err, {});
         }
 
-        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "AccountMapper",
-            "selectByAddress",
-            {address: address}
-        );
-        let result = await execSql(sqlResult.result);
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: address,
+        });
+        let result = await exec_sql(sqlResult.result);
         let isExit = result == null;
 
         return responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
@@ -260,29 +687,24 @@ const handleUserRouter = async (req, res) => {
         });
     }
     // 导出账户 (同步)
-    if (req.method === "POST" && req.path === "/api/account/exportAccount") {
+    if (req.path === "/api/account/exportAccount") {
         const {address, password} = req.body;
 
         if (isEmpty(password).flag) {
             return PasswordEmpty;
         }
         // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
-        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "AccountMapper",
-            "selectByAddress",
-            {address: address}
-        );
-        let ret = await execSql(sqlResult.result);
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: address,
+        });
+        let ret = await exec_sql(sqlResult.result);
         if (ret == null) {
             return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
             return;
         }
 
-        // let wallet = await web3o.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
-        let decWalletResult = await getPrivateKeyByAccountAndPassword(
-            ret,
-            password
-        );
+        // let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
+        let decWalletResult = await getPriKey(ret, password);
         let wallet;
         if (decWalletResult.err != null) {
             return PasswordError;
@@ -295,10 +717,7 @@ const handleUserRouter = async (req, res) => {
         }
     }
     // 单NFT铸造(异步)
-    if (
-        req.method === "POST" &&
-        req.path === "/api/account/createctNftAsyncIncludeFile"
-    ) {
+    if (req.path === "/api/account/createctNftAsyncIncludeFile") {
         return new Promise((resolve, reject) => {
             // 创建表单解析对象
             const formsy = formidable({});
@@ -320,12 +739,10 @@ const handleUserRouter = async (req, res) => {
                     author,
                     authorDesc,
                 } = fields;
-                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-                    "AccountMapper",
-                    "selectByAddress",
-                    {address: address}
-                );
-                let result = await execSql(sqlResult.result);
+                let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                    address: address,
+                });
+                let result = await exec_sql(sqlResult.result);
                 // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
                 return result
                     .then(async (ret) => {
@@ -334,10 +751,7 @@ const handleUserRouter = async (req, res) => {
                             return;
                         }
 
-                        let decWalletResult = await getPrivateKeyByAccountAndPassword(
-                            ret,
-                            password
-                        );
+                        let decWalletResult = await getPriKey(ret, password);
                         let wallet;
                         if (decWalletResult.err != null) {
                             return PasswordError;
@@ -410,7 +824,7 @@ const handleUserRouter = async (req, res) => {
                                                     ),
                                                     fileName: file.originalFilename,
                                                     tempPath: file.filepath,
-                                                    tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
+                                                    tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),
                                                     nonce: transCount,
                                                 };
 
@@ -453,10 +867,7 @@ const handleUserRouter = async (req, res) => {
             });
         });
     }
-    if (
-        req.method === "POST" &&
-        req.path === "/api/account/createctNftAsyncSplitParam"
-    ) {
+    if (req.path === "/api/account/createctNftAsyncSplitParam") {
         return new Promise((resolve, reject) => {
             // 创建表单解析对象
             const {
@@ -469,12 +880,10 @@ const handleUserRouter = async (req, res) => {
                 authorDesc,
                 file,
             } = req.body;
-            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "AccountMapper",
-                "selectByAddress",
-                {address: address}
-            );
-            let result = execSql(sqlResult.result);
+            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                address: address,
+            });
+            let result = exec_sql(sqlResult.result);
             // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
             return result
                 .then(async (ret) => {
@@ -483,10 +892,7 @@ const handleUserRouter = async (req, res) => {
                         return;
                     }
                     let wallet;
-                    let decWalletResult = await getPrivateKeyByAccountAndPassword(
-                        ret,
-                        password
-                    );
+                    let decWalletResult = await getPriKey(ret, password);
                     if (decWalletResult.err != null) {
                         resolve(PasswordError);
                     } else {
@@ -552,7 +958,7 @@ const handleUserRouter = async (req, res) => {
                                                     serverPath: path.join(basePath, originalFilename),
                                                     fileName: originalFilename,
                                                     tempPath: file,
-                                                    tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
+                                                    tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),
                                                     nonce: transCount,
                                                 };
 
@@ -594,10 +1000,7 @@ const handleUserRouter = async (req, res) => {
                 });
         });
     }
-    if (
-        req.method === "POST" &&
-        req.path === "/api/account/createctNftAsyncDivTokenId"
-    ) {
+    if (req.path === "/api/account/createctNftAsyncDivTokenId") {
         // 创建表单解析对象
         const {
             address,
@@ -641,21 +1044,16 @@ const handleUserRouter = async (req, res) => {
             return responseFun(RESPONSE_STATUS.ERROR, e, {});
         }
         //  判断参数是否满足规范
-        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "AccountMapper",
-            "selectByAddress",
-            {address: address}
-        );
-        let ret = await execSql(sqlResult.result);
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: address,
+        });
+        let ret = await exec_sql(sqlResult.result);
 
         if (ret == null) {
             return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
         }
         let wallet;
-        let decWalletResult = await getPrivateKeyByAccountAndPassword(
-            ret,
-            password
-        );
+        let decWalletResult = await getPriKey(ret, password);
         if (decWalletResult.err != null) {
             return PasswordError;
         } else {
@@ -665,13 +1063,11 @@ const handleUserRouter = async (req, res) => {
 
         try {
             // 查询合约基本信息  type   == 10
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "collect",
-                "selectByAddress",
-                {address: collectAddress}
-            ).result;
+            var sql = get_mysql("collect", "selectByAddress", {
+                address: collectAddress,
+            }).result;
 
-            let collectRet = await execSql(sql)
+            let collectRet = await exec_sql(sql)
                 .then((ret) => {
                     return ret;
                 })
@@ -745,7 +1141,7 @@ const handleUserRouter = async (req, res) => {
                 serverPath: path.join(basePath, originalFilename),
                 fileName: originalFilename,
                 tempPath: file,
-                tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
+                tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),
                 nonce: transCount,
                 rebackUrl: rebackUrl,
             };
@@ -765,7 +1161,12 @@ const handleUserRouter = async (req, res) => {
             return responseFun(RESPONSE_STATUS.ERROR, err, {});
         }
     }
-    if (req.method === "POST" && req.path === "/api/account/createctNftAsync") {
+
+    // 异步铸造721接口
+    if (
+        req.path === "/api/account/createctNftAsync" ||
+        req.path === "/api/account/createNftAsync"
+    ) {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, rebackUrl} =
             req.body;
@@ -774,25 +1175,22 @@ const handleUserRouter = async (req, res) => {
         }
         try {
             //  判断参数是否满足规范
-            let {err, flag} = validateAddress(address);
-            if (!flag) {
-                throw err;
+            let ret01 = validateAddress(address);
+            if (!ret01.flag) {
+                throw ret01.err;
             }
 
-            let {err1, flag1} = (() => {
-                let {err, flag} = validateAddress(collectAddress);
-                return {err1: err, flag1: flag};
-            })();
-            if (!flag1) {
-                throw err1;
+            let ret02 = validateAddress(collectAddress);
+
+            if (!ret02.flag) {
+                throw ret02.err;
             }
-            let {err2, flag2} = (() => {
-                let {err, flag} = isJson(data);
-                return {err2: err, flag2: flag};
-            })();
-            if (!flag2) {
-                throw err2;
+
+            let ret03 = isJson(data);
+            if (!ret03.flag) {
+                throw ret03.err;
             }
+
             let checkURLRet = checkURL(rebackUrl);
             if (!checkURLRet.flag) {
                 throw checkURLRet.err;
@@ -807,39 +1205,51 @@ const handleUserRouter = async (req, res) => {
         }
 
         //  判断参数是否满足规范
-        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "AccountMapper",
-            "selectByAddress",
-            {address: address}
-        );
-        let ret = await execSql(sqlResult.result);
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: address,
+        });
+        let ret04 = await exec_sql(sqlResult.result);
 
+        let ret = ret04.result;
         if (ret == null) {
             return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
         }
 
         // 判断账户余额
         var params1 = {address: collectAddress};
-        var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "collect",
-            "selectByAddress",
-            params1
-        ).result;
-        let collectDetail = await execSql(sql1)
-            .then((ret) => {
-                return ret;
-            })
-            .catch((err) => {
-                console.trace("ERR:", err);
-                return err;
-            });
+        var sql1 = get_mysql("collect", "selectByAddress", params1).result;
+        let collectDetail01 = await exec_sql(sql1);
+
+        if (collectDetail01.err != null) {
+            console.trace("ERR:", err);
+        }
+        if (collectDetail01.result == null) {
+            return responseFun(RESPONSE_STATUS.ERROR, "没有找到匹配的合约信息!", {});
+        }
+
+        let collectDetail = collectDetail01.result;
+
+        // 查询账户实名状况
+
+        // 判断商家身份
+        if (address != collectDetail.owner) {
+            let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+            let authData = await contract_static_call(
+                ethers,
+                contractAddress,
+                ABI_const["AuthController"].abi,
+                "parentauths",
+                customHttpProvider,
+                [address, collectDetail.owner]
+            );
+            if (authData.data.isAuth != true) {
+                return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+            }
+        }
 
         let wallet;
         // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
-        let decWalletResult = await getPrivateKeyByAccountAndPassword(
-            ret,
-            password
-        );
+        let decWalletResult = await getPriKey(ret, password);
         if (decWalletResult.err != null) {
             throw PasswordError;
         } else {
@@ -865,13 +1275,9 @@ const handleUserRouter = async (req, res) => {
         try {
             // 查询合约基本信息  type   == 10
             var params = {address: collectAddress};
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "collect",
-                "selectByAddress",
-                params
-            ).result;
+            var sql = get_mysql("collect", "selectByAddress", params).result;
 
-            let collectRet = await execSql(sql)
+            let collectRet02 = await exec_sql(sql)
                 .then((ret) => {
                     return ret;
                 })
@@ -879,6 +1285,8 @@ const handleUserRouter = async (req, res) => {
                     console.log("ERR:", err);
                     return err;
                 });
+            collectRet02.err;
+            let collectRet = collectRet02.result;
             if (collectRet == null || collectRet.type !== 9) {
                 throw "collectAddress is error";
             }
@@ -929,19 +1337,15 @@ const handleUserRouter = async (req, res) => {
                 serverPath: xss(JSON.stringify(path.join(basePath, originalFilename))),
                 fileName: originalFilename,
                 tempPath: file,
-                tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
+                tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),
                 nonce: "0",
                 rebackUrl: rebackUrl,
             };
 
             // 插入数据库
             // Get SQL Statement
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "nft",
-                "insertSelective",
-                nft
-            ).result;
-            return await execSql(sql)
+            var sql = get_mysql("nft", "insertSelective", nft).result;
+            return await exec_sql(sql)
                 .then((ret) => {
                     // return ret;
                     // fileUploadIpfs();
@@ -957,11 +1361,9 @@ const handleUserRouter = async (req, res) => {
             return responseFun(RESPONSE_STATUS.ERROR, err, {});
         }
     }
+
     // 批量铸造
-    if (
-        req.method === "POST" &&
-        req.path === "/api/account/createctNft1155AsyncV1"
-    ) {
+    if (req.path === "/api/account/createctNft1155AsyncV1") {
         // 创建表单解析对象
         const {
             address,
@@ -992,21 +1394,16 @@ const handleUserRouter = async (req, res) => {
             return responseFun(RESPONSE_STATUS.ERROR, e, {});
         }
         //  判断参数是否满足规范
-        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "AccountMapper",
-            "selectByAddress",
-            {address: address}
-        );
-        let ret = await execSql(sqlResult.result);
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: address,
+        });
+        let ret = await exec_sql(sqlResult.result);
 
         //
         if (ret == null) {
             return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
         }
-        let decWalletResult = await getPrivateKeyByAccountAndPassword(
-            ret,
-            password
-        );
+        let decWalletResult = await getPriKey(ret, password);
         let wallet;
         if (decWalletResult.err != null) {
             return PasswordError;
@@ -1056,7 +1453,7 @@ const handleUserRouter = async (req, res) => {
                             // to: "ricmoo.firefly.eth"
                             // We must pass in the amount as wei (1 ether = 1e18 wei), so we
                             // use this convenience function to convert ether to wei.
-                            value: web3.utils.numberToHex(neceGas1),
+                            value: Web3.utils.numberToHex(neceGas1),
                         };
 
                         let txTransfer = await walletSys.sendTransaction(tx);
@@ -1099,17 +1496,13 @@ const handleUserRouter = async (req, res) => {
                     owner: wallet.address,
                     contract_url: contractUrl,
                     token_url_prefix: tokenUrlPrefix,
-                    contract_name: "CtnftMToken",
+                    contract_name: ABI_const["CtnftMToken"].contractName,
                     create_address: wallet.address,
                     type: 1, // v1 1155
                 };
-                var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                    "collect",
-                    "insertSelective",
-                    collect
-                ).result;
+                var sql = get_mysql("collect", "insertSelective", collect).result;
 
-                let collectRet = await execSql(sql)
+                let collectRet = await exec_sql(sql)
                     .then((ret) => {
                         return responseFun(RESPONSE_STATUS.SUCCESS, "", {
                             ret,
@@ -1179,18 +1572,14 @@ const handleUserRouter = async (req, res) => {
                         serverPath: path.join(basePath, originalFilename),
                         fileName: originalFilename,
                         tempPath: file,
-                        tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
+                        tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),
                         nonce: transCount,
                     };
 
                     // 插入数据库
                     // Get SQL Statement
-                    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                        "nft",
-                        "insertSelective",
-                        nft
-                    );
-                    return await execSql(sql)
+                    var sql = get_mysql("nft", "insertSelective", nft);
+                    return await exec_sql(sql)
                         .then((ret) => {
                             return responseFun(RESPONSE_STATUS.SUCCESS, "", {
                                 tokenId,
@@ -1209,9 +1598,10 @@ const handleUserRouter = async (req, res) => {
             return responseFun(RESPONSE_STATUS.ERROR, err, {});
         }
     }
+
     if (
-        req.method === "POST" &&
-        req.path === "/api/account/createctNft1155Async"
+        req.path === "/api/account/createctNft1155Async" ||
+        req.path === "/api/account/createNft1155Async"
     ) {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, supply, rebackUrl} =
@@ -1222,25 +1612,19 @@ const handleUserRouter = async (req, res) => {
         }
         try {
             //  判断参数是否满足规范
-            let {err, flag} = validateAddress(address);
-            if (!flag) {
-                throw err;
+            let ret01 = validateAddress(address);
+            if (!ret01.flag) {
+                throw ret01.err;
             }
 
-            let {err1, flag1} = (() => {
-                let {err, flag} = validateAddress(collectAddress);
-                return {err1: err, flag1: flag};
-            })();
-            if (!flag1) {
-                throw err1;
+            let ret02 = validateAddress(collectAddress);
+            if (!ret02.flag) {
+                throw ret02.err;
             }
 
-            let {err2, flag2} = (() => {
-                let {err, flag} = isJson(data);
-                return {err2: err, flag2: flag};
-            })();
-            if (!flag2) {
-                throw err2;
+            let ret03 = isJson(data);
+            if (!ret03.flag) {
+                throw ret03.err;
             }
             let checkURLRet = checkURL(rebackUrl);
             if (!checkURLRet.flag) {
@@ -1262,23 +1646,18 @@ const handleUserRouter = async (req, res) => {
         // }
 
         //  判断参数是否满足规范
-        let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-            "AccountMapper",
-            "selectByAddress",
-            {address: address}
-        );
-        let ret = await execSql(sqlResult.result);
+        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            address: address,
+        });
+        let ret002 = await exec_sql(sqlResult.result);
 
         //
-        if (ret == null) {
+        if (ret002.result == null) {
             return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
         }
         let wallet;
         // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
-        let decWalletResult = await getPrivateKeyByAccountAndPassword(
-            ret,
-            password
-        );
+        let decWalletResult = await getPriKey(ret002.result, password);
         if (decWalletResult.err != null) {
             return PasswordError;
         } else {
@@ -1289,26 +1668,39 @@ const handleUserRouter = async (req, res) => {
             // 查询合约基本信息  type   == 10
 
             var params = {address: collectAddress};
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "collect",
-                "selectByAddress",
-                params
-            ).result;
+            var sql = get_mysql("collect", "selectByAddress", params).result;
 
-            let collectRet = await execSql(sql)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("ERR:", err);
-                    return err;
-                });
+            let collectRet02 = await exec_sql(sql);
+            if (collectRet02.err != null) {
+                console.log("ERR:", collectRet02.err);
+            }
+            let collectRet = collectRet02.result;
             if (
                 collectRet == null ||
                 (collectRet.type !== 10 && collectRet.type !== 12)
             ) {
                 throw "collectAddress is error";
             }
+
+            // 查询账户实名状况
+
+            // 判断商家身份
+
+            if (address != collectRet.owner) {
+                let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                let authData = await contract_static_call(
+                    ethers,
+                    contractAddress,
+                    ABI_const["AuthController"].abi,
+                    "parentauths",
+                    customHttpProvider,
+                    [address, collectRet.owner]
+                );
+                if (authData.data.isAuth != true) {
+                    return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+                }
+            }
+
             // address: wallet.address,
             // privateKey: wallet.privateKey,
             //    单个藏品铸造
@@ -1370,7 +1762,7 @@ const handleUserRouter = async (req, res) => {
                 serverPath: xss(JSON.stringify(path.join(basePath, originalFilename))),
                 fileName: originalFilename,
                 tempPath: file,
-                tokenIdDecmial: web3.utils.hexToNumberString(tokenId),
+                tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),
                 nonce: "0",
                 rebackUrl: rebackUrl,
             };
@@ -1378,12 +1770,8 @@ const handleUserRouter = async (req, res) => {
             // 插入数据库
             // Get SQL Statement
 
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "nft",
-                "insertSelective",
-                nft
-            ).result;
-            return await execSql(sql)
+            var sql = get_mysql("nft", "insertSelective", nft).result;
+            return await exec_sql(sql)
                 .then((ret) => {
                     // fileUploadIpfs();
                     return responseFun(RESPONSE_STATUS.SUCCESS, "", {
@@ -1399,40 +1787,38 @@ const handleUserRouter = async (req, res) => {
         }
     }
     //创建收藏夹
-    if (req.method === "POST" && req.path === "/api/account/createctCollect") {
+    if (req.path === "/api/account/createctCollect") {
         // 创建表单解析对象
         try {
             const {address, password, cMetadata, type} = req.body;
+            //  判断参数是否满足规范
             if (isEmpty(password).flag) {
                 return PasswordEmpty;
             }
-            try {
-                let {err, flag} = validateAddress(address);
-                if (!flag) {
-                    throw err;
-                }
-                let {err2, flag2} = (() => {
-                    let {err, flag} = isJson(cMetadata);
-                    return {err2: err, flag2: flag};
-                })();
-                if (!flag2) {
-                    throw err2;
-                }
-            } catch (e) {
-                return responseFun(RESPONSE_STATUS.ERROR, e, {});
+
+            let ret01 = validateAddress(address);
+            if (!ret01.flag) {
+                throw ret01.err;
             }
+
+            let ret02 = isJson(cMetadata);
+            if (!ret02.flag) {
+                throw ret02.err;
+            }
+
             if (JSON.stringify(cMetadata).indexOf("{") == -1) {
                 return responseFun(RESPONSE_STATUS.ERROR, "invalid paramter data", {});
             }
 
-            //  判断参数是否满足规范
-            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "AccountMapper",
-                "selectByAddress",
-                {address: address}
-            );
-            let ret = await execSql(sqlResult.result);
+            // 判断实名
+            // 这里好像不需要判断实名, 因为这里一般都是项目方调用, 不会有手续费垫付的情况发生
 
+            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                address: address,
+            });
+            let ret03 = await exec_sql(sqlResult.result);
+
+            let ret = ret03.result;
             if (ret == null) {
                 return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
             }
@@ -1449,10 +1835,7 @@ const handleUserRouter = async (req, res) => {
 
             let wallet;
 
-            let decWalletResult = await getPrivateKeyByAccountAndPassword(
-                ret,
-                password
-            );
+            let decWalletResult = await getPriKey(ret, password);
             if (decWalletResult.err != null) {
                 return PasswordError;
             } else {
@@ -1545,13 +1928,13 @@ const handleUserRouter = async (req, res) => {
             }
             let contractName;
             if (type == 10) {
-                contractName = ERC721Ctnft.contractName;
+                contractName = ABI_const["ERC721Ctnft"].contractName;
             } else if (type == 12) {
-                contractName = ERC1155CtnftOwner.contractName;
+                contractName = ABI_const["ERC1155CtnftOwner"].contractName;
             } else if (type == 9) {
-                contractName = ERC1155Ctnft.contractName;
+                contractName = ABI_const["ERC1155Ctnft"].contractName;
             } else if (type == 1) {
-                contractName = CtnftMToken.contractName;
+                contractName = ABI_const["CtnftMToken"].contractName;
             } else {
                 contractName = "";
             }
@@ -1568,30 +1951,25 @@ const handleUserRouter = async (req, res) => {
                 type: type, // v1 1155
             };
 
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "collect",
-                "insertSelective",
-                collect
-            ).result;
+            var sql = get_mysql("collect", "insertSelective", collect).result;
 
-            return await execSql(sql)
-                .then((ret) => {
-                    return responseFun(RESPONSE_STATUS.SUCCESS, "", {
-                        collectAddress,
-                        type,
-                        hash: result1.hash,
-                    });
-                })
-                .catch((err) => {
-                    console.log("ERR:", err);
-                    return responseFun(RESPONSE_STATUS.ERROR, err.code, {});
+            let ret04 = await exec_sql(sql);
+            if (ret04.err == null) {
+                return responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                    collectAddress,
+                    type,
+                    hash: result1.hash,
                 });
+            } else {
+                return responseFun(RESPONSE_STATUS.ERROR, ret04.err, {});
+            }
         } catch (err) {
             return responseFun(RESPONSE_STATUS.ERROR, err, {});
         }
     }
+
     // 单NFT铸造(同步)
-    if (req.method === "POST" && req.path === "/api/account/createctNft") {
+    if (req.path === "/api/account/createctNft") {
         return new Promise((resolve, reject) => {
             // 创建表单解析对象
             const form = formidable({});
@@ -1616,12 +1994,10 @@ const handleUserRouter = async (req, res) => {
                 if (isEmpty(password).flag) {
                     return PasswordEmpty;
                 }
-                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-                    "AccountMapper",
-                    "selectByAddress",
-                    {address: address}
-                );
-                let result = await execSql(sqlResult.result);
+                let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                    address: address,
+                });
+                let result = await exec_sql(sqlResult.result);
 
                 // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
                 return result.then(async (ret) => {
@@ -1630,10 +2006,7 @@ const handleUserRouter = async (req, res) => {
                         return;
                     }
                     let wallet;
-                    let decWalletResult = await getPrivateKeyByAccountAndPassword(
-                        ret,
-                        password
-                    );
+                    let decWalletResult = await getPriKey(ret, password);
                     if (decWalletResult.err != null) {
                         resolve(PasswordError);
                     } else {
@@ -1711,7 +2084,7 @@ const handleUserRouter = async (req, res) => {
                                                 // 使用Provider 连接合约，将只有对合约的可读权限
                                                 let contract = new ethers.Contract(
                                                     collectAddress,
-                                                    ERC721Ctnft.abi,
+                                                    ABI_const["ERC721Ctnft"].abi,
                                                     customHttpProvider
                                                 );
                                                 // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
@@ -1827,7 +2200,7 @@ const handleUserRouter = async (req, res) => {
         });
     }
     // 查询和批量查询
-    if (req.method === "POST" && req.path === "/api/account/queryNft") {
+    if (req.path === "/api/account/queryNft") {
         const {tokenIds} = req.body;
         const result = nftSelectSelective(tokenIds);
         return result
@@ -1839,32 +2212,27 @@ const handleUserRouter = async (req, res) => {
             });
     }
     // 回调  TODO 这个可能需要考虑是否需要回调
-    if (req.method === "POST" && req.path === "/api/account/callFun") {
+    if (req.path === "/api/account/callFun") {
         const {tokenId, status, key} = req.body;
         return {code: 0};
     }
     // 积分相关接口
-    if (req.method === "POST" && req.path === "/api/account/rcti") {
+    if (req.path === "/api/account/rcti") {
         const {address, password, type, amount} = req.body;
         // 2 注册积分    1  消费积分
         try {
             try {
                 //  判断参数是否满足规范
-                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-                    "AccountMapper",
-                    "selectByAddress",
-                    {address: address}
-                );
-                let ret = await execSql(sqlResult.result);
+                let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                    address: address,
+                });
+                let ret = await exec_sql(sqlResult.result);
 
                 if (ret == null) {
                     return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
                 }
 
-                let decWalletResult = await getPrivateKeyByAccountAndPassword(
-                    ret,
-                    password
-                );
+                let decWalletResult = await getPriKey(ret, password);
                 if (decWalletResult.err != null) {
                     throw "invalid password";
                 } else {
@@ -1875,12 +2243,8 @@ const handleUserRouter = async (req, res) => {
             }
 
             var params = {type: 11}; // 草田积分合约
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "collect",
-                "selectByType",
-                params
-            ).result;
-            let collectRet = await execSql(sql)
+            var sql = get_mysql("collect", "selectByType", params).result;
+            let collectRet = await exec_sql(sql)
                 .then((ret) => {
                     return ret;
                 })
@@ -1916,8 +2280,8 @@ const handleUserRouter = async (req, res) => {
         }
     }
     // 通过个人身份转账接口
-    if (req.method === "POST" && req.path === "/api/account/transfer_f") {
-        logger.debug("In :%s", new Date().getTime())
+    if (req.path === "/api/account/transfer_f") {
+        logger.debug("In :%s", new Date().getTime());
         const {address, password, amount, to, tokenId, rebackUrl, orderId} =
             req.body;
         if (isEmpty(password).flag) {
@@ -1927,29 +2291,25 @@ const handleUserRouter = async (req, res) => {
         try {
             let wallet;
             //  判断参数是否满足规范
-            let {err, flag} = validateAddress(address);
-            if (!flag) {
-                throw err;
+            let ret01 = validateAddress(address);
+            if (!ret01.flag) {
+                throw ret01.err;
             }
 
-            let {err1, flag1} = (() => {
-                let {err, flag} = validateAddress(to);
-                return {err1: err, flag1: flag};
-            })();
-            if (!flag1) {
-                throw err1;
+            let ret02 = validateAddress(to);
+            if (!ret02.flag) {
+                throw ret02.err;
             }
             // if (address.toLowerCase() == to.toLowerCase()) {
             //     throw  "transfer is owner!"
             // }
-            logger.debug("Start Query Account:%s", new Date().getTime())
-            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "AccountMapper",
-                "selectByAddress",
-                {address: address}
-            );
-            let ret = await execSql(sqlResult.result);
-            logger.debug("Over Query Account:%s", new Date().getTime())
+            logger.debug("Start Query Account:%s", new Date().getTime());
+            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                address: address,
+            });
+            let ret03 = await exec_sql(sqlResult.result);
+            logger.debug("Over Query Account:%s", new Date().getTime());
+            let ret = ret03.result;
             if (ret == null) {
                 return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
             }
@@ -1960,12 +2320,9 @@ const handleUserRouter = async (req, res) => {
             }
 
             //
-            logger.debug("Start dec account:%s", new Date().getTime())
-            let decWalletResult = await getPrivateKeyByAccountAndPassword(
-                ret,
-                password
-            );
-            logger.debug("Dec Over Query 账户:%s", new Date().getTime())
+            logger.debug("Start dec account:%s", new Date().getTime());
+            let decWalletResult = await getPriKey(ret, password);
+            logger.debug("Dec Over Query 账户:%s", new Date().getTime());
             if (decWalletResult.err != null) {
                 return PasswordError;
             } else {
@@ -1974,36 +2331,30 @@ const handleUserRouter = async (req, res) => {
 
             //这里直接查询合约地址
 
-            logger.debug("Start Query NFT:%s", new Date().getTime())
+            logger.debug("Start Query NFT:%s", new Date().getTime());
             var params = {tokenId: tokenId};
-            var sqlQueryByTokenId = getMysqlSqlByTabNameAndSqlNameAndParam(
+            var sqlQueryByTokenId = get_mysql(
                 "nft",
                 "selectByTokenId",
                 params
             ).result;
-            let nftObj = await execSql(sqlQueryByTokenId)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("ERR:", err);
-                    return err;
-                });
+            let nftObj_ret = await exec_sql(sqlQueryByTokenId);
+
+            if (nftObj_ret.err != null) {
+                console.log("ERR:", nftObj_ret.err);
+            }
+            let nftObj = nftObj_ret.result;
             if (nftObj == null) {
                 throw "nft is not exist!";
             }
-            logger.debug("Over Query NFT:%s", new Date().getTime())
+            logger.debug("Over Query NFT:%s", new Date().getTime());
             let supply = nftObj["supply"];
             collectAddress = nftObj["collectAddress"];
 
             var params = {address: nftObj["collectAddress"]}; // 草田积分合约
-            logger.debug("开始Query Contract:%s", new Date().getTime())
-            var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
-                "collect",
-                "selectByAddress",
-                params
-            ).result;
-            let collectDetail = await execSql(sql)
+            logger.debug("开始Query Contract:%s", new Date().getTime());
+            var sql = get_mysql("collect", "selectByAddress", params).result;
+            let collectDetail_ret = await exec_sql(sql)
                 .then((ret) => {
                     return ret;
                 })
@@ -2011,10 +2362,34 @@ const handleUserRouter = async (req, res) => {
                     console.log("ERR:", err);
                     return err;
                 });
-            logger.debug("Over Query Contract:%s", new Date().getTime())
+            if (collectDetail_ret.err != null) {
+                console.log("ERR:", collectDetail_ret.err);
+            }
+            let collectDetail = collectDetail_ret.result;
+            logger.debug("Over Query Contract:%s", new Date().getTime());
+
             if (collectDetail == null) {
                 throw "collectAddress is error";
             }
+
+            // 查询账户实名状况
+
+            // 判断商家身份
+            if (address != collectDetail.owner) {
+                let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                let authData = await contract_static_call(
+                    ethers,
+                    contractAddress,
+                    ABI_const["AuthController"].abi,
+                    "parentauths",
+                    customHttpProvider,
+                    [address, collectDetail.owner]
+                );
+                if (authData.data.isAuth != true) {
+                    return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+                }
+            }
+
             // 判断合约转账类型
             let contract;
             let transObjFrom;
@@ -2025,7 +2400,7 @@ const handleUserRouter = async (req, res) => {
                 case 12:
                     contract = new ethers.Contract(
                         collectAddress,
-                        ERC1155Ctnft.abi, // 10 和 12 是同一个abi
+                        ABI_const["ERC1155Ctnft"].abi, // 10 和 12 是同一个abi
                         customHttpProvider
                     );
                     //    查询协议tokenId的总发行
@@ -2054,20 +2429,20 @@ const handleUserRouter = async (req, res) => {
                     // TODO 这里要进行余额判断
                     // 这里对藏品余额进行判断
                     // 这里对手续费余额进行判断
-                    logger.debug("Start Query Balance:%s", new Date().getTime())
+                    logger.debug("Start Query Balance:%s", new Date().getTime());
                     var balanceRet = await queryBalanceAndTokenBalance(
                         address,
                         collectAddress,
                         tokenId
                     );
-                    logger.debug("Over Query Balance:%s", new Date().getTime())
+                    logger.debug("Over Query Balance:%s", new Date().getTime());
                     if (balanceRet.err != null) {
                         throw err;
                     } else {
                         let mainBalance = ethers.utils.formatEther(
-                            web3.utils.hexToNumberString(balanceRet.data.balance)
+                            Web3.utils.hexToNumberString(balanceRet.data.balance)
                         );
-                        let tokenBalance = web3.utils.hexToNumberString(
+                        let tokenBalance = Web3.utils.hexToNumberString(
                             balanceRet.data.tokenBalance
                         );
                         // 这里如果是合约发行方的话, 做手续费判断   1155协议
@@ -2082,8 +2457,8 @@ const handleUserRouter = async (req, res) => {
                         }
 
                         // if (nftObj["address"].toLowerCase() != address.toLowerCase()) {
-                        //     transObjFrom = await execSql(
-                        //         getMysqlSqlByTabNameAndSqlNameAndParam(
+                        //     transObjFrom = await exec_sql(
+                        //         get_mysql(
                         //             "trans_form_list",
                         //             "selectByFormAndTokenId",
                         //             {token_id: tokenId, t_from: address}
@@ -2096,8 +2471,8 @@ const handleUserRouter = async (req, res) => {
                         //             console.log("ERR:", err);
                         //             return err;
                         //         });
-                        //     transObjTo = await execSql(
-                        //         getMysqlSqlByTabNameAndSqlNameAndParam(
+                        //     transObjTo = await exec_sql(
+                        //         get_mysql(
                         //             "trans_form_list",
                         //             "selectByToAndTokenId",
                         //             {token_id: tokenId, t_to: address}
@@ -2142,38 +2517,39 @@ const handleUserRouter = async (req, res) => {
 
                         // save db
                         //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
-                        var sqlQueryByTokenIdAndForm =
-                            getMysqlSqlByTabNameAndSqlNameAndParam(
-                                "trans_form_list",
-                                "insertSelective",
-                                {
-                                    t_from: address,
-                                    t_to: to,
-                                    collectAddress: collectAddress,
-                                    amount: amount,
-                                    reback_url: rebackUrl,
-                                    token_id: tokenId,
-                                    orderId: orderId,
-                                    type: collectDetail["type"],
-                                    t_status: 1,
-                                }
-                            ).result;
-                        return await execSql(sqlQueryByTokenIdAndForm)
-                            .then((ret) => {
-                                // betchTransfer();
-                                logger.debug("Out:%s", new Date().getTime())
-                                return responseFun(RESPONSE_STATUS.SUCCESS, "", {ret: ret});
-                            })
-                            .catch((err) => {
-                                console.log("ERR:", err);
-                                return responseFun(RESPONSE_STATUS.ERROR, err, "");
+                        var sqlQueryByTokenIdAndForm = get_mysql(
+                            "trans_form_list",
+                            "insertSelective",
+                            {
+                                t_from: address,
+                                t_to: to,
+                                collectAddress: collectAddress,
+                                amount: amount,
+                                reback_url: rebackUrl,
+                                token_id: tokenId,
+                                orderId: orderId,
+                                type: collectDetail["type"],
+                                t_status: 1,
+                            }
+                        ).result;
+                        let ex_ret = await exec_sql(sqlQueryByTokenIdAndForm);
+
+                        if (ex_ret.err != null) {
+                            console.log("ERR:", ex_ret.err);
+                            return responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, "");
+                        } else {
+                            logger.debug("Out:%s", new Date().getTime());
+                            return responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                                orderId: orderId,
                             });
+                        }
+
                         break;
                     }
                 case 9:
                     contract = new ethers.Contract(
                         collectAddress,
-                        ERC721Ctnft.abi, // 10 和 12 是同一个abi
+                        ABI_const["ERC721Ctnft"].abi, // 10 和 12 是同一个abi
                         customHttpProvider
                     );
                     //    Query 协议tokenId的总发行
@@ -2198,35 +2574,29 @@ const handleUserRouter = async (req, res) => {
 
                     // 数据库余额判断
                     //    数据库已有数据判断
-                    transObjFrom = await execSql(
-                        getMysqlSqlByTabNameAndSqlNameAndParam(
-                            "trans_form_list",
-                            "selectByFormAndTokenId",
-                            {token_id: tokenId, t_from: address}
-                        ).result
-                    )
-                        .then((ret) => {
-                            return ret;
-                        })
-                        .catch((err) => {
-                            console.log("ERR:", err);
-                            return err;
-                        });
-                    transObjTo = await execSql(
+                    let transObjFrom_ret01 = await exec_sql(
+                        get_mysql("trans_form_list", "selectByFormAndTokenId", {
+                            token_id: tokenId,
+                            t_from: address,
+                        }).result
+                    );
+                    if (transObjFrom_ret01.err) {
+                        console.log("ERR:", transObjFrom_ret01.err);
+                    }
+                    transObjFrom = transObjFrom_ret01.result;
+
+                    let transObjTo_ret02 = await exec_sql(
                         getMysqlSqlByTabNameAndSqlNameAndParam(
                             "trans_form_list",
                             "selectByToAndTokenId",
                             {token_id: tokenId, t_to: address}
                         ).result
-                    )
-                        .then((ret) => {
-                            return ret;
-                        })
-                        .catch((err) => {
-                            console.log("ERR:", err);
-                            return err;
-                        });
+                    );
 
+                    if (transObjTo_ret02.err != null) {
+                        console.log("ERR:", transObjTo_ret02.err);
+                    }
+                    transObjTo = transObjTo_ret02.result;
                     juAmount = 0;
                     if (transObjFrom && transObjFrom["sumAmount"]) {
                         juAmount -= Number(transObjFrom["sumAmount"]);
@@ -2274,15 +2644,14 @@ const handleUserRouter = async (req, res) => {
                                 t_status: 1,
                             }
                         ).result;
-                    return await execSql(sqlQueryByTokenIdAndForm1)
-                        .then((ret) => {
-                            // console.log("inset TransFotmList data:", ret);
-                            return responseFun(RESPONSE_STATUS.SUCCESS, "", {ret: ret});
-                        })
-                        .catch((err) => {
-                            console.log("ERR:", err);
-                            return responseFun(RESPONSE_STATUS.ERROR, err, "");
-                        });
+                    let ex_ret_01 = await exec_sql(sqlQueryByTokenIdAndForm1);
+                    if (ex_ret_01.err != null) {
+                        console.log("ERR:", ex_ret_01.err);
+                        return responseFun(RESPONSE_STATUS.ERROR, ex_ret_01.err, "");
+                    } else {
+                        return responseFun(RESPONSE_STATUS.SUCCESS, "", {orderId: orderId,});
+                    }
+
                     break;
                 default:
                     return responseFun(RESPONSE_STATUS.ERROR, "暂不受支持的合约!", null);
@@ -2292,7 +2661,7 @@ const handleUserRouter = async (req, res) => {
         }
     }
     // 转fee
-    if (req.method === "POST" && req.path === "/api/account/tfee") {
+    if (req.path === "/api/account/tfee") {
         const {address, password} = req.body;
 
         // try {
@@ -2307,46 +2676,46 @@ const handleUserRouter = async (req, res) => {
         // }
     }
 
-    if (req.method === "GET" && req.path === "/api/private/dashboard") {
+    if (req.path === "/api/private/dashboard") {
         let resultNFT = {};
         let resultTREANS = {};
         let result = {};
 
         // 等待上传ipfs
         let sql1 = "SELECT count(0) from nft where `status` = 0;";
-        await execSql(sql1);
-        resultNFT["等待上传ipfs"] = await execSql(sql1);
+        await exec_sql(sql1);
+        resultNFT["等待上传ipfs"] = await exec_sql(sql1);
         // 等待上链
         let sql2 = "SELECT count(0) from nft where `status` = 6;";
-        resultNFT["等待上链"] = await execSql(sql2);
+        resultNFT["等待上链"] = await exec_sql(sql2);
         // 等待hash查询
         let sql3 = "SELECT count(0) from nft where `status` = 10;";
-        resultNFT["等待hash查询"] = await execSql(sql3);
+        resultNFT["等待hash查询"] = await exec_sql(sql3);
         // 上链成功
         let sql4 = "SELECT count(0) from nft where `status` = 7;";
-        resultNFT["上链成功"] = await execSql(sql4);
+        resultNFT["上链成功"] = await exec_sql(sql4);
         // 上链失败
         let sql5 = "SELECT count(0) from nft where `status` = 8;";
-        resultNFT["上链失败"] = await execSql(sql5);
+        resultNFT["上链失败"] = await exec_sql(sql5);
         // 回调失败
         let sql6 = "SELECT count(0) from nft where `status` = 9;";
-        resultNFT["回调失败"] = await execSql(sql6);
+        resultNFT["回调失败"] = await exec_sql(sql6);
 
         // 等待上链
         let sql7 = "SELECT count(0) from trans_form_list where `t_status` = 1;";
-        resultTREANS["等待上链"] = await execSql(sql7);
+        resultTREANS["等待上链"] = await exec_sql(sql7);
         // 等待hash查询
         let sql8 = "SELECT count(0) from trans_form_list where `t_status` = 5;";
-        resultTREANS["等待hash查询"] = await execSql(sql8);
+        resultTREANS["等待hash查询"] = await exec_sql(sql8);
         // 上链成功
         let sql9 = "SELECT count(0) from trans_form_list where `t_status` = 6;";
-        resultTREANS["上链成功"] = await execSql(sql9);
+        resultTREANS["上链成功"] = await exec_sql(sql9);
         // 上链失败
         let sql10 = "SELECT count(0) from trans_form_list where `t_status` = 7;";
-        resultTREANS["上链失败"] = await execSql(sql10);
+        resultTREANS["上链失败"] = await exec_sql(sql10);
         // 回调失败
         let sql11 = "SELECT count(0) from trans_form_list where `t_status` = 8;";
-        resultTREANS["回调失败"] = await execSql(sql11);
+        resultTREANS["回调失败"] = await exec_sql(sql11);
         result = {
             NFT: resultNFT,
             TRANS: resultTREANS,
@@ -2367,7 +2736,7 @@ async function transfer(value, toAddress) {
         // to: "ricmoo.firefly.eth"
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
-        value: web3.utils.numberToHex(value),
+        value: Web3.utils.numberToHex(value),
         // nonce: transactionCount1Mint,
     };
 

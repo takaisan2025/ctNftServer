@@ -2,7 +2,7 @@ const {
     isEmpty
 } = require("../rules/rules");
 const {
-    execSql,
+    exec_sql,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const gasConfig = require("../config/gasConfig.json");
@@ -29,8 +29,8 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 const ethUtil = require("ethereumjs-util");
 const {responseFun} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
-const {getPrivateKeyByAccountAndPassword} = require("../chain/accountProUtils");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {getPriKey} = require("../chain/accountProUtils");
+const {get_mysql} = require("../db/genSql");
 
 async function betchTransfer() {
     let transList = JSON.parse(process.env.spTransList);
@@ -51,32 +51,33 @@ async function betchTransfer() {
             update_time
         } = transList[retKey];
         try {
-            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: t_from})
-            let accountDetail = await execSql(sqlResult.result);
+            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {address: t_from})
+            let accountDetail_ret01 = await exec_sql(sqlResult.result);
+            let accountDetail = accountDetail_ret01.result
             var params1 = {address: collectAddress};
-            var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam(
+            var sql1 = get_mysql(
                 "collect",
                 "selectByAddress",
                 params1
             ).result;
-            let collectDetail = await execSql(sql1)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.trace("ERR:", err);
-                    return err;
-                });
+            let collectDetail_ret02 = await exec_sql(sql1)
+
+            if (collectDetail_ret02.err != null) {
+                console.trace("ERR:", collectDetail_ret02.err);
+            }
+
+            let collectDetail = collectDetail_ret02.result
             let contractAddressDetailAsync;
 
             if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
                 contractAddressDetailAsync = accountDetail;
             } else {
-                let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: collectDetail.owner})
-                contractAddressDetailAsync = await execSql(sqlResult.result);
+                let sqlResult = get_mysql("AccountMapper", "selectByAddress", {address: collectDetail.owner})
+                let contractAddressDetailAsync_ret = await exec_sql(sqlResult.result);
+                contractAddressDetailAsync = contractAddressDetailAsync_ret.result
             }
             let contractAddressDetail = contractAddressDetailAsync;
-            let decWalletResult1 = await getPrivateKeyByAccountAndPassword(contractAddressDetailAsync, contractAddressDetailAsync.psd);
+            let decWalletResult1 = await getPriKey(contractAddressDetailAsync, contractAddressDetailAsync.psd);
             let wallet1;
             if (decWalletResult1.err != null) {
                 return PasswordError;
@@ -88,7 +89,7 @@ async function betchTransfer() {
             // try {
             let wallet;
 
-            let decWalletResult = await getPrivateKeyByAccountAndPassword(accountItem, accountItem.psd);
+            let decWalletResult = await getPriKey(accountItem, accountItem.psd);
             if (decWalletResult.err != null) {
                 return PasswordError;
             } else {
@@ -280,12 +281,12 @@ async function betchTransfer() {
                     console.log("nftUpdateSelective:", trans_from_obj);
 
                     var paramsUp = trans_from_obj;
-                    var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                    var sqlUp = get_mysql(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
                         paramsUp
                     ).result;
-                    await execSql(sqlUp);
+                    await exec_sql(sqlUp);
                 } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
                     // 计算手续费导致的错误, 稍后重试
                 } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
@@ -296,12 +297,12 @@ async function betchTransfer() {
                     };
 
                     var paramsUp1 = trans_from_obj;
-                    var sqlUp1 = getMysqlSqlByTabNameAndSqlNameAndParam(
+                    var sqlUp1 = get_mysql(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
                         paramsUp1
                     ).result;
-                    await execSql(sqlUp1);
+                    await exec_sql(sqlUp1);
                 } else if ("replacement fee too low" == gasLimitRet.err) {
                 } else {
                 }
@@ -363,19 +364,17 @@ async function betchTransfer() {
                     console.log("nftUpdateSelective:", trans_from_obj);
 
                     var paramsUp = trans_from_obj;
-                    var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                    var sqlUp = get_mysql(
                         "trans_form_list",
                         "updateByPrimaryKeySelective",
                         paramsUp
                     ).result;
-                    let result = await execSql(sqlUp)
-                        .then((ret) => {
-                            return ret;
-                        })
-                        .catch((err) => {
-                            console.trace(responseFun(500, err, ""), id);
-                        });
-                    console.log("update TransFrom data:", result);
+                    let result002 = await exec_sql(sqlUp)
+
+                    if (result002.err != null) {
+                        console.trace(responseFun(500, result002.err, ""), id);
+                    }
+                    console.log("update TransFrom data:", result002.result);
                     continue;
                 } else {
                     if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
@@ -386,12 +385,12 @@ async function betchTransfer() {
                         console.log("nftUpdateSelective:", trans_from_obj);
 
                         var paramsUp = trans_from_obj;
-                        var sqlUp = getMysqlSqlByTabNameAndSqlNameAndParam(
+                        var sqlUp = get_mysql(
                             "trans_form_list",
                             "updateByPrimaryKeySelective",
                             paramsUp
                         ).result;
-                        await execSql(sqlUp);
+                        await exec_sql(sqlUp);
                         continue;
                     }
                     if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
@@ -410,12 +409,12 @@ async function betchTransfer() {
                         };
 
                         var paramsUp1 = trans_from_obj;
-                        var sqlUp1 = getMysqlSqlByTabNameAndSqlNameAndParam(
+                        var sqlUp1 = get_mysql(
                             "trans_form_list",
                             "updateByPrimaryKeySelective",
                             paramsUp1
                         ).result;
-                        await execSql(sqlUp1);
+                        await exec_sql(sqlUp1);
                         continue;
                     }
                     if ("replacement fee too low" == txRet.err) {

@@ -1,5 +1,5 @@
 const child_process = require('child_process');
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {get_mysql} = require("../db/genSql");
 const {
     isJson,
     stripHexPrefix,
@@ -17,28 +17,26 @@ function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一
 }
 
 const {
-    execSql,
-    execSqlAll,
+    exec_sql,
+    exec_sql_all,
 } = require("../controller/ctnft");
 
 async function main() {
     console.log("betchTransferThread Start !!")
     let countTh = 0;
     var params = {t_status: 6};
-    var sql = getMysqlSqlByTabNameAndSqlNameAndParam(
+    var sql = get_mysql(
         "trans_form_list",
         "selectByStatus",
         params
     ).result;
-    let transList = await execSqlAll(sql)
-        .then((ret) => {
-            return ret;
-        })
-        .catch((err) => {
-            console.trace("ERR:", err);
-            return err;
-        });
 
+    let transList_ret = await exec_sql_all(sql)
+    let transList = []
+    if (transList_ret.err != null) {
+        console.trace("ERR:", transList_ret.err);
+    }
+    transList = transList_ret.result
     let processedTransList = spArr(transList, 250);
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {

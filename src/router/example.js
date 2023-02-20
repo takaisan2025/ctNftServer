@@ -9,7 +9,7 @@ const GlobalConfig = require("../config/GlobalConfig.json");
 let privateKeyExample =
   ""; // mint pri
 let addressExample = ""; // mint pri
-const web3 = require("web3");
+const Web3 = require("web3");
 const ipfsAPI = require("ipfs-api");
 const ipfsNode = ipfsAPI({
   host: GlobalConfig.IPFS[0].HOST,

@@ -1,13 +1,8 @@
-const {
-    isEmpty
-} = require("../rules/rules");
+const {isEmpty} = require("../rules/rules");
 const {
     nftUpdateSelectiveStatus,
     nftSelectSelectiveStatus,
-    nftSelectSelectiveCreator,
-    nftInsertSelective,
     nftUpdateSelective,
-    nftUpdateSelectiveIsFinish,
     responseFun,
 } = require("../controller/ctnft");
 const fs = require("fs");
@@ -26,9 +21,6 @@ const ipfsNode = ipfsAPI({
 //     lrange,
 //     lrem,
 // } = require('../redis/redis-client');
-const {
-    graphiqlHashQuery
-} = require("../broapi/broapi");
 const gasConfig = require("../config/gasConfig.json");
 const FormData = require("form-data");
 const Web3 = require("web3");
@@ -36,31 +28,27 @@ let web3o = new Web3("http://ctblock.cn/blockChain");
 // let web3o = new Web3("https://exploder.coozw.com/blockChain");
 let web3 = web3o;
 const fetch = require("node-fetch");
-let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 
 let reCallUrlChanel1 = "http://nft.richonn.com/home/nft/casting";
 
-const TRANSACTION_RECEIPT_STATUS = {
-    SUCCESS: 1,
-    REVERTED: 0,
-};
-const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
-const CtnftMToken = require("../contract/CtnftMToken.json");
-const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
+const ABI_const = require("../contract/ABI_const.js");
 const ethers = require("ethers");
 const {responseFunStr} = require("../mapper/account");
-const {getPrivateKeyByAccountAndPassword} = require("../chain/accountProUtils");
+const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
-const {execSql} = require("../controller/ctnft");
-const {getMysqlSqlByTabNameAndSqlNameAndParam} = require("../db/genSql");
+const {exec_sql, exec_sql_all} = require("../controller/ctnft");
+const {get_mysql} = require("../db/genSql");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 
-let customHttpProvider = new ethers.providers.JsonRpcProvider({
-    ...rpc
-}, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
+let customHttpProvider = new ethers.providers.JsonRpcProvider(
+    {
+        ...rpc,
+    },
+    {
+        chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
+    }
+);
 
 let minted721TokenStr = "execution reverted: ERC721: token already minted";
 let minted1155TokenStr = "execution reverted: more than supply";
@@ -105,61 +93,76 @@ function Mint1155Data(
  */
 
 async function fileUploadIpfs() {
-    // let nftSql = getMysqlSqlByTabNameAndSqlNameAndParam("nft","");
-    let nfts = nftSelectSelectiveStatus(0); // 资源未上链ipfs的条目
-    let nftArr = await nfts
-        .then((ret) => {
-            return ret;
-        })
-        .catch((err) => {
-            console.trace(responseFunStr(500, err, {}));
-        });
+    // let nftSql = get_mysql("nft","");
+    let nfts_sql_ret = get_mysql("nft", "selectByStatus", {
+        status: 0,
+    }); // 资源未上链ipfs的条目
+    let nfts_sql = nfts_sql_ret.result;
+    let nfts_ret = await exec_sql_all(nfts_sql);
+    let nftArr = [];
+    if (nfts_ret.err != null) {
+        console.trace(responseFunStr(500, nfts_ret.err, {}));
+    } else {
+        nftArr = nfts_ret.result;
+    }
 
     for (let retKey in nftArr) {
         try {
-
         } catch (e) {
             console.trace(e);
-            continue
+            continue;
         }
         // console.log(nftArr[retKey]);
         let {id, premetadata, tokenId, serverPath, tempPath} = nftArr[retKey];
-        const searchRegExp = new RegExp("\\\\\"", 'g') // // 抛出 SyntaxError 异常
-        premetadata = premetadata.replace(searchRegExp, '"')
+        const searchRegExp = new RegExp('\\\\"', "g"); // // 抛出 SyntaxError 异常
+        premetadata = premetadata.replace(searchRegExp, '"');
         // 这里上传IPFS资源文件
         // 图片资源上传ipfs
         let data = await fs.readFileSync(serverPath);
-        console.log("data:", data);
+
         let imgResponseRet = await ipfsNode
             .add(data)
             // .add(Buffer.from(data))
             .then((imgResponse) => {
                 // return imgResponse;
-                return {err: null, data: imgResponse}
+                return {err: null, data: imgResponse};
             })
             .catch((err) => {
                 console.trace(responseFunStr(500, err, {}));
-                return {err: err, data: null}
+                return {err: err, data: null};
             });
         if (imgResponseRet.err == null) {
             let imgResponse = imgResponseRet.data;
             console.log("imgResponse:", imgResponse);
-            console.log("img:", imgResponse[0].path);
             //PIN
             ipfsNode.pin.add(imgResponse[0].path);
             console.log("img ping success");
             let imgIpfsAddress = imgResponse[0].path;
             // 元数据上传ipfs
-            const reqdataRet = JSON.parse(premetadata.replace(/\n/g, "\\n").replace(/\r/g, "\\r"));
+
+            let reqdataRet;
+
+            try {
+                reqdataRet = JSON.parse(
+                    premetadata.replace(/\n/g, "\\n").replace(/\r/g, "\\r")
+                );
+            } catch (e) {
+                reqdataRet = JSON.parse(
+                    premetadata.replace(/\\%/g, '%')
+                );
+            }
+
+            console.log(reqdataRet)
             const reqdata = {};
             // const reqdata = JSON.parse(JSON.stringify(premetadata));
             reqdata.fileName = tempPath.substring(tempPath.lastIndexOf("/") + 1);
-            reqdata.image = "https://dream.chaonft.cn/ipfs/api/v0/cat/" + imgIpfsAddress;
-            reqdata.subject = reqdataRet.title
-            reqdata.author = reqdataRet.author
+            reqdata.image =
+                "https://dream.chaonft.cn/ipfs/api/v0/cat/" + imgIpfsAddress;
+            reqdata.subject = reqdataRet.title;
+            reqdata.author = reqdataRet.author;
             reqdata.authorDescription = reqdataRet.authorDesc;
             reqdata.description = reqdataRet.desc;
-            reqdata.flydate = "Summer 2022"
+            reqdata.flydate = "Summer 2022";
             reqdata.data = reqdataRet;
             let response = await ipfsNode
                 .add(Buffer.from(JSON.stringify(reqdata), "utf-8"))
@@ -197,26 +200,30 @@ async function fileUploadIpfs() {
                 console.trace(responseFunStr(500, e, ""), id);
             }
         } else {
-            console.trace("ipfs upload err:", imgResponseRet.err)
+            console.trace("ipfs upload err:", imgResponseRet.err);
         }
     }
     console.log("fileUploadIpfs All Done!");
     setTimeout(() => {
-        formatTime(new Date())
-        console.log("fileUploadIpfs Start !!")
-        fileUploadIpfs()
-    }, 2000)
+        formatTime(new Date());
+        console.log("fileUploadIpfs Start !!");
+        fileUploadIpfs();
+    }, 2000);
 }
 
 async function betchMint() {
-    let nfts = nftSelectSelectiveStatus(6); // 资源未上链ipfs的条目
-    let nftArr = await nfts
-        .then((ret) => {
-            return ret;
-        })
-        .catch((err) => {
-            console.trace(responseFunStr(500, err, {}));
-        });
+    let nfts_sql_ret = get_mysql("nft", "selectByStatus", {
+        status: 6,
+    }); // 资源未上链ipfs的条目
+    let nfts_sql = nfts_sql_ret.result;
+    let nfts_ret = await exec_sql_all(nfts_sql);
+    let nftArr = [];
+    if (nfts_ret.err != null) {
+        console.trace(responseFunStr(500, nfts_ret.err, {}));
+    } else {
+        nftArr = nfts_ret.result;
+    }
+
     for (let retKey in nftArr) {
         // console.log(ret[retKey]);
         try {
@@ -231,17 +238,19 @@ async function betchMint() {
                 nonce,
                 type,
             } = nftArr[retKey];
-            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: address})
-            let accountDetail = await execSql(sqlResult.result);
-            let accountItem = accountDetail;
+            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                address: address,
+            });
+            let accountDetail_ret = await exec_sql(sqlResult.result);
+            let accountItem = accountDetail_ret.result;
             // try {
             let wallet;
 
-            let decWalletResult = await getPrivateKeyByAccountAndPassword(accountItem, accountItem.psd);
+            let decWalletResult = await getPriKey(accountItem, accountItem.psd);
             if (decWalletResult.err != null) {
                 throw PasswordError;
             } else {
-                wallet = decWalletResult.result
+                wallet = decWalletResult.result;
             }
             wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
 
@@ -256,27 +265,37 @@ async function betchMint() {
             if (type == 10 || type == 12) {
                 let contract = new ethers.Contract(
                     collectAddress,
-                    ERC1155Ctnft.abi,
+                    ABI_const["ERC1155Ctnft"].abi,
                     customHttpProvider
                 );
 
-                if (collectAddress.toString().toLowerCase() == "0xA9d539e9B9B0d3885bC2056C9482B2aE7277a1Da".toLowerCase()) {
+                if (
+                    collectAddress.toString().toLowerCase() ==
+                    "0xA9d539e9B9B0d3885bC2056C9482B2aE7277a1Da".toLowerCase()
+                ) {
                     tokenURI = "/" + tokenURI;
                 }
                 // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
                 let contractWithSigner = contract.connect(wallet);
                 let gasLimitRet = await contractWithSigner.estimateGas
                     .mintAndTransfer(
-                        Mint1155Data(tokenId, tokenURI, supply, [creators], [], [signatures]),
+                        Mint1155Data(
+                            tokenId,
+                            tokenURI,
+                            supply,
+                            [creators],
+                            [],
+                            [signatures]
+                        ),
                         transferTo,
                         supply
                     )
                     .then((ret) => {
-                        return {err: null, gasLimit: ret}
+                        return {err: null, gasLimit: ret};
                     })
                     .catch((err) => {
                         console.trace("err:", err.reason);
-                        return {err: err.reason, gasLimit: null}
+                        return {err: err.reason, gasLimit: null};
                     });
                 let gasLimit = gasLimitRet.gasLimit;
                 if (gasLimit == null) {
@@ -290,13 +309,16 @@ async function betchMint() {
                     continue;
                 } else {
                     console.log("gasLimit:", gasLimit.toString());
-                    let neceliby = ethers.utils.formatEther((gasConfig.mint1155.gas).toString());
+                    let neceliby = ethers.utils.formatEther(
+                        gasConfig.mint1155.gas.toString()
+                    );
                     console.log("gasPrice*:", neceliby);
                     let balance = await wallet.provider.getBalance(address);
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
+                    if (Number(etherString) < Number(String(10))) {
+                        // 合约持有者余额不足十个,将进行充值 1155铸造者
                         console.log("合约持有者余额不足, 请进行充值!", address);
                         // await delNonce(address);
                         continue;
@@ -305,7 +327,9 @@ async function betchMint() {
                             // The maximum units of gas for the transaction to use
                             gasLimit: web3.utils.numberToHex(gasLimit),
                             // The price (in wei) per unit of gas
-                            gasPrice: web3.utils.numberToHex(parseInt(gasConfig.mint1155.gas / Number(gasLimit))),
+                            gasPrice: web3.utils.numberToHex(
+                                parseInt(gasConfig.mint1155.gas / Number(gasLimit))
+                            ),
                             // The nonce to use in the transaction
                             // nonce: nonce,
                             // nonce: transactionCount1Mint,
@@ -315,11 +339,17 @@ async function betchMint() {
                             // chainId: 27
                         };
 
-
                         // 设置一个新值，返回交易
                         let txRet = await contractWithSigner
                             .mintAndTransfer(
-                                Mint1155Data(tokenId, tokenURI, supply, [creators], [], [signatures]),
+                                Mint1155Data(
+                                    tokenId,
+                                    tokenURI,
+                                    supply,
+                                    [creators],
+                                    [],
+                                    [signatures]
+                                ),
                                 transferTo,
                                 supply,
                                 overrides
@@ -334,9 +364,7 @@ async function betchMint() {
                         // console.log("tx:", tx.toString().startsWith('0x'))
                         // console.log("tx:", tx);
                         let tx = txRet.data;
-                        if (
-                            tx == null && minted1155TokenStr == txRet.err
-                        ) {
+                        if (tx == null && minted1155TokenStr == txRet.err) {
                             console.log("tx:", tx.hash);
                             let nft = {
                                 isFinish: 1,
@@ -356,7 +384,10 @@ async function betchMint() {
                                     console.trace(responseFun(500, err, ""), tokenId);
                                 });
                             console.log("update NFT data:", result);
-                            console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
+                            console.info(
+                                responseFunStr(200, "", {tokenId: tokenId}),
+                                tokenId
+                            );
                             continue;
                         } else if (tx != null) {
                             // 查看: https://ropsten.etherscan.io/tx/0xaf0068dcf728afa5accd02172867627da4e6f946dfb8174a7be31f01b11d5364
@@ -396,7 +427,10 @@ async function betchMint() {
                                     console.trace(responseFun(500, err, ""), tokenId);
                                 });
                             console.log("update NFT data:", result);
-                            console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
+                            console.info(
+                                responseFunStr(200, "", {tokenId: tokenId}),
+                                tokenId
+                            );
                             // await updateNonce(address, transactionCount1Mint + 1);
                         } else if ("replacement fee too low" == txRet.err) {
                             //手续费不足
@@ -408,11 +442,10 @@ async function betchMint() {
                         }
                     }
                 }
-
             } else if (type == 9) {
                 let contract = new ethers.Contract(
                     collectAddress,
-                    ERC721Ctnft.abi,
+                    ABI_const["ERC721Ctnft"].abi,
                     customHttpProvider
                 );
                 let contractWithSigner = contract.connect(wallet);
@@ -422,11 +455,11 @@ async function betchMint() {
                         transferTo
                     )
                     .then((ret) => {
-                        return {err: null, gasLimit: ret}
+                        return {err: null, gasLimit: ret};
                     })
                     .catch(async (err) => {
                         console.trace("err:", err.reason);
-                        return {err: err.reason, gasLimit: null}
+                        return {err: err.reason, gasLimit: null};
                     });
 
                 let gasLimit = gasLimitRet.gasLimit;
@@ -442,7 +475,9 @@ async function betchMint() {
                     continue;
                 } else {
                     console.log("gasLimit:", gasLimit.toString());
-                    let neceliby = ethers.utils.formatEther((gasConfig.mint721.gas).toString());
+                    let neceliby = ethers.utils.formatEther(
+                        gasConfig.mint721.gas.toString()
+                    );
                     console.log("gasPrice*:", neceliby);
                     console.log("gasPrice*:", gasConfig.mint721.gas);
                     let balance = await wallet.provider.getBalance(address);
@@ -451,29 +486,29 @@ async function betchMint() {
                     console.log("Balance: ", etherString);
                     var params1 = {address: collectAddress};
                     if (Number(etherString) < Number(String(1))) {
-                        var sql1 = getMysqlSqlByTabNameAndSqlNameAndParam(
-                            "collect",
-                            "selectByAddress",
-                            params1
-                        ).result;
-                        let collectDetail = await execSql(sql1)
-                            .then((ret) => {
-                                return ret;
-                            })
-                            .catch((err) => {
-                                console.trace("ERR:", err);
-                                return err;
-                            });
+                        var sql1 = get_mysql("collect", "selectByAddress", params1).result;
+                        let collectDetail_ret = await exec_sql(sql1);
+
+                        if (collectDetail_ret.err != null) {
+                            console.trace("ERR:", collectDetail_ret.err);
+                        }
+                        let collectDetail = collectDetail_ret.result;
                         let contractAddressDetailAsync;
 
                         if (collectDetail.owner.toLowerCase() == address.toLowerCase()) {
-                            contractAddressDetailAsync = accountDetail;
+                            contractAddressDetailAsync = accountItem;
                         } else {
-                            let sqlResult = getMysqlSqlByTabNameAndSqlNameAndParam("AccountMapper", "selectByAddress", {address: collectDetail.owner})
-                            contractAddressDetailAsync = await execSql(sqlResult.result);
+                            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                                address: collectDetail.owner,
+                            });
+                            let contractAddressDetailAsync_ret = await exec_sql(sqlResult.result);
+                            contractAddressDetailAsync = contractAddressDetailAsync_ret.result
                         }
                         let contractAddressDetail = contractAddressDetailAsync;
-                        let decWalletResult1 = await getPrivateKeyByAccountAndPassword(contractAddressDetailAsync, contractAddressDetailAsync.psd);
+                        let decWalletResult1 = await getPriKey(
+                            contractAddressDetailAsync,
+                            contractAddressDetailAsync.psd
+                        );
                         let wallet1;
                         if (decWalletResult1.err != null) {
                             return PasswordError;
@@ -486,7 +521,11 @@ async function betchMint() {
                         if (isEmpty(privateKeyA).flag) {
                             continue;
                         } else {
-                            let {err, hash} = await transfer(privateKeyA, ethers.utils.parseEther(String(1)), address);
+                            let {err, hash} = await transfer(
+                                privateKeyA,
+                                ethers.utils.parseEther(String(1)),
+                                address
+                            );
                             if (err != null) {
                                 console.log("txTransfer faild");
                                 continue;
@@ -494,7 +533,6 @@ async function betchMint() {
                             console.log("tx Hash:", hash);
                             continue;
                         }
-
                     }
                     // if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
                     //     console.log("合约持有者余额不足, 请进行充值!", address);
@@ -518,7 +556,9 @@ async function betchMint() {
                         // The maximum units of gas for the transaction to use
                         gasLimit: web3.utils.numberToHex(gasLimit),
                         // The price (in wei) per unit of gas
-                        gasPrice: web3.utils.numberToHex(parseInt(gasConfig.mint721.gas / Number(gasLimit))),
+                        gasPrice: web3.utils.numberToHex(
+                            parseInt(gasConfig.mint721.gas / Number(gasLimit))
+                        ),
                         // The nonce to use in the transaction
                         // nonce: nonce,
                         // nonce: transactionCount1Mint,
@@ -544,10 +584,7 @@ async function betchMint() {
                     // console.log("tx:", tx.toString().startsWith('0x'))
                     // console.log("tx:", tx);
                     let tx = txRet.data;
-                    if (
-                        tx == null && minted721TokenStr == txRet.err
-                    ) {
-
+                    if (tx == null && minted721TokenStr == txRet.err) {
                         let nft = {
                             isFinish: 1,
                             hash: tx.hash,
@@ -564,7 +601,10 @@ async function betchMint() {
                             .catch((err) => {
                                 console.trace(responseFun(500, err, ""), tokenId);
                             });
-                        console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
+                        console.info(
+                            responseFunStr(200, "", {tokenId: tokenId}),
+                            tokenId
+                        );
                         continue;
                     } else if (tx != null) {
                         // 查看: https://ropsten.etherscan.io/tx/0xaf0068dcf728afa5accd02172867627da4e6f946dfb8174a7be31f01b11d5364
@@ -601,7 +641,10 @@ async function betchMint() {
                             .catch((err) => {
                                 console.trace(responseFun(500, err, ""), tokenId);
                             });
-                        console.info(responseFunStr(200, "", {tokenId: tokenId}), tokenId);
+                        console.info(
+                            responseFunStr(200, "", {tokenId: tokenId}),
+                            tokenId
+                        );
                         // await updateNonce(address, transactionCount1Mint + 1);
                     } else if ("replacement fee too low" == txRet.err) {
                         //手续费不足
@@ -612,12 +655,11 @@ async function betchMint() {
                         // await delNonce(address);
                     }
                 }
-
             } else if (type == 1) {
                 // 1155
                 let contract = new ethers.Contract(
                     collectAddress,
-                    CtnftMToken.abi,
+                    ABI_const["CtnftMToken"].abi,
                     customHttpProvider
                 );
                 console.log("ERROR:", "no implements");
@@ -625,17 +667,16 @@ async function betchMint() {
                 console.log("ERROR:", "没有找到匹配的合约信息");
             }
         } catch (e) {
-            console.trace(e)
+            console.trace(e);
             continue;
         }
-
     }
     console.log("betchMint All Done!");
     setTimeout(() => {
-        formatTime(new Date())
-        console.log("betchMint Start !!")
-        betchMint()
-    }, 2000)
+        formatTime(new Date());
+        console.log("betchMint Start !!");
+        betchMint();
+    }, 2000);
 }
 
 async function transfer(privateKey, value, toAddress) {
@@ -663,6 +704,7 @@ async function transfer(privateKey, value, toAddress) {
         return {err, hash: null};
     }
 }
+
 //
 // async function transfer(value, toAddress) {
 //     let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
@@ -710,28 +752,26 @@ async function betchCallFund() {
             formdata.append("mintDate", formatTime(update_time));
             formdata.append("status", "true");
             formdata.append("hash", hash);
-            console.log("formatTime(update_time)", formatTime(update_time))
+            console.log("formatTime(update_time)", formatTime(update_time));
             var requestOptions = {
                 method: "POST",
                 body: formdata,
                 redirect: "follow",
             };
 
-            if (rebackUrl == ''
-                || rebackUrl == null
-                || rebackUrl == undefined) {
+            if (rebackUrl == "" || rebackUrl == null || rebackUrl == undefined) {
                 let responseChanel1 = await fetch(reCallUrlChanel1, {
                     headers: {
-                        'Content-Type': 'application/json'
+                        "Content-Type": "application/json",
                     },
                     method: "POST",
                     body: JSON.stringify({
-                        'key': 'qianyidata',
-                        'tokenId': tokenId,
-                        'mintDate': formatTime(update_time),
-                        "status": true,
-                        "hash": hash,
-                    })
+                        key: "qianyidata",
+                        tokenId: tokenId,
+                        mintDate: formatTime(update_time),
+                        status: true,
+                        hash: hash,
+                    }),
                 })
                     .then((response) => {
                         console.log("回调返回原始内容status:", response.status);
@@ -752,7 +792,7 @@ async function betchCallFund() {
                     await nftUpdateSelectiveStatus(9, tokenId);
                     continue;
                 } else if (responseChanel1.code == 200) {
-                    await nftUpdateSelectiveStatus(1, tokenId);              // 设置为回调成功状态
+                    await nftUpdateSelectiveStatus(1, tokenId); // 设置为回调成功状态
                 } else {
                     await nftUpdateSelectiveStatus(9, tokenId);
                     continue;
@@ -773,7 +813,7 @@ async function betchCallFund() {
                         return {data: null, err: err};
                     });
                 //处理响应结果
-                let response = responseRet.data
+                let response = responseRet.data;
                 console.log(response);
                 if (response == null) {
                     await nftUpdateSelectiveStatus(9, tokenId);
@@ -792,22 +832,24 @@ async function betchCallFund() {
     }
     console.log("betchCallFund All Done!");
     setTimeout(() => {
-        formatTime(new Date())
-        console.log("betchCallFund Start !!")
-        betchCallFund()
-    }, 2000)
+        formatTime(new Date());
+        console.log("betchCallFund Start !!");
+        betchCallFund();
+    }, 2000);
 }
 
 function formatTime(date) {
     //let date = new Date(value)	// 时间戳为毫秒：13位数
-    let year = date.getFullYear()
-    let month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1
-    let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate()
-    let hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours()
-    let minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
-    let second = date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
-
+    let year = date.getFullYear();
+    let month =
+        date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1;
+    let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate();
+    let hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours();
+    let minute =
+        date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
+    let second =
+        date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds();
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 
 async function betchHashQuery() {
@@ -823,7 +865,8 @@ async function betchHashQuery() {
 
     for (let retKey in transList) {
         try {
-            let {tokenId, update_time, hash, rebackUrl, address, id} = transList[retKey];
+            let {tokenId, update_time, hash, rebackUrl, address, id} =
+                transList[retKey];
             if (!hash || hash == "" || hash == null) {
                 continue;
             }
@@ -831,14 +874,14 @@ async function betchHashQuery() {
             let recept = await web3.eth.getTransactionReceipt(hash);
             let currTime = new Date().getTime();
 
-            if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
+            if (currTime - update_time.getTime() < 10000) {
+                // hash产生不到10s自动跳过
                 continue;
             } else {
                 let t_statusStorage;
                 if (recept != null && recept.status == true) {
                     t_statusStorage = 7;
                 } else {
-
                     if (currTime - update_time.getTime() < 60000) {
                         continue;
                     } else {
@@ -855,21 +898,21 @@ async function betchHashQuery() {
     }
     console.log("betchHashQuery All Done!");
     setTimeout(() => {
-        formatTime(new Date())
-        console.log("betchHashQuery Start !!")
-        betchHashQuery()
-    }, 2000)
+        formatTime(new Date());
+        console.log("betchHashQuery Start !!");
+        betchHashQuery();
+    }, 2000);
 }
 
 //TEST
 fileUploadIpfs();
 // test();
 betchMint();
-betchHashQuery()
+betchHashQuery();
 betchCallFund();
 
 module.exports = {
-    fileUploadIpfs
+    fileUploadIpfs,
 };
 
 // node src\task\mintTask.js

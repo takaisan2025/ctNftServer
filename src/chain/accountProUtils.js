@@ -1,6 +1,5 @@
 const Web3 = require("web3");
-let web3o = new Web3("http://ctblock.cn/blockChain");
-let web3 = web3o;
+let web3 = new Web3("http://ctblock.cn/blockChain");
 const ethers = require("ethers");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const {PasswordError} = require("./responseError");
@@ -22,6 +21,9 @@ async function getPriKey(account, password) {
     try {
 
         if (isEmpty(account.private_key).flag == true) {
+            console.log(account.id)
+            console.log(account.keystore)
+            console.log(password)
             let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(account.keystore).toLowerCase()), password);
             return {err: null, result: wallet}
         } else {

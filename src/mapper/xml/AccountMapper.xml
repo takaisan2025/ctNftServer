@@ -18,6 +18,28 @@
         from account
         where id = #{id}
     </select>
+    <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from account
+        where status = #{status}
+        limit 4000
+    </select>
+    <select id="selectByStatusDesc" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from account
+        where status = #{status}
+        ORDER BY id desc
+        limit 4000
+    </select>
+    <select id="selectByStatusOffset" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from account
+        where status = #{status}
+        limit ${offset}, 4000
+    </select>
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
         delete from account
         where id = #{id}

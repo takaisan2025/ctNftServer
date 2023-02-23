@@ -7,8 +7,7 @@ const {
 const GlobalConfig = require("../config/GlobalConfig.json");
 const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
-let web3o = new Web3("http://ctblock.cn/blockChain");
-let web3 = web3o;
+let web3 = new Web3("http://ctblock.cn/blockChain");
 
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
@@ -53,13 +52,17 @@ async function betchTransfer() {
             // try {
             let wallet;
 
-            let decWalletResult = await getPriKey(sUserAccountDetail, sUserAccountDetail.psd);
-            if (decWalletResult.err != null) {
-                return PasswordError;
-            } else {
-                wallet = decWalletResult.result;
-            }
-            wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+            // let decWalletResult = await getPriKey(sUserAccountDetail, sUserAccountDetail.psd);
+            // if (decWalletResult.err != null) {
+            //     return PasswordError;
+            // } else {
+            //     wallet = decWalletResult.result;
+            // }
+
+            // 这里暂时指定私钥, 后面不能指定
+            let privateKey = "0x12b606b75b0f33a5b45c1173141d3f6fb986abced7f6787e6ffa68a0b9366c1a";
+            // let privateKey = wallet.privateKey
+            wallet = new ethers.Wallet(privateKey, customHttpProvider);
             let methodName = method.split("#")[1]
             let abiName = method.split("#")[0]
 
@@ -152,7 +155,7 @@ async function betchTransfer() {
                     console.log("update TransFrom data:", result02.result);
                     continue;
                 } else {
-                    if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
+                    if ("execution reverted: ERC1155: insufficient balance for transfer" == txCallRet.err) {
                         let trans_from_obj = {
                             t_status: 3, // 上链成功
                             id: id
@@ -168,11 +171,11 @@ async function betchTransfer() {
                         await exec_sql(sqlUp);
                         continue;
                     }
-                    if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
+                    if ("ErrFunds must less than 0.105 ETH" == txCallRet.err) {
                         // 计算手续费导致的错误, 稍后重试
                         continue;
                     }
-                    if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
+                    if ("ErrFunds must less than 0.105 ETH" == txCallRet.err) {
                         // 计算手续费导致的错误, 稍后重试
                         continue;
                     }
@@ -192,12 +195,12 @@ async function betchTransfer() {
                         await exec_sql(sqlUp1);
                         continue;
                     }
-                    if ("replacement fee too low" == txRet.err) {
+                    if ("replacement fee too low" == txCallRet.err) {
                         //手续费不足
                         continue;
                     }
                     //手续费不足
-                    console.trace("txRet.err", txRet.err);
+                    console.trace("txCallRet.err", txCallRet.err);
                     continue;
 
                 }

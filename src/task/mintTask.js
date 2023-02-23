@@ -3,7 +3,6 @@ const {
     nftUpdateSelectiveStatus,
     nftSelectSelectiveStatus,
     nftUpdateSelective,
-    responseFun,
 } = require("../controller/ctnft");
 const fs = require("fs");
 const ipfsAPI = require("ipfs-api");
@@ -24,9 +23,8 @@ const ipfsNode = ipfsAPI({
 const gasConfig = require("../config/gasConfig.json");
 const FormData = require("form-data");
 const Web3 = require("web3");
-let web3o = new Web3("http://ctblock.cn/blockChain");
-// let web3o = new Web3("https://exploder.coozw.com/blockChain");
-let web3 = web3o;
+let web3 = new Web3("http://ctblock.cn/blockChain");
+
 const fetch = require("node-fetch");
 
 let reCallUrlChanel1 = "http://nft.richonn.com/home/nft/casting";

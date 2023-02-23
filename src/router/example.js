@@ -1,6 +1,4 @@
-const {
-  responseFun,
-} = require("../controller/ctnft");
+const {responseFun, responseFunStr} = require("../mapper/account");
 const ethers = require("ethers");
 const fetch = require("node-fetch");
 const formidable = require("formidable");

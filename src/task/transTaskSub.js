@@ -7,8 +7,7 @@ const {
 const GlobalConfig = require("../config/GlobalConfig.json");
 const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
-let web3o = new Web3("http://ctblock.cn/blockChain");
-let web3 = web3o;
+let web3 = new Web3("http://ctblock.cn/blockChain");
 
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,

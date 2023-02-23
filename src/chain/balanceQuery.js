@@ -1,6 +1,6 @@
 const Web3 = require("web3");
-let web3o = new Web3("http://ctblock.cn/blockChain");
-let web3 = web3o;
+let web3 = new Web3("http://ctblock.cn/blockChain");
+
 const ethers = require("ethers");
 const GlobalConfig = require("../config/GlobalConfig.json");
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];

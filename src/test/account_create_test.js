@@ -11,14 +11,14 @@ const {
     getPriKey,
 } = require("../chain/accountProUtils");
 var Web3 = require("web3");
-let web3o = new Web3("http://ctblock.cn/blockChain");
+let web3 = new Web3("http://ctblock.cn/blockChain");
 
 async function createAccountWeb3() {
     let password = "uKdJGhmFraDBGZpnADfQtESiyaNcuNtl";
     let startTime = new Date().getTime();
     var Web3 = require("web3");
-    let web3o = new Web3("http://ctblock.cn/blockChain");
-    let a = web3o.eth.accounts.create();
+    let web3 = new Web3("http://ctblock.cn/blockChain");
+    let a = web3.eth.accounts.create();
     let keystore = await a.encrypt(password);
     let midDate = new Date().getTime();
     console.log(midDate - startTime);
@@ -28,7 +28,7 @@ async function createAccountWeb3() {
     console.log(JSON.stringify(keystore))
 
     try {
-        keystoreA = await web3o.eth.accounts.decrypt(
+        keystoreA = await web3.eth.accounts.decrypt(
             JSON.parse(JSON.stringify(keystore).toLowerCase()),
             password
         );
@@ -64,8 +64,8 @@ async function createAccountX() {
     console.log(midDate - startTime);
     // console.log(JSON.parse(keystore));
     var Web3 = require("web3");
-    let web3o = new Web3("http://ctblock.cn/blockChain");
-    let keystoreA = await web3o.eth.accounts.decrypt(
+    let web3 = new Web3("http://ctblock.cn/blockChain");
+    let keystoreA = await web3.eth.accounts.decrypt(
         JSON.parse(JSON.stringify(keystore).toLowerCase()),
         password
     );
@@ -78,8 +78,8 @@ async function createAccountXX() {
     let password = "12345678";
     let startTime = new Date().getTime();
     var Web3 = require("web3");
-    let web3o = new Web3("http://ctblock.cn/blockChain");
-    let a = web3o.eth.accounts.create();
+    let web3 = new Web3("http://ctblock.cn/blockChain");
+    let a = web3.eth.accounts.create();
     let keystore = await a.encrypt(password);
     let midDate = new Date().getTime();
     console.log(midDate - startTime);
@@ -150,7 +150,7 @@ const fetch = require("node-fetch");
 
 async function haha() {
     // console.log("0xDD3ab80BC8C40ea5bF1cb4ef4f072026C2B221bAc12345678901667291169058")
-    // let a = web3o.utils.hexToNumberString("0xDD3ab80BC8C40ea5bF1cb4ef4f072026C2B221bAc12345678901667291169058")
+    // let a = web3.utils.hexToNumberString("0xDD3ab80BC8C40ea5bF1cb4ef4f072026C2B221bAc12345678901667291169058")
     // console.log(a)
 
     let result = ethers.utils.defaultAbiCoder.encode(
@@ -197,7 +197,3 @@ async function haha() {
     // console.log(responseRet)
 }
 
-// haha();
-// setInterval(haha, 3000)
-let a = [1,2]
-console.log(a)

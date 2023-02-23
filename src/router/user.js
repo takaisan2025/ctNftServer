@@ -1615,18 +1615,20 @@ const handleUserRouter = async (req, res) => {
         // 查询账户实名状况
 
         // 判断商家身份
-        if (address != collectDetail.owner) {
-            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-            let isAuth = await contract_static_call(
-                ethers,
-                authContractAddress,
-                ABI_const["AuthController"].abi,
-                "authsSingle",
-                customHttpProvider,
-                [address]
-            );
-            if (isAuth.data != true) {
-                return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+        if (GlobalConfig.CAN_AUTH) {
+            if (address != collectDetail.owner) {
+                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                let isAuth = await contract_static_call(
+                    ethers,
+                    authContractAddress,
+                    ABI_const["AuthController"].abi,
+                    "authsSingle",
+                    customHttpProvider,
+                    [address]
+                );
+                if (isAuth.data != true) {
+                    return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+                }
             }
         }
 
@@ -2068,22 +2070,22 @@ const handleUserRouter = async (req, res) => {
             // 查询账户实名状况
 
             // 判断商家身份
-
-            if (address != collectRet.owner) {
-                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-                let isAuth = await contract_static_call(
-                    ethers,
-                    authContractAddress,
-                    ABI_const["AuthController"].abi,
-                    "authsSingle",
-                    customHttpProvider,
-                    [address]
-                );
-                if (isAuth.data != true) {
-                    return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+            if (GlobalConfig.CAN_AUTH) {
+                if (address != collectRet.owner) {
+                    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                    let isAuth = await contract_static_call(
+                        ethers,
+                        authContractAddress,
+                        ABI_const["AuthController"].abi,
+                        "authsSingle",
+                        customHttpProvider,
+                        [address]
+                    );
+                    if (isAuth.data != true) {
+                        return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+                    }
                 }
             }
-
             // address: wallet.address,
             // privateKey: wallet.privateKey,
             //    单个藏品铸造
@@ -2763,18 +2765,20 @@ const handleUserRouter = async (req, res) => {
             // 查询账户实名状况
 
             // 判断商家身份
-            if (address != collectDetail.owner) {
-                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-                let isAuth = await contract_static_call(
-                    ethers,
-                    authContractAddress,
-                    ABI_const["AuthController"].abi,
-                    "authsSingle",
-                    customHttpProvider,
-                    [address]
-                );
-                if (isAuth.data != true) {
-                    return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+            if (GlobalConfig.CAN_AUTH) {
+                if (address != collectDetail.owner) {
+                    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                    let isAuth = await contract_static_call(
+                        ethers,
+                        authContractAddress,
+                        ABI_const["AuthController"].abi,
+                        "authsSingle",
+                        customHttpProvider,
+                        [address]
+                    );
+                    if (isAuth.data != true) {
+                        return responseFun(500, "用户信息未认证或过期,请稍后重试!", {});
+                    }
                 }
             }
 

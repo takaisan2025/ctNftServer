@@ -17,6 +17,10 @@ const TRANSACTION_RECEIPT_STATUS = {
     REVERTED: 0,
 };
 const ethers = require("ethers");
+const ABI_const = require("../contract/ABI_const");
+const {RESPONSE_STATUS} = require("../chain/responseError");
+const {contract_static_call} = require("../contract/ChainCall");
+const {responseFunStr} = require("../mapper/account");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 // 通过定制 URL 连接 :
@@ -27,6 +31,10 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
+const ethUtil = require("ethereumjs-util");
+const EIP712 = require("../router/EIP712");
+const {PasswordError} = require("../chain/responseError");
+const {getPriKey} = require("../chain/accountProUtils");
 
 async function betchTransfer() {
     var params = {t_status: 1, is_pay: 1};
@@ -53,6 +61,23 @@ async function betchTransfer() {
 
         // 使用Provider 连接合约，将只有对合约的可读权限
         let transactionCount1Mint;
+
+        // 这里首先判断toAddress的实名情况, 否则转手续费会失败
+        if (GlobalConfig.CAN_AUTH) {
+            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+            let isAuth = await contract_static_call(
+                ethers,
+                authContractAddress,
+                ABI_const["AuthController"].abi,
+                "authsSingle",
+                customHttpProvider,
+                [address]
+            );
+            if (isAuth.data != true) {
+                console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
+                return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
+            }
+        }
 
         let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
 

@@ -17,3 +17,7 @@ node src/task/accountPreparAuthTask22.js
 node src/task/accountPreparAuthTask01.js
 node src/task/accountPreparAuthTask02.js
 node src/task/accountPreparAuthTask03.js
+
+
+node src/task/submitTransactionBetchTask.js
+node src/task/submitTransactionBetchTaskMaster.js

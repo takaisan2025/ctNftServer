@@ -54,7 +54,7 @@ async function betchPreaprAuth() {
                 .toString("hex")}`;
 
             // 判断接入方用户名密码
-            let privateKeySys = "0x12b606b75b0f33a5b45c1173141d3f6fb986abced7f6787e6ffa68a0b9366c1a" // TODO 这里需要系统地址
+            let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
             let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
 
             // 判断用户密码是否正确

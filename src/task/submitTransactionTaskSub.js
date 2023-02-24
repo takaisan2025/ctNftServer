@@ -60,7 +60,7 @@ async function betchTransfer() {
             // }
 
             // 这里暂时指定私钥, 后面不能指定
-            let privateKey = "0x12b606b75b0f33a5b45c1173141d3f6fb986abced7f6787e6ffa68a0b9366c1a";
+            let privateKey = GlobalConfig.AUTH_CONTROLLER_PK;
             // let privateKey = wallet.privateKey
             wallet = new ethers.Wallet(privateKey, customHttpProvider);
             let methodName = method.split("#")[1]

@@ -18,6 +18,9 @@
     "RPC_CHAIN_ID": 27,
     "RPC_URL": [
       {
+        "url": "http://172.16.169.162:7400/"
+      },
+      {
         "url": "http://ctblock.cn/blockChain"
       },
       {

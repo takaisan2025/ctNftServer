@@ -24,13 +24,23 @@ const gasConfig = require("../config/gasConfig.json");
 const FormData = require("form-data");
 const Web3 = require("web3");
 let web3 = new Web3("http://ctblock.cn/blockChain");
-
+const path = require('path');
+const crypto = require('crypto');
+const {
+    getString,
+    setString,
+    removeString,
+    rpush,
+    lrange,
+    lrem,
+} = require("../redis/redis-client");
 const fetch = require("node-fetch");
 
 let reCallUrlChanel1 = "http://nft.richonn.com/home/nft/casting";
 
 const ABI_const = require("../contract/ABI_const.js");
 const ethers = require("ethers");
+const {contract_static_call} = require("../contract/ChainCall");
 const {responseFunStr} = require("../mapper/account");
 const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
@@ -118,89 +128,109 @@ async function fileUploadIpfs() {
         // 图片资源上传ipfs
         let data = await fs.readFileSync(serverPath);
 
-        let imgResponseRet = await ipfsNode
-            .add(data)
-            // .add(Buffer.from(data))
-            .then((imgResponse) => {
-                // return imgResponse;
-                return {err: null, data: imgResponse};
-            })
-            .catch((err) => {
-                console.trace(responseFunStr(500, err, {}));
-                return {err: err, data: null};
-            });
-        if (imgResponseRet.err == null) {
-            let imgResponse = imgResponseRet.data;
-            console.log("imgResponse:", imgResponse);
-            //PIN
-            ipfsNode.pin.add(imgResponse[0].path);
-            console.log("img ping success");
-            let imgIpfsAddress = imgResponse[0].path;
-            // 元数据上传ipfs
+        // 计算文件hash
+        const hash = crypto.createHash('md5');
+        hash.update(data, 'utf8');
+        let md5 = hash.digest('hex');
+        console.log("FILE MD5:", md5)
+        let ipfsAdd = await getString("FILE_" + md5);
+        let imgIpfsAddress;
 
-            let reqdataRet;
-
-            try {
-                reqdataRet = JSON.parse(
-                    premetadata.replace(/\n/g, "\\n").replace(/\r/g, "\\r")
-                );
-            } catch (e) {
-                reqdataRet = JSON.parse(
-                    premetadata.replace(/\\%/g, '%')
-                );
-            }
-
-            console.log(reqdataRet)
-            const reqdata = {};
-            // const reqdata = JSON.parse(JSON.stringify(premetadata));
-            reqdata.fileName = tempPath.substring(tempPath.lastIndexOf("/") + 1);
-            reqdata.image =
-                "https://dream.chaonft.cn/ipfs/api/v0/cat/" + imgIpfsAddress;
-            reqdata.subject = reqdataRet.title;
-            reqdata.author = reqdataRet.author;
-            reqdata.authorDescription = reqdataRet.authorDesc;
-            reqdata.description = reqdataRet.desc;
-            reqdata.flydate = "Summer 2022";
-            reqdata.data = reqdataRet;
-            let response = await ipfsNode
-                .add(Buffer.from(JSON.stringify(reqdata), "utf-8"))
-                .then((response) => {
-                    return response;
+        // 元数据上传ipfs
+        if (isEmpty(ipfsAdd).flag == true) {
+            let imgResponseRet = await ipfsNode
+                .add(data)
+                // .add(Buffer.from(data))
+                .then((imgResponse) => {
+                    // return imgResponse;
+                    return {err: null, data: imgResponse};
                 })
                 .catch((err) => {
-                    console.trace(responseFunStr(500, err, {}), id);
+                    console.trace(responseFunStr(500, err, {}));
+                    return {err: err, data: null};
                 });
-            console.log("metaData:", response[0].path);
-            try {
-                ipfsNode.pin.add(response[0].path);
-                tokenURI = response[0].path;
-                // 设置一个新值，返回交易
-                // save db
-                let nft = {
-                    isFinish: 0,
-                    tokenId: tokenId,
-                    imgPath: reqdata.image,
-                    metaData: response[0].path,
-                    metaDataSource: JSON.stringify(reqdata),
-                    hash: "",
-                    status: 6, // 资源已上传ipfs,未上链
-                };
-                let result = nftUpdateSelective(nft);
-                let dbOp = await result
-                    .then((ret) => {
-                        return ret;
-                    })
-                    .catch((err) => {
-                        console.trace(responseFunStr(500, err, ""), id);
-                    });
-                console.info(responseFunStr(200, ""), id);
-            } catch (e) {
-                console.trace(responseFunStr(500, e, ""), id);
+            if (imgResponseRet.err == null) {
+                let imgResponse = imgResponseRet.data;
+                console.log("imgResponse:", imgResponse);
+                //PIN
+                ipfsNode.pin.add(imgResponse[0].path);
+                console.log("img ping success");
+                imgIpfsAddress = imgResponse[0].path;
+                await setString(
+                    "FILE_" + md5,
+                    imgIpfsAddress,
+                    600000
+                );
+
+            } else {
+                console.trace("ipfs upload err:", imgResponseRet.err);
+                continue;
             }
         } else {
-            console.trace("ipfs upload err:", imgResponseRet.err);
+            imgIpfsAddress = ipfsAdd;
+        }
+
+        let reqdataRet;
+
+        try {
+            reqdataRet = JSON.parse(
+                premetadata.replace(/\n/g, "\\n").replace(/\r/g, "\\r")
+            );
+        } catch (e) {
+            reqdataRet = JSON.parse(
+                premetadata.replace(/\\%/g, '%')
+            );
+        }
+
+        console.log(reqdataRet)
+        const reqdata = {};
+        // const reqdata = JSON.parse(JSON.stringify(premetadata));
+        reqdata.fileName = tempPath.substring(tempPath.lastIndexOf("/") + 1);
+        reqdata.image =
+            "https://dream.chaonft.cn/ipfs/api/v0/cat/" + imgIpfsAddress;
+        reqdata.subject = reqdataRet.title;
+        reqdata.author = reqdataRet.author;
+        reqdata.authorDescription = reqdataRet.authorDesc;
+        reqdata.description = reqdataRet.desc;
+        reqdata.flydate = "Summer 2022";
+        reqdata.data = reqdataRet;
+        let response = await ipfsNode
+            .add(Buffer.from(JSON.stringify(reqdata), "utf-8"))
+            .then((response) => {
+                return response;
+            })
+            .catch((err) => {
+                console.trace(responseFunStr(500, err, {}), id);
+            });
+        console.log("metaData:", response[0].path);
+        try {
+            ipfsNode.pin.add(response[0].path);
+            tokenURI = response[0].path;
+            // 设置一个新值，返回交易
+            // save db
+            let nft = {
+                isFinish: 0,
+                tokenId: tokenId,
+                imgPath: reqdata.image,
+                metaData: response[0].path,
+                metaDataSource: JSON.stringify(reqdata),
+                hash: "",
+                status: 6, // 资源已上传ipfs,未上链
+            };
+            let result = nftUpdateSelective(nft);
+            let dbOp = await result
+                .then((ret) => {
+                    return ret;
+                })
+                .catch((err) => {
+                    console.trace(responseFunStr(500, err, ""), id);
+                });
+            console.info(responseFunStr(200, ""), id);
+        } catch (e) {
+            console.trace(responseFunStr(500, e, ""), id);
         }
     }
+
     console.log("fileUploadIpfs All Done!");
     setTimeout(() => {
         formatTime(new Date());
@@ -522,7 +552,8 @@ async function betchMint() {
                             let {err, hash} = await transfer(
                                 privateKeyA,
                                 ethers.utils.parseEther(String(1)),
-                                address
+                                address,
+                                wallet
                             );
                             if (err != null) {
                                 console.log("txTransfer faild");
@@ -532,24 +563,7 @@ async function betchMint() {
                             continue;
                         }
                     }
-                    // if (Number(etherString) < Number(String(10))) {  // 合约持有者余额不足十个,将进行充值 1155铸造者
-                    //     console.log("合约持有者余额不足, 请进行充值!", address);
-                    //     // await delNonce(address);
-                    //     continue;
-                    // if (Number(etherString) < Number("10")) {
-                    //     //    赠送手续费 20
-                    //     let neceliby1 = ethers.utils.parseEther(String(20));
-                    //
-                    //     let {err, hash} = await transfer(neceliby1 + "", address);
-                    //     if (err != null) {
-                    //         //
-                    //         console.log("txTransfer faild");
-                    //         continue;
-                    //     }
-                    //     console.log("tx Hash:", hash);
-                    // }
-                    // console.log("nonce: " + nonce);
-                    // console.log("nonce: " + transactionCount1Mint);
+
                     let overrides = {
                         // The maximum units of gas for the transaction to use
                         gasLimit: web3.utils.numberToHex(gasLimit),
@@ -677,7 +691,156 @@ async function betchMint() {
     }, 2000);
 }
 
-async function transfer(privateKey, value, toAddress) {
+const ethUtil = require("ethereumjs-util");
+const EIP712 = require("../router/EIP712");
+const sigUtil = require("eth-sig-util");
+const {RESPONSE_STATUS} = require("../chain/responseError");
+
+async function authUser(walletUser) {
+
+    let address = walletUser.address;
+    let orderId = new Date().getTime() + "sys_a_auto";
+    // 计算签名
+    let orderIdEcc = `0x${ethUtil
+        .keccak256(Buffer.from(orderId + ""))
+        .toString("hex")}`;
+
+    // 判断接入方用户名密码
+    let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
+    let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
+
+    let c_wallet = walletUser;
+    // 判断商家身份
+    let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+    // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
+    //等待其它程序处理上链
+    let sender = s_wallet.address;
+    let authTime = 1766841499; // 没有用的参数
+    let authExpiry = Date.now() + 1 * 60 * 60 * 24 * 180; // 六个月
+    let isAuth = true;
+    let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
+    let expandData = '{hash: \\"\\", version: \\"v1.0.0\\"}';
+    console.log(expandData)
+    let caddress = c_wallet.address;
+    // 计算签名
+    let auth = {
+        caddress,
+        sender,
+        authTime,
+        authExpiry,
+        isAuth,
+        authLevel,
+        expandData,
+    };
+
+    let privateKeyStr = c_wallet.privateKey;
+    let verifyingContract = contractAddress;
+    privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+
+    const privateKey = Buffer.from(privateKeyStr, "hex");
+
+    // uint256 orderId,
+    // address caddress,
+    // address sender,
+    // bool isAuth,
+    // string expandData
+
+    const Types = {
+        Authentication: [
+            {type: "uint256", name: "orderId"},
+            {type: "address", name: "caddress"},
+            {type: "address", name: "sender"},
+            {type: "bool", name: "isAuth"},
+        ],
+    };
+
+    const data = EIP712.createTypeData(
+        {
+            name: "Authentication",
+            version: "1",
+            chainId: "27",
+            verifyingContract,
+        },
+        "Authentication",
+        {
+            orderId: orderIdEcc,
+            caddress: auth.caddress,
+            sender: auth.sender,
+            isAuth: auth.isAuth,
+        },
+        Types
+    );
+
+    let signature = sigUtil.signTypedData_v4(privateKey, {data: data});
+    auth.signature = signature;
+
+    let origin_data_json = [auth, orderIdEcc];
+    // 存储上链数据
+    // 插入数据库
+    let nft_transaction_aql = get_mysql(
+        "NftTransactionMapper",
+        "insertSelective",
+        {
+            from: s_wallet.address,
+            to: contractAddress,
+            status: 0,
+            // "hash": "",
+            // "block_number": "",
+            type: 1,
+            is_reback: 0,
+            order_id: orderId,
+            value: "0",
+            // "origin_data": JSON.stringify(origin_data_json),
+            origin_data: origin_data_json,
+            contract_address: contractAddress,
+            method:
+                ABI_const["AuthController"].contractName +
+                "#" +
+                "authentication",
+            origin_value: "0",
+        }
+    );
+    let nft_transaction_aql_result = await exec_sql(
+        nft_transaction_aql.result
+    );
+    if (nft_transaction_aql_result.err != null) {
+        if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
+            return responseFunStr(500, "OrderId 冲突!", {});
+        } else {
+            return responseFunStr(500, "操作失败,请重试!", {});
+        }
+    }
+    console.log(responseFunStr(RESPONSE_STATUS.SUCCESS, "请求成功", {
+        s_address: s_wallet.address,
+        address: address,
+        orderId: orderId,
+    }))
+
+}
+
+
+async function transfer(privateKey, value, toAddress, walletUser) {
+
+    // 这里首先判断toAddress的实名情况, 否则转手续费会失败
+    if (GlobalConfig.CAN_AUTH) {
+        let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+        let isAuth = await contract_static_call(
+            ethers,
+            authContractAddress,
+            ABI_const["AuthController"].abi,
+            "authsSingle",
+            customHttpProvider,
+            [address]
+        );
+        if (isAuth.data != true) {
+            // 这里进行预先实名
+            await authUser(walletUser)
+            console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
+            return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
+        }
+    }
+
+
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
     let tx = {
         to: toAddress,
@@ -702,34 +865,6 @@ async function transfer(privateKey, value, toAddress) {
         return {err, hash: null};
     }
 }
-
-//
-// async function transfer(value, toAddress) {
-//     let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
-//     // console.log("nonce: " + nonce);
-//     let tx = {
-//         to: toAddress,
-//         // ... or supports ENS names
-//         // to: "ricmoo.firefly.eth"
-//         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
-//         // use this convenience function to convert ether to wei.
-//         value: web3.utils.toHex(value),
-//     };
-//
-//     let txTransfer = await walletSys.sendTransaction(tx);
-//     console.log("txTransfer: :", txTransfer.hash);
-//     try {
-//         let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
-//         console.log("recept1:", recept1);
-//         if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-//             throw  "Transaction Reverted";
-//         }
-//         return {err: null, hash: txTransfer.hash};
-//     } catch (err) {
-//         console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
-//         return {err, hash: null};
-//     }
-// }
 
 async function betchCallFund() {
     let nfts = nftSelectSelectiveStatus(7); // 上链成功  没有回调的

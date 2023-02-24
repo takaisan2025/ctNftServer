@@ -32,10 +32,10 @@
     </sql>
     <select id="selectByStatus" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select
-        <include refid="Base_Column_List" />
+        <include refid="Base_Column_List"/>
         from nft_transaction
         where status = #{status}
-        limit 500
+        limit ${offset}, ${limit}
     </select>
     <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
 

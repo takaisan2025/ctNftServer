@@ -52,16 +52,15 @@ async function betchTransfer() {
             // try {
             let wallet;
 
-            // let decWalletResult = await getPriKey(sUserAccountDetail, sUserAccountDetail.psd);
-            // if (decWalletResult.err != null) {
-            //     return PasswordError;
-            // } else {
-            //     wallet = decWalletResult.result;
-            // }
+            let decWalletResult = await getPriKey(sUserAccountDetail, sUserAccountDetail.psd);
+            if (decWalletResult.err != null) {
+                return PasswordError;
+            } else {
+                wallet = decWalletResult.result;
+            }
 
             // 这里暂时指定私钥, 后面不能指定
-            let privateKey = GlobalConfig.AUTH_CONTROLLER_PK;
-            // let privateKey = wallet.privateKey
+            let privateKey = wallet.privateKey
             wallet = new ethers.Wallet(privateKey, customHttpProvider);
             let methodName = method.split("#")[1]
             let abiName = method.split("#")[0]
@@ -111,9 +110,9 @@ async function betchTransfer() {
                     ...funData,
                     {
                         // The maximum units of gas for the transaction to use
-                        gasLimit: web3.utils.numberToHex(gasLimitA),
+                        // gasLimit: web3.utils.numberToHex(gasLimitA),
                         // The price (in wei) per unit of gas
-                        gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
+                        // gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                         // The nonce to use in the transaction
                         // nonce: nonce,
                         // The amount to send with the transaction (i.e. msg.value)

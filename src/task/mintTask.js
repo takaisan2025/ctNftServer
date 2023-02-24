@@ -12,14 +12,6 @@ const ipfsNode = ipfsAPI({
     port: GlobalConfig.IPFS[1].PORT,
     protocol: GlobalConfig.IPFS[1].PROTOCOL,
 });
-// const {
-//     getString,
-//     setString,
-//     removeString,
-//     rpush,
-//     lrange,
-//     lrem,
-// } = require('../redis/redis-client');
 const gasConfig = require("../config/gasConfig.json");
 const FormData = require("form-data");
 const Web3 = require("web3");
@@ -239,10 +231,17 @@ async function fileUploadIpfs() {
     }, 2000);
 }
 
+let excloudAddr = ""
+
 async function betchMint() {
-    let nfts_sql_ret = get_mysql("nft", "selectByStatus", {
+
+    let paramset1 = {
         status: 6,
-    }); // 资源未上链ipfs的条目
+    }
+    if (!isEmpty(excloudAddr).flag) {
+        paramset1.address = excloudAddr
+    }
+    let nfts_sql_ret = get_mysql("nft", "selectByStatus", paramset1); // 资源未上链ipfs的条目
     let nfts_sql = nfts_sql_ret.result;
     let nfts_ret = await exec_sql_all(nfts_sql);
     let nftArr = [];
@@ -266,9 +265,28 @@ async function betchMint() {
                 nonce,
                 type,
             } = nftArr[retKey];
-            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+            let paramset = {
                 address: address,
-            });
+            }
+            let sqlResult = get_mysql("AccountMapper", "selectByAddress", paramset);
+
+            var params1 = {address: collectAddress};
+            var sql1 = get_mysql("collect", "selectByAddress", params1).result;
+            let collectDetail_ret = await exec_sql(sql1);
+
+            if (collectDetail_ret.err != null) {
+                console.trace("ERR:", collectDetail_ret.err);
+            }
+            let collectDetail = collectDetail_ret.result;
+            let isBal = await getString("BALANCE_" + collectDetail.owner)
+            if (isBal == "false") {
+                excloudAddr = collectDetail.owner
+                console.log("合约草田分余额不足:", collectDetail.owner)
+                continue;
+            } else {
+                excloudAddr = null
+            }
+
             let accountDetail_ret = await exec_sql(sqlResult.result);
             let accountItem = accountDetail_ret.result;
             // try {
@@ -508,19 +526,15 @@ async function betchMint() {
                     );
                     console.log("gasPrice*:", neceliby);
                     console.log("gasPrice*:", gasConfig.mint721.gas);
+
+
                     let balance = await wallet.provider.getBalance(address);
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
-                    var params1 = {address: collectAddress};
-                    if (Number(etherString) < Number(String(1))) {
-                        var sql1 = get_mysql("collect", "selectByAddress", params1).result;
-                        let collectDetail_ret = await exec_sql(sql1);
 
-                        if (collectDetail_ret.err != null) {
-                            console.trace("ERR:", collectDetail_ret.err);
-                        }
-                        let collectDetail = collectDetail_ret.result;
+                    if (Number(etherString) < Number(String(1))) {
+
                         let contractAddressDetailAsync;
 
                         if (collectDetail.owner.toLowerCase() == address.toLowerCase()) {
@@ -533,6 +547,11 @@ async function betchMint() {
                             contractAddressDetailAsync = contractAddressDetailAsync_ret.result
                         }
                         let contractAddressDetail = contractAddressDetailAsync;
+                        let isBal = await getString("BALANCE_" + collectDetail.owner)
+                        if (isBal == "false") {
+                            console.log("合约草田分余额不足:", collectDetail.owner)
+                            continue;
+                        }
                         let decWalletResult1 = await getPriKey(
                             contractAddressDetailAsync,
                             contractAddressDetailAsync.psd
@@ -545,10 +564,32 @@ async function betchMint() {
                         }
                         contractAddressDetail.private_key = wallet1.privateKey;
 
+                        if (  // 判断是否是项目方
+                            contractAddressDetail.address.toLowerCase() == address.toLowerCase() && Number(etherString) < Number(String(10))
+                        ) {
+
+                            await setString("BALANCE_" + contractAddressDetail.address, "false", 600000)
+                            // 跳出, 重新查询数据
+                            console.log("草田分余额不足:", contractAddressDetail.address)
+                            continue;
+                        } else {
+                            let balanceC = await wallet.provider.getBalance(contractAddressDetail.address.toLowerCase());
+                            // 余额是 BigNumber (in wei); 格式化为 ether 字符串
+                            let etherStringC = ethers.utils.formatEther(balanceC);
+                            if (Number(etherStringC) < Number(String(10))) {
+                                await setString("BALANCE_" + contractAddressDetail.address, "false", 600000)
+                                // 跳出, 重新查询数据
+                                console.log("草田分余额不足:", contractAddressDetail.address)
+                                continue;
+                            }
+                        }
+
+
                         let privateKeyA = contractAddressDetail.private_key;
                         if (isEmpty(privateKeyA).flag) {
                             continue;
                         } else {
+
                             let {err, hash} = await transfer(
                                 privateKeyA,
                                 ethers.utils.parseEther(String(1)),
@@ -664,6 +705,7 @@ async function betchMint() {
                     } else {
                         //手续费不足
                         console.trace("txRet.err", txRet.err);
+
                         // await delNonce(address);
                     }
                 }
@@ -822,23 +864,23 @@ async function authUser(walletUser) {
 async function transfer(privateKey, value, toAddress, walletUser) {
 
     // 这里首先判断toAddress的实名情况, 否则转手续费会失败
-    if (GlobalConfig.CAN_AUTH) {
-        let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-        let isAuth = await contract_static_call(
-            ethers,
-            authContractAddress,
-            ABI_const["AuthController"].abi,
-            "authsSingle",
-            customHttpProvider,
-            [address]
-        );
-        if (isAuth.data != true) {
-            // 这里进行预先实名
-            await authUser(walletUser)
-            console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
-            return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
-        }
+    // if (GlobalConfig.CAN_AUTH) {
+    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+    let isAuth = await contract_static_call(
+        ethers,
+        authContractAddress,
+        ABI_const["AuthController"].abi,
+        "authsSingle",
+        customHttpProvider,
+        [walletUser.address]
+    );
+    if (isAuth.data != true) {
+        // 这里进行预先实名
+        await authUser(walletUser)
+        console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
+        return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
     }
+    // }
 
 
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
@@ -858,6 +900,12 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         // console.log("recept1:", recept1);
         // if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
         //     throw "Transaction Reverted";
+        // }
+        // if("INSUFFICIENT_FUNDS" == txRet.err.code) {
+        //     await setString("BALANCE_" + contractAddressDetail.address, false, 600000)
+        //     // 跳出, 重新查询数据
+        //     console.log("草田分余额不足:", contractAddressDetail.address)
+        //     continue;
         // }
         return {err: null, hash: txTransfer.hash};
     } catch (err) {

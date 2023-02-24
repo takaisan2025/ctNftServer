@@ -1,3 +1,11 @@
+const {
+    getString,
+    setString,
+    removeString,
+    rpush,
+    lrange,
+    lrem,
+} = require("../redis/redis-client");
 const EIP712 = require("./EIP712");
 const sigUtil = require("eth-sig-util");
 const ethUtil = require("ethereumjs-util");
@@ -235,7 +243,7 @@ const handleUserRouter = async (req, res) => {
                 ABI_const["AuthController"].abi,
                 "parentauths",
                 customHttpProvider,
-                [s_address, s_address]
+                [s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS]
             );
 
             if (authData.err != null) {
@@ -425,7 +433,7 @@ const handleUserRouter = async (req, res) => {
                 ABI_const["AuthController"].abi,
                 "parentauths",
                 customHttpProvider,
-                [s_address, s_address]
+                [s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS]
             );
 
             if (authData.err != null) {
@@ -618,7 +626,7 @@ const handleUserRouter = async (req, res) => {
                 ABI_const["AuthController"].abi,
                 "parentauths",
                 customHttpProvider,
-                [s_address, s_address]
+                [s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS]
             );
 
             if (authData.err != null) {
@@ -829,7 +837,7 @@ const handleUserRouter = async (req, res) => {
                     ABI_const["AuthController"].abi,
                     "parentauths",
                     customHttpProvider,
-                    [s_address, s_address]
+                    [s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS]
                 );
 
                 if (authData.err != null) {
@@ -1612,7 +1620,15 @@ const handleUserRouter = async (req, res) => {
 
         let collectDetail = collectDetail01.result;
 
+
+
+
         // 查询账户实名状况
+
+        let isBal = await getString("BALANCE_" + collectDetail.owner)
+        if (isBal == "false") {
+            return responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {});
+        }
 
         // 判断商家身份
         if (GlobalConfig.CAN_AUTH) {

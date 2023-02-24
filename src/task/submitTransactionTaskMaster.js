@@ -29,7 +29,7 @@ async function main() {
 
     var sql
     var params;
-    params = {status: 0};
+    params = {status: 0, offset: 0, limit: 100};
     sql = get_mysql(
         "NftTransactionMapper",
         "selectByStatus",
@@ -43,7 +43,7 @@ async function main() {
         return transList_ret01.err;
     }
     let transList = transList_ret01.result
-    let processedTransList = spArr(transList, 250);
+    let processedTransList = spArr(transList, 100);
 
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {

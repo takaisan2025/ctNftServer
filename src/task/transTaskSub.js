@@ -8,7 +8,14 @@ const GlobalConfig = require("../config/GlobalConfig.json");
 const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
 let web3 = new Web3("http://ctblock.cn/blockChain");
-
+const {
+    getString,
+    setString,
+    removeString,
+    rpush,
+    lrange,
+    lrem,
+} = require("../redis/redis-client");
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
     REVERTED: 0,
@@ -53,6 +60,7 @@ async function betchTransfer() {
             update_time
         } = transList[retKey];
         try {
+
             let sqlResult = get_mysql("AccountMapper", "selectByAddress", {address: t_from})
             let accountDetail_ret01 = await exec_sql(sqlResult.result);
             let accountDetail = accountDetail_ret01.result
@@ -79,6 +87,13 @@ async function betchTransfer() {
                 contractAddressDetailAsync = contractAddressDetailAsync_ret.result
             }
             let contractAddressDetail = contractAddressDetailAsync;
+
+            let isBal = await getString("BALANCE_" + contractAddressDetail.address)
+            if (isBal == "false") {
+                console.log("合约草田分余额不足:", contractAddressDetail.address)
+                continue;
+            }
+
             let decWalletResult1 = await getPriKey(contractAddressDetailAsync, contractAddressDetailAsync.psd);
             let wallet1;
             if (decWalletResult1.err != null) {
@@ -125,9 +140,20 @@ async function betchTransfer() {
                 contractAddressDetail.address.toLowerCase() == t_from.toLowerCase() && Number(etherString) < Number(String(10))
             ) {
 
+                await setString("BALANCE_" + contractAddressDetail.address, "false", 600000)
                 // 跳出, 重新查询数据
-                console.log("草田分余额不足:", t_from)
-                break;
+                console.log("草田分余额不足:", contractAddressDetail.address)
+                continue;
+            } else {
+                let balanceC = await wallet.provider.getBalance(contractAddressDetail.address.toLowerCase());
+                // 余额是 BigNumber (in wei); 格式化为 ether 字符串
+                let etherStringC = ethers.utils.formatEther(balanceC);
+                if (Number(etherStringC) < Number(String(10))) {
+                    await setString("BALANCE_" + contractAddressDetail.address, "false", 600000)
+                    // 跳出, 重新查询数据
+                    console.log("草田分余额不足:", contractAddressDetail.address)
+                    continue;
+                }
             }
             if (isApprovedForAll == false) {
                 console.log("Balance: ", etherString);
@@ -137,7 +163,10 @@ async function betchTransfer() {
                         continue;
                     } else {
                         // 这里传入from的wallet对象, 因为可能会给from转手续费
-                        let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), wallet);
+                        let {
+                            err,
+                            hash
+                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from, wallet);
                         if (err != null) {
                             console.log("txTransfer faild");
                             continue;
@@ -149,24 +178,24 @@ async function betchTransfer() {
             } else {
 
                 console.log("Balance: ", etherString);
-                if (false) {
-                } else {
-                    if (Number(etherString) < Number(String(0.3))) {
-                        let privateKey = contractAddressDetail.private_key;
-                        if (isEmpty(privateKey).flag) {
-                            continue;
-                        } else {
-                            let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from);
-                            if (err != null) {
-                                console.log("txTransfer faild");
-                                continue;
-                            }
-                            console.log("tx Hash:", hash);
+
+                if (Number(etherString) < Number(String(0.3))) {
+                    let privateKey = contractAddressDetail.private_key;
+                    if (isEmpty(privateKey).flag) {
+                        continue;
+                    } else {
+                        let {
+                            err,
+                            hash
+                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from, wallet);
+                        if (err != null) {
+                            console.log("txTransfer faild");
                             continue;
                         }
+                        console.log("tx Hash:", hash);
+                        continue;
                     }
                 }
-
 
             }
             if (isApprovedForAll == false) {
@@ -177,7 +206,10 @@ async function betchTransfer() {
                     if (isEmpty(privateKey).flag) {
                         continue;
                     } else {
-                        let {err, hash} = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from, accountItem);
+                        let {
+                            err,
+                            hash
+                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from, wallet);
                         if (err != null) {
                             console.log("txTransfer faild");
                             continue;
@@ -448,14 +480,14 @@ function id_fun(str) {
         .substring(0, 8)}`;
 }
 
-const ethUtil = require("ethereumjs-util");
 const EIP712 = require("../router/EIP712");
 const sigUtil = require("eth-sig-util");
 const {RESPONSE_STATUS} = require("../chain/responseError");
+
 async function authUser(walletUser) {
 
     let address = walletUser.address;
-    let orderId = new Date().getTime()+"sys_a_auto";
+    let orderId = new Date().getTime() + "sys_a_auto";
     // 计算签名
     let orderIdEcc = `0x${ethUtil
         .keccak256(Buffer.from(orderId + ""))
@@ -577,23 +609,23 @@ async function authUser(walletUser) {
 async function transfer(privateKey, value, toAddress, walletUser) {
 
     // 这里首先判断toAddress的实名情况, 否则转手续费会失败
-    if (GlobalConfig.CAN_AUTH) {
-        let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-        let isAuth = await contract_static_call(
-            ethers,
-            authContractAddress,
-            ABI_const["AuthController"].abi,
-            "authsSingle",
-            customHttpProvider,
-            [address]
-        );
-        if (isAuth.data != true) {
-            // 这里进行预先实名
-            await authUser(walletUser)
-            console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
-            return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
-        }
+    // if (GlobalConfig.CAN_AUTH) {
+    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+    let isAuth = await contract_static_call(
+        ethers,
+        authContractAddress,
+        ABI_const["AuthController"].abi,
+        "authsSingle",
+        customHttpProvider,
+        [walletUser.address]
+    );
+    if (isAuth.data != true) {
+        // 这里进行预先实名
+        await authUser(walletUser)
+        console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
+        return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
     }
+    // }
 
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
     let tx = {

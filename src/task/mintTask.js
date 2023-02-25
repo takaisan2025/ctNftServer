@@ -151,7 +151,7 @@ async function fileUploadIpfs() {
                 await setString(
                     "FILE_" + md5,
                     imgIpfsAddress,
-                    600000
+                    300
                 );
 
             } else {
@@ -279,7 +279,7 @@ async function betchMint() {
             }
             let collectDetail = collectDetail_ret.result;
             let isBal = await getString("BALANCE_" + collectDetail.owner)
-            if (isBal == "false") {
+            if (isBal == "1") {
                 excloudAddr = collectDetail.owner
                 console.log("合约草田分余额不足:", collectDetail.owner)
                 continue;
@@ -548,7 +548,7 @@ async function betchMint() {
                         }
                         let contractAddressDetail = contractAddressDetailAsync;
                         let isBal = await getString("BALANCE_" + collectDetail.owner)
-                        if (isBal == "false") {
+                        if (isBal == "1") {
                             console.log("合约草田分余额不足:", collectDetail.owner)
                             continue;
                         }
@@ -568,7 +568,7 @@ async function betchMint() {
                             contractAddressDetail.address.toLowerCase() == address.toLowerCase() && Number(etherString) < Number(String(10))
                         ) {
 
-                            await setString("BALANCE_" + contractAddressDetail.address, "false", 600000)
+                            await setString("BALANCE_" + contractAddressDetail.address, "1", 300)
                             // 跳出, 重新查询数据
                             console.log("草田分余额不足:", contractAddressDetail.address)
                             continue;
@@ -577,7 +577,7 @@ async function betchMint() {
                             // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                             let etherStringC = ethers.utils.formatEther(balanceC);
                             if (Number(etherStringC) < Number(String(10))) {
-                                await setString("BALANCE_" + contractAddressDetail.address, "false", 600000)
+                                await setString("BALANCE_" + contractAddressDetail.address, "1", 300)
                                 // 跳出, 重新查询数据
                                 console.log("草田分余额不足:", contractAddressDetail.address)
                                 continue;
@@ -902,7 +902,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         //     throw "Transaction Reverted";
         // }
         // if("INSUFFICIENT_FUNDS" == txRet.err.code) {
-        //     await setString("BALANCE_" + contractAddressDetail.address, false, 600000)
+        //     await setString("BALANCE_" + contractAddressDetail.address, false, 300)
         //     // 跳出, 重新查询数据
         //     console.log("草田分余额不足:", contractAddressDetail.address)
         //     continue;

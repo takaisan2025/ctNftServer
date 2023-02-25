@@ -1626,7 +1626,7 @@ const handleUserRouter = async (req, res) => {
         // 查询账户实名状况
 
         let isBal = await getString("BALANCE_" + collectDetail.owner)
-        if (isBal == "false") {
+        if (isBal == "1") {
             return responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {});
         }
 
@@ -2146,7 +2146,7 @@ const handleUserRouter = async (req, res) => {
             // await setString(
             //   "WALLET_ACCOUNT_" + address,
             //   JSON.stringify(decWalletResult.result),
-            //   600000
+            //   300
             // );
 
             //    暂时插入数据库

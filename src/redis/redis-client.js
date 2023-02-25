@@ -93,6 +93,19 @@ const lrem = (key, n = 1, value) => {
         })
     })
 }
+const pttl = (key) => {
+    key = redisPrefix + key;
+    return new Promise((resolve, reject) => {
+        redisClient.pttl(key, function (err, result) {
+            if (err) {
+                reject(err)
+            }
+            resolve(result)
+        })
+    })
+}
+
+
 module.exports = {
     getString,
     setString,
@@ -100,5 +113,6 @@ module.exports = {
     rpush,
     lrange,
     lrem,
+    pttl
 }
 

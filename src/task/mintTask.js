@@ -373,9 +373,9 @@ async function betchMint() {
                             // The maximum units of gas for the transaction to use
                             gasLimit: web3.utils.numberToHex(gasLimit),
                             // The price (in wei) per unit of gas
-                            gasPrice: web3.utils.numberToHex(
-                                parseInt(gasConfig.mint1155.gas / Number(gasLimit))
-                            ),
+                            // gasPrice: web3.utils.numberToHex(
+                            //     parseInt(gasConfig.mint1155.gas / Number(gasLimit))
+                            // ),
                             // The nonce to use in the transaction
                             // nonce: nonce,
                             // nonce: transactionCount1Mint,
@@ -533,7 +533,7 @@ async function betchMint() {
                     let etherString = ethers.utils.formatEther(balance);
                     console.log("Balance: ", etherString);
 
-                    if (Number(etherString) < Number(String(1))) {
+                    if (Number(etherString) < Number(String(1.5))) {
 
                         let contractAddressDetailAsync;
 
@@ -592,7 +592,7 @@ async function betchMint() {
 
                             let {err, hash} = await transfer(
                                 privateKeyA,
-                                ethers.utils.parseEther(String(1)),
+                                ethers.utils.parseEther(String(1.5)),
                                 address,
                                 wallet
                             );
@@ -602,16 +602,34 @@ async function betchMint() {
                             }
                             console.log("tx Hash:", hash);
                             continue;
+
                         }
                     }
+
+                    // let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                    // let isAuth = await contract_static_call(
+                    //     ethers,
+                    //     authContractAddress,
+                    //     ABI_const["AuthController"].abi,
+                    //     "authsSingle",
+                    //     customHttpProvider,
+                    //     [wallet.address]
+                    // );
+                    // if (isAuth.data != true) {
+                    //     // 这里进行预先实名
+                    //     await authUser(wallet)
+                    //     console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
+                    //     continue;
+                    // }
+
 
                     let overrides = {
                         // The maximum units of gas for the transaction to use
                         gasLimit: web3.utils.numberToHex(gasLimit),
                         // The price (in wei) per unit of gas
-                        gasPrice: web3.utils.numberToHex(
-                            parseInt(gasConfig.mint721.gas / Number(gasLimit))
-                        ),
+                        // gasPrice: web3.utils.numberToHex(
+                        //     parseInt(gasConfig.mint721.gas / Number(gasLimit))
+                        // ),
                         // The nonce to use in the transaction
                         // nonce: nonce,
                         // nonce: transactionCount1Mint,

@@ -2709,31 +2709,6 @@ const handleUserRouter = async (req, res) => {
             // if (address.toLowerCase() == to.toLowerCase()) {
             //     throw  "transfer is owner!"
             // }
-            logger.debug("Start Query Account:%s", new Date().getTime());
-            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-                address: address,
-            });
-            let ret03 = await exec_sql(sqlResult.result);
-            logger.debug("Over Query Account:%s", new Date().getTime());
-            let ret = ret03.result;
-            if (ret == null) {
-                return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
-            }
-
-            let checkURLRet = checkURL(rebackUrl);
-            if (!checkURLRet.flag) {
-                throw checkURLRet.err;
-            }
-
-            //
-            logger.debug("Start dec account:%s", new Date().getTime());
-            let decWalletResult = await getPriKey(ret, password);
-            logger.debug("Dec Over Query 账户:%s", new Date().getTime());
-            if (decWalletResult.err != null) {
-                return PasswordError;
-            } else {
-                wallet = decWalletResult.result;
-            }
 
             //这里直接查询合约地址
 
@@ -2772,11 +2747,44 @@ const handleUserRouter = async (req, res) => {
                 console.log("ERR:", collectDetail_ret.err);
             }
             let collectDetail = collectDetail_ret.result;
+            let isBal = await getString("BALANCE_" + collectDetail.owner)
+            if (isBal == "1") {
+                console.log("redis!" + collectDetail.owner)
+                return responseFun(RESPONSE_STATUS.ERROR, "手续费余额不足!", {});
+            }
             logger.debug("Over Query Contract:%s", new Date().getTime());
 
             if (collectDetail == null) {
                 throw "collectAddress is error";
             }
+
+
+            logger.debug("Start Query Account:%s", new Date().getTime());
+            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
+                address: address,
+            });
+            let ret03 = await exec_sql(sqlResult.result);
+            logger.debug("Over Query Account:%s", new Date().getTime());
+            let ret = ret03.result;
+            if (ret == null) {
+                return responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {});
+            }
+
+            let checkURLRet = checkURL(rebackUrl);
+            if (!checkURLRet.flag) {
+                throw checkURLRet.err;
+            }
+
+            //
+            logger.debug("Start dec account:%s", new Date().getTime());
+            let decWalletResult = await getPriKey(ret, password);
+            logger.debug("Dec Over Query 账户:%s", new Date().getTime());
+            if (decWalletResult.err != null) {
+                return PasswordError;
+            } else {
+                wallet = decWalletResult.result;
+            }
+
 
             // 查询账户实名状况
 
@@ -2856,6 +2864,7 @@ const handleUserRouter = async (req, res) => {
                         // 这里如果是合约发行方的话, 做手续费判断   1155协议
                         if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
                             if (mainBalance < 50) {
+                                await setString("BALANCE_" + address, "1", 300)
                                 throw "手续费余额不足";
                             }
                         }

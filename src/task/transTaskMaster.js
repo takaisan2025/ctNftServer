@@ -21,7 +21,7 @@ const {
     exec_sql,
     exec_sql_all,
 } = require("../controller/ctnft");
-let noAddress = null
+let excloudAddr = ""
 
 async function main() {
     console.log("betchTransferThread Start !!")
@@ -29,7 +29,7 @@ async function main() {
 
     var sql
     var params;
-    if (noAddress == null) {
+    if (isEmpty(excloudAddr).flag) {
         params = {t_status: 1};
         sql = get_mysql(
             "trans_form_list",
@@ -37,8 +37,7 @@ async function main() {
             params
         ).result;
     } else {
-        params = {t_status: 1, t_from: noAddress};
-        // params = {t_status: 1, collectAddress: noAddress};
+        params = {t_status: 1, t_from: excloudAddr};
         sql = get_mysql(
             "trans_form_list",
             "selectByStatusAndNoFrom",
@@ -58,7 +57,7 @@ async function main() {
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {
         // if (i == 0) {
-        //     noAddress = null;
+        //     excloudAddr = null;
         // }
         var workerProcess = child_process.spawn('node', ['src/task/transTaskSub.js', i], {
             env: {
@@ -69,13 +68,6 @@ async function main() {
 
         workerProcess.stdout.on('data', function (data) {
             console.log('stdout: ' + data);
-            if (validateAddressBalanceEnough(data.toString().trim()).flag == true) {
-                noAddress = data.toString().trim().replace("草田分余额不足: ", '')
-                noAddress = noAddress.slice(0, 42)
-                if (validateAddress(noAddress).flag == false) {
-                    noAddress = null;
-                }
-            }
         });
 
         workerProcess.stderr.on('data', function (data) {

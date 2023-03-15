@@ -9,9 +9,18 @@ let web3 = new Web3("http://ctblock.cn/blockChain");
 const fetch = require("node-fetch");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
-
+const {
+    getString,
+    setString,
+    removeString,
+    rpush,
+    lrange,
+    lrem,
+} = require("../redis/redis-client");
 async function betchCallFund1() {
-    let transList = JSON.parse(process.env.spTransList);
+    // 设置列表
+    let transList = JSON.parse(await getString("spTransList"));
+    // let transList = JSON.parse(process.env.spTransList);
     for (let retKey in transList) {
         let {
             token_id,

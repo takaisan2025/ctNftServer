@@ -77,6 +77,8 @@ async function betchTransfer() {
             }
 
             let collectDetail = collectDetail_ret02.result
+
+
             let contractAddressDetailAsync;
 
             if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
@@ -155,53 +157,11 @@ async function betchTransfer() {
                     continue;
                 }
             }
-            if (isApprovedForAll == false) {
-                console.log("Balance: ", etherString);
-                if (Number(etherString) < Number(String(0.405))) {
-                    let privateKey = contractAddressDetail.private_key;
-                    if (isEmpty(privateKey).flag) {
-                        continue;
-                    } else {
-                        // 这里传入from的wallet对象, 因为可能会给from转手续费
-                        let {
-                            err,
-                            hash
-                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from, wallet);
-                        if (err != null) {
-                            console.log("txTransfer faild");
-                            continue;
-                        }
-                        console.log("tx Hash:", hash);
-                        continue;
-                    }
-                }
-            } else {
 
-                console.log("Balance: ", etherString);
-
-                if (Number(etherString) < Number(String(0.3))) {
-                    let privateKey = contractAddressDetail.private_key;
-                    if (isEmpty(privateKey).flag) {
-                        continue;
-                    } else {
-                        let {
-                            err,
-                            hash
-                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.3)), t_from, wallet);
-                        if (err != null) {
-                            console.log("txTransfer faild");
-                            continue;
-                        }
-                        console.log("tx Hash:", hash);
-                        continue;
-                    }
-                }
-
-            }
             if (isApprovedForAll == false) {
 
                 console.log("Balance: ", etherString);
-                if (Number(etherString) < Number(String(0.405))) {
+                if (Number(etherString) < Number(String(0.66))) {
                     let privateKey = contractAddressDetail.private_key;
                     if (isEmpty(privateKey).flag) {
                         continue;
@@ -209,7 +169,7 @@ async function betchTransfer() {
                         let {
                             err,
                             hash
-                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.405)), t_from, wallet);
+                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.66)), t_from, wallet);
                         if (err != null) {
                             console.log("txTransfer faild");
                             continue;
@@ -257,6 +217,28 @@ async function betchTransfer() {
                 // let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
                 //
                 // console.log("txApprove:", recept1);
+
+            } else {
+
+                console.log("Balance: ", etherString);
+
+                if (Number(etherString) < Number(String(0.44))) {
+                    let privateKey = contractAddressDetail.private_key;
+                    if (isEmpty(privateKey).flag) {
+                        continue;
+                    } else {
+                        let {
+                            err,
+                            hash
+                        } = await transfer(privateKey, ethers.utils.parseEther(String(0.44)), t_from, wallet);
+                        if (err != null) {
+                            console.log("txTransfer faild");
+                            continue;
+                        }
+                        console.log("tx Hash:", hash);
+                        continue;
+                    }
+                }
 
             }
 
@@ -353,6 +335,7 @@ async function betchTransfer() {
                 let overrides = {
                     // The maximum units of gas for the transaction to use
                     gasLimit: web3.utils.numberToHex(gasLimit),
+                    // gasLimit: web3.utils.numberToHex(80000),
                     // The price (in wei) per unit of gas
                     // gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
                     // The nonce to use in the transaction

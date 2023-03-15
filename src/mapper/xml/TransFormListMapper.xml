@@ -42,6 +42,12 @@
         from trans_form_list
         where id = #{id}
     </select>
+    <select id="selectByOrderId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from trans_form_list
+        where orderId = #{orderId}
+    </select>
     <select id="selectByFormAndTokenId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         select
         *,

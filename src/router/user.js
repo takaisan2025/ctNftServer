@@ -1621,8 +1621,6 @@ const handleUserRouter = async (req, res) => {
         let collectDetail = collectDetail01.result;
 
 
-
-
         // 查询账户实名状况
 
         let isBal = await getString("BALANCE_" + collectDetail.owner)
@@ -2710,8 +2708,27 @@ const handleUserRouter = async (req, res) => {
             //     throw  "transfer is owner!"
             // }
 
-            //这里直接查询合约地址
+            let isDump = await getString(orderId)
+            if (isDump == "1") {
+                return responseFun(RESPONSE_STATUS.ERROR, "ER_DUP_ENTRY", "");
+            }
 
+            // 数据库查询订单号状态
+            var sqlQueryByOrderId = get_mysql(
+                "trans_form_list",
+                "selectByOrderId",
+                {
+                    orderId: orderId,
+                }
+            ).result;
+            let ex_orderId_ret = await exec_sql(sqlQueryByOrderId);
+            console.log("ex_orderId_ret:", ex_orderId_ret)
+            if (ex_orderId_ret.result != null) {
+                console.log("数据库判断订单号冲突!")
+                return responseFun(RESPONSE_STATUS.ERROR, "ER_DUP_ENTRY", "");
+            }
+
+            //这里直接查询合约地址
             logger.debug("Start Query NFT:%s", new Date().getTime());
             var params = {tokenId: tokenId};
             var sqlQueryByTokenId = get_mysql(
@@ -2953,6 +2970,12 @@ const handleUserRouter = async (req, res) => {
 
                         if (ex_ret.err != null) {
                             console.log("ERR:", ex_ret.err);
+                            console.log("ERR_JUDGE:", "ER_DUP_ENTRY" == ex_ret.err);
+                            if ("ER_DUP_ENTRY" == ex_ret.err) {
+                                await setString(orderId, "1", 300);
+                            }
+                            let isDump = await getString(orderId);
+                            console.log("isDump:", isDump);
                             return responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, "");
                         } else {
                             logger.debug("Out:%s", new Date().getTime());

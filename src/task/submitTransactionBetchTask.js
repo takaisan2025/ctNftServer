@@ -182,4 +182,4 @@ function id_fun(str) {
 
 //TEST
 betchTransfer();
-// node src\task\transTaskExec1.js
+// node src\task\submitTransactionBetchTask.js

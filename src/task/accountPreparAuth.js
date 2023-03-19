@@ -55,8 +55,7 @@ async function betchPreaprAuth() {
             .toString("hex")}`;
 
         // 判断接入方用户名密码
-        let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
-        let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
+        let AUTH_CONTROLLER_SYSTEM_ADDRESS = GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS // TODO 这里需要系统地址
 
         // 判断用户密码是否正确
         // 判断接入方用户名密码
@@ -73,7 +72,7 @@ async function betchPreaprAuth() {
             let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
             // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
             //等待其它程序处理上链
-            let sender = s_wallet.address;
+            let sender = AUTH_CONTROLLER_SYSTEM_ADDRESS;
             let authTime = 1766841499; // 没有用的参数
             let authExpiry = Date.now() + 1 * 60 * 60 * 24 * 180; // 六个月
             let isAuth = true;
@@ -140,7 +139,7 @@ async function betchPreaprAuth() {
                 "NftTransactionMapper",
                 "insertSelective",
                 {
-                    from: s_wallet.address,
+                    from: AUTH_CONTROLLER_SYSTEM_ADDRESS,
                     to: contractAddress,
                     status: 0,
                     // "hash": "",
@@ -170,7 +169,7 @@ async function betchPreaprAuth() {
                 }
             }
             console.log(responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
-                s_address: s_wallet.address,
+                s_address: AUTH_CONTROLLER_SYSTEM_ADDRESS,
                 address: address,
                 orderId: orderId,
             }))

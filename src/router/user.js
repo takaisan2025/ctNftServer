@@ -1065,7 +1065,9 @@ const handleUserRouter = async (req, res) => {
             address: address,
         });
         let result = await exec_sql(sqlResult.result);
-        let isExit = result == null;
+        console.log(result)
+
+        let isExit = (result.result != null);
 
         return responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
             address: address,

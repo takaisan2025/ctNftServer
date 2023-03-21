@@ -113,9 +113,7 @@ async function betchTransfer() {
         ).result;
         let result02 = await exec_sql(sqlUp);
         if (result02.err != null) {
-            console.error(responseFun(500, err, ""), id);
-        } else {
-            return result02.result;
+            console.error(responseFun(500, result02.err, ""), id);
         }
         console.log("update TransFrom data:", result02.result);
 
@@ -188,8 +186,6 @@ async function betchHashQuery() {
         let result03 = await exec_sql(sqlUp);
         if (result03.err != null) {
             console.error(responseFun(500, result03.err, ""), id);
-        } else {
-            return result03.result;
         }
     }
     console.log("betchHashQuery All Done!");

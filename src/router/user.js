@@ -3176,7 +3176,6 @@ const handleUserRouter = async (req, res) => {
 
         let addressAuth = await getString("ADDRESS_AUTH_" + address);
         if (!isEmpty(addressAuth).flag) {
-            console.log("addressAuth:", addressAuth)
             return responseFun(RESPONSE_STATUS.SUCCESS, null, JSON.parse(addressAuth));
         }
         // 查询地址实名情况

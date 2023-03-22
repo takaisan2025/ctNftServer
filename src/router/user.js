@@ -197,7 +197,7 @@ const handleUserRouter = async (req, res) => {
 
         s_address = Web3.utils.toChecksumAddress(s_address);
         if (!validateAddress(s_address).flag) {
-            return responseFun(500, validateAddress(s_password).err, {});
+            return responseFun(500, validateAddress(s_address).err, {});
         }
         if (isEmpty(password).flag) {
             return PasswordEmpty;
@@ -3163,6 +3163,47 @@ const handleUserRouter = async (req, res) => {
             NFT: resultNFT,
             TRANS: resultTREANS,
         };
+        return responseFun(RESPONSE_STATUS.SUCCESS, null, result);
+    }
+
+
+    // 认证信息查询
+    if (req.path === "/api/address/address_auth") {
+        const {address} = req.body;
+        if (!validateAddress(address).flag) {
+            return responseFun(500, validateAddress(address).err, {});
+        }
+
+        let addressAuth = await getString("ADDRESS_AUTH_" + address);
+        if (!isEmpty(addressAuth).flag) {
+            console.log("addressAuth:", addressAuth)
+            return responseFun(RESPONSE_STATUS.SUCCESS, null, JSON.parse(addressAuth));
+        }
+        // 查询地址实名情况
+        let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+        let parentauthsa = await contract_static_call(
+            ethers,
+            authContractAddress,
+            ABI_const["AuthController"].abi,
+            "parentauthsa",
+            customHttpProvider,
+            [address, 0]
+        );
+
+        // 将结果添加到redis  有效期五分钟
+        let result;
+        if (parentauthsa.data == null) {
+            result = {
+                isAuth: false,
+            }
+        } else {
+            result = {
+                isAuth: true,
+                parthAddr: parentauthsa.data
+            }
+        }
+        console.log("parentauthsa:", result)
+        await setString("ADDRESS_AUTH_" + address, JSON.stringify(result), 300)
         return responseFun(RESPONSE_STATUS.SUCCESS, null, result);
     }
 };

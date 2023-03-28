@@ -22,7 +22,8 @@ const TRANSACTION_RECEIPT_STATUS = {
 };
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
-const CtTransferExecutorAddress = "0xF41d25234dB41465450F5cCfE1e302A1fA0E2fEF";
+let CtTransferExecutorAddress = "0xF41d25234dB41465450F5cCfE1e302A1fA0E2fEF";
+CtTransferExecutorAddress = "0xD7F34361dA7eeDD62974C9bcD5CE5937E73968C8";
 const ethers = require("ethers");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
@@ -137,7 +138,7 @@ async function betchTransfer() {
                 t_from,
                 CtTransferExecutorAddress
             );
-            // console.log("isApprovedForAll:", isApprovedForAll);
+            console.log("isApprovedForAll:", isApprovedForAll);
             if (  // 判断是否是项目方
                 contractAddressDetail.address.toLowerCase() == t_from.toLowerCase() && Number(etherString) < Number(String(10))
             ) {
@@ -285,6 +286,7 @@ async function betchTransfer() {
                     return {err: null, gasLimit: ret}
                 })
                 .catch((err) => {
+                    console.log("Err:", err)
                     return {err: err.reason, gasLimit: null}
                 });
             if (gasLimitRet.err != null) {

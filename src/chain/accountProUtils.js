@@ -16,16 +16,41 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
+const {
+    getString,
+    setString,
+    removeString,
+    rpush,
+    lrange,
+    lrem,
+} = require("../redis/redis-client");
 
 async function getPriKey(account, password) {
     try {
 
         if (isEmpty(account.private_key).flag == true) {
-            console.log(account.id)
-            console.log(account.keystore)
-            console.log(password)
-            let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(account.keystore).toLowerCase()), password);
-            return {err: null, result: wallet}
+
+            let privateKeyByRedis = await getString("PRIVATE_KEY" + account.address + "_" + password);
+
+            if (isEmpty(privateKeyByRedis).flag == true) {
+            // if (true) {
+                console.log("解析私钥, 未命中redis!")
+                let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(account.keystore).toLowerCase()), password);
+                // 这里进行redis缓存, 如果没有出错
+                await setString("PRIVATE_KEY" + account.address + "_" + password, wallet.privateKey, 300)
+                return {err: null, result: wallet}
+            } else {
+                console.log("解析私钥, hahaha命中redis!")
+
+                return {
+                    err: null, result: {
+                        address: account.address,
+                        privateKey: privateKeyByRedis,
+                    }
+                }
+            }
+
+
         } else {
 
             if (password != account.psd) {

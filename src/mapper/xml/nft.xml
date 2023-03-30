@@ -20,7 +20,7 @@
         RIGHT JOIN collect ON nft.collectAddress = collect.address
         where status = ${status}
         <if test="address != null">
-            AND nft.address != #{address}
+            AND collect.owner != #{address}
         </if>
         limit 50
     </select>

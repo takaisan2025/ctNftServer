@@ -577,16 +577,16 @@ const handleUserRouter = async (req, res) => {
 
         s_address = Web3.utils.toChecksumAddress(s_address);
         if (!validateAddress(s_address).flag) {
-            return responseFun(500, validateAddress(s_password).err, {});
+            return responseFun(500, validateAddress(s_address).err, {});
         }
         if (isEmpty(password).flag) {
             return PasswordEmpty;
         }
         if (isEmpty(private_key).flag) {
-            return PasswordEmpty;
+            return responseFun(500, "invalid private_key", {});
         }
         if (isEmpty(s_password).flag) {
-            return PasswordEmpty;
+            return responseFun(500, "invalid s_password", {});
         }
         if (isEmpty(expand_data).flag) {
             return responseFun(500, isEmpty(expand_data).err, {});

@@ -116,7 +116,8 @@ const severHandle = (req, res) => {
             } catch (e) {
                 console.trace(e);
                 if (e) {
-                    res.end(JSON.stringify(e));
+                    // res.end(JSON.stringify(e));
+                    res.end(responseFunStr(500, e.message, ""));
                 } else {
                     res.end(responseFunStr(500, "process error!", ""));
                 }

@@ -297,7 +297,7 @@ async function betchCallFund() {
                 redirect: "follow",
             };
 
-            if (rebackUrl == "" || rebackUrl == null || rebackUrl == undefined) {
+            if (rebackUrl == "" || rebackUrl == null || rebackUrl == undefined || rebackUrl == reCallUrlChanel1) {
                 let responseChanel1 = await fetch(reCallUrlChanel1, {
                     headers: {
                         "Content-Type": "application/json",
@@ -326,10 +326,10 @@ async function betchCallFund() {
                     });
                 //处理响应结果
                 console.log(responseChanel1);
-                if (responseChanel1 == null) {
+                if (responseChanel1.data == null) {
                     await nftUpdateSelectiveStatus(9, tokenId);
                     continue;
-                } else if (responseChanel1.code == 200) {
+                } else if (responseChanel1.data.code == 200) {
                     await nftUpdateSelectiveStatus(1, tokenId); // 设置为回调成功状态
                 } else {
                     await nftUpdateSelectiveStatus(9, tokenId);

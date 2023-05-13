@@ -43,8 +43,8 @@ const {getPriKey} = require("../chain/accountProUtils");
 const {get_mysql} = require("../db/genSql");
 
 async function betchTransfer() {
-    let transList = JSON.parse(process.env.spTransList);
-
+    // let transList = JSON.parse(process.env.spTransList);
+    let transList = JSON.parse(await getString("spTransListTrans"));
     for (let retKey in transList) {
         const {
             id,

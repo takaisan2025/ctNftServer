@@ -71,7 +71,7 @@ async function main() {
     // let response = await betGetHistory(0, 1895565);
     // console.log(response);
 
-    let data = "0x00000000000000000000000000000000000000000000000000000000000004d20000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000162e0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000b48656c6c6f20576f726c64000000000000000000000000000000000000000000";
+    let data = "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002e516d5a6350587573696834704457573836614245397059635948464c577a4d61415a7038454c74704c764c327469000000000000000000000000000000000000";
 // [
 //   { BigNumber: "1234" },
 //   [
@@ -82,9 +82,53 @@ async function main() {
 
 // Decoding complex structs; named parameters allows positional
 // or keyword access to values
-    let v = ethers.utils.defaultAbiCoder.decode(["uint a", "tuple(uint256 b, string c) d"], data);
+    let v = ethers.utils.defaultAbiCoder.decode(["string"], data);
     console.log(v)
 }
 
-main()
+const Web3 = require("web3");
+
+function main1() {
+    const address1 = '0x1234567890123456789012345678901234567890';
+    const address2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+    const address3 = '0xbbcdefabcdefabcdefabcdefabcdefabcdefabcd';
+    const address4 = '0xbbcdefabcdefabcdefabcdefabcdefabcdefabc1';
+    const address5 = '0xbbcdefabcdefabcdefabcdefabcdefabcdefabc2';
+
+    const addresses = [address1, address2, address3, address4, address5];
+
+    addresses.sort((a, b) => {
+        if (a.toLowerCase() < b.toLowerCase()) {
+            return -1;
+        }
+        if (a.toLowerCase() > b.toLowerCase()) {
+            return 1;
+        }
+        return 0;
+    });
+
+    console.log(addresses);
+}
+
+const web3 = new Web3();
+
+function main2() {
+    let rootHashOx = "0x3975b76e36bc4e346b86f22f22523595"
+
+// 定义输入参数
+    const _from = '0x5216964c075426651b949c6d9c2d7682c5bd81dd';
+    const _to = '0x6331384fd95eedc4c5ce96d4bdfe14d7fc365554';
+
+    let env = web3.eth.abi.encodeParameters(['address', 'address'], [_from, _to])
+
+    console.log(env)
+// 计算keccak256散列
+    const hash = web3.utils.keccak256(web3.eth.abi.encodeParameters(['address', 'address'], [_from, _to]));
+    // const hash = web3.utils.keccak256("0x5216964c075426651b949c6d9c2d7682c5bd81dd6331384fd95eedc4c5ce96d4bdfe14d7fc365554");
+    console.log(hash);  //0x0e11fc7ad4191b6de8b9a13638fd17c99e0cb510c03c7ca71c05adac61b5f106
+}
+
+// main()
+// main1()
+main2()
 // node src/task/mintHashFlHistory.js

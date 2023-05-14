@@ -16,6 +16,7 @@ function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一
     }
     return newArr
 }
+
 const {
     getString,
     setString,
@@ -66,10 +67,10 @@ async function main() {
         // if (i == 0) {
         //     excloudAddr = null;
         // }
-        await setString("spTransListTrans", JSON.stringify(processedTransList[i]));
+        await setString("spTransListTrans" + ''+i, JSON.stringify(processedTransList[i]));
         var workerProcess = child_process.spawn('node', ['src/task/transTaskSub.js', i], {
             env: {
-                // spTransList: JSON.stringify(processedTransList[i]),
+                '_spTransListTransindex': i,
                 PATH: process.env.PATH
             }
         });

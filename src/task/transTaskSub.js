@@ -44,7 +44,9 @@ const {get_mysql} = require("../db/genSql");
 
 async function betchTransfer() {
     // let transList = JSON.parse(process.env.spTransList);
-    let transList = JSON.parse(await getString("spTransListTrans"));
+    let transList = JSON.parse(await getString("spTransListTrans" + process.env._spTransListTransindex));
+    console.log('transList', transList)
+    console.log('process.env._spTransListTransindex', process.env._spTransListTransindex)
     for (let retKey in transList) {
         const {
             id,
@@ -292,9 +294,11 @@ async function betchTransfer() {
             if (gasLimitRet.err != null) {
                 console.trace(gasLimitRet.err);
                 // console.log(minted721TokenStr == gasLimitRet.err)
-                if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err) {
+                if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err ||
+                    "execution reverted: ERC1155: burn amount exceeds balance" == gasLimitRet.err
+                ) {
                     let trans_from_obj = {
-                        t_status: 3, // 上链成功
+                        t_status: 3, // 上链失败
                         id: id
                     };
                     console.log("nftUpdateSelective:", trans_from_obj);

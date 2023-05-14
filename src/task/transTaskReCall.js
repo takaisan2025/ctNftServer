@@ -1,5 +1,6 @@
 const {
     exec_sql,
+    exec_sql_all
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const FormData = require("form-data");
@@ -20,12 +21,25 @@ const {
 
 async function betchCallFund1() {
     // 设置列表
+    var sql
+    var params;
+    params = {t_status: 6};
+    sql = get_mysql(
+        "trans_form_list",
+        "selectByStatus",
+        params
+    ).result;
 
-    // let transList = JSON.parse(await getString("spTransList" + process.env.spTransList_index));
-    let transList = JSON.parse(await getString("spTransList"));
-    // console.log('transList', transList)
-    // console.log('process.env.spTransList_index', process.env.spTransList_index)
-    // let transList = JSON.parse(process.env.spTransList);
+    sql = sql.replace("! =", "!=")
+    // console.log("betchTransferThread", sql)
+    let transList_ret = await exec_sql_all(sql)
+    let transList = []
+    if (transList_ret.err != null) {
+        console.trace("ERR:", transList_ret.err);
+        return
+    }
+    transList = transList_ret.result
+    console.log("transList", transList)
     for (let retKey in transList) {
         let {
             token_id,
@@ -140,7 +154,6 @@ async function betchCallFund1() {
         }
     }
     console.log("betchCallFund All Done!");
-    process.exit();
 }
 
 function formatTime(date) {
@@ -159,4 +172,5 @@ function formatTime(date) {
 //TEST
 betchCallFund1();
 
-// node src\task\transTaskExec2.js
+// node src\task\transTaskReCall.js
+// node src/task/transTaskReCall.js

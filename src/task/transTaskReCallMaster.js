@@ -15,6 +15,7 @@ const {
     lrange,
     lrem,
 } = require("../redis/redis-client");
+
 function spArr(arr, num) { //arr是你要分割的数组，num是以几个为一组
     let newArr = [] //首先创建一个新的空数组。用来存放分割好的数组
     for (let i = 0; i < arr.length;) { //注意：这里与for循环不太一样的是，没有i++
@@ -49,10 +50,12 @@ async function main() {
     for (var i = 0; i < processedTransList.length; i++) {
 
         // 设置列表
+        // await setString("spTransList" + i, JSON.stringify(processedTransList[i]));
         await setString("spTransList", JSON.stringify(processedTransList[i]));
 
         var workerProcess = child_process.spawn('node', ['src/task/transTaskReCallSub.js', i], {
             env: {
+                spTransList_index: i,
                 PATH: process.env.PATH
             }
         });

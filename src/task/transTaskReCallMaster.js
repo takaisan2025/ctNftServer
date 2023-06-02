@@ -28,7 +28,7 @@ const {
     exec_sql,
     exec_sql_all,
 } = require("../controller/ctnft");
-
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 async function main() {
     console.log("betchTransferThread Start !!")
     let countTh = 0;

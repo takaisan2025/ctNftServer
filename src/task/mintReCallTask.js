@@ -52,7 +52,7 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider(
 
 let minted721TokenStr = "execution reverted: ERC721: token already minted";
 let minted1155TokenStr = "execution reverted: more than supply";
-
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 function Part(account, value) {
     return {
         account,

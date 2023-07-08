@@ -292,6 +292,39 @@ async function betchMint() {
             // try {
             let wallet;
 
+            if(type == 10) {
+                let contractAddressDetailAsync;
+
+                if (collectDetail.owner.toLowerCase() == address.toLowerCase()) {
+                    contractAddressDetailAsync = accountItem;
+                } else {
+                    let sqlResult1 = get_mysql("AccountMapper", "selectByAddress", {
+                        address: collectDetail.owner,
+                    });
+                    let contractAddressDetailAsync_ret = await exec_sql(sqlResult1.result);
+                    contractAddressDetailAsync = contractAddressDetailAsync_ret.result
+                }
+                let contractAddressDetail = contractAddressDetailAsync;
+                let decWalletResultq = await getPriKey(contractAddressDetail, contractAddressDetail.psd);
+                if (decWalletResultq.err != null) {
+                    throw PasswordError;
+                } else {
+                    wallet = decWalletResultq.result;
+                }
+               let privateKeyA = wallet.privateKey
+                let {err, hash} = await transfer(
+                    privateKeyA,
+                    ethers.utils.parseEther(String(1.2)),
+                    address,
+                    wallet
+                );
+                if (err != null) {
+                    console.log("txTransfer faild");
+                    continue
+                }
+                console.log("tx Hash:", hash);
+            }
+
             let decWalletResult = await getPriKey(accountItem, accountItem.psd);
             if (decWalletResult.err != null) {
                 throw PasswordError;
@@ -341,6 +374,7 @@ async function betchMint() {
                     })
                     .catch((err) => {
                         console.trace("err:", err.reason);
+
                         return {err: err.reason, gasLimit: null};
                     });
                 let gasLimit = gasLimitRet.gasLimit;
@@ -349,6 +383,8 @@ async function betchMint() {
                         await nftUpdateSelectiveStatus(7, tokenId); // 已经被铸造, 但是获取不到hash
                     } else if ("replacement fee too low" == gasLimitRet.err) {
                         // await updateNonce(address, transactionCount1Mint + 1);
+                    } else if (gasLimitRet.err == 'execution reverted: ERC1155: mint is not owner') {
+                        await nftUpdateSelectiveStatus(8, tokenId); // up chain faild.
                     } else {
                         // await delNonce(address);
                     }

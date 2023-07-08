@@ -45,7 +45,7 @@ async function main() {
         console.trace("ERR:", transList_ret.err);
     }
     transList = transList_ret.result
-    let processedTransList = spArr(transList, 250);
+    let processedTransList = spArr(transList, 100);
     // console.log(processedTransList[0])
     for (var i = 0; i < processedTransList.length; i++) {
 

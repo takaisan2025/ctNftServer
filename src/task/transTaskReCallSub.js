@@ -17,7 +17,7 @@ const {
     lrange,
     lrem,
 } = require("../redis/redis-client");
-
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 async function betchCallFund1() {
     // 设置列表
 
@@ -57,7 +57,7 @@ async function betchCallFund1() {
                 method: "POST",
                 body: formdata,
                 redirect: "follow",
-                timeout: 5000
+                timeout: 2000
             };
 
             let responseRet = await fetch(reback_url, requestOptions)

@@ -29,7 +29,7 @@ async function main() {
 
     var sql
     var params;
-    params = {status: 0, offset: 0, limit: 100};
+    params = {status: 0, offset: 0, limit: 500};
     sql = get_mysql(
         "NftTransactionMapper",
         "selectByStatus",

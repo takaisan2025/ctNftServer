@@ -19,7 +19,7 @@
         select
         <include refid="Base_Column_List" />
         from trans_form_list
-        where t_status = #{t_status}
+        where t_status = #{t_status} order by id desc
         limit 500
     </select>
     <select id="selectByStatusDesc" parameterType="java.lang.Integer" resultMap="BaseResultMap">

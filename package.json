@@ -1,30 +1,37 @@
 {
-  "name": "publickeyserver",
+  "name": "ct-nft-server",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=dev nodemon ./bin/www.js",
-    "prd": "cross-env NODE_ENV=production nodemon ./bin/www.js"
+    "dev": "cross-env NODE_ENV=dev nodemon src/index.js",
+    "start": "node src/index.js",
+    "dev1": "cross-env NODE_ENV=dev nodemon ./bin/www.js",
+    "prd": "cross-env NODE_ENV=production nodemon ./bin/www.js",
+    "background": "node src/background.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
     "crypto-js": "^3.1.9-1",
     "dotenv": "^16.0.0",
     "ecdh": "^0.1.1",
     "eth-crypto": "^1.3.3",
     "eth-sig-util": "^3.0.1",
-    "express": "^4.16.4",
+    "express": "^4.18.2",
     "express-pino-logger": "^7.0.0",
     "forever": "^1.0.0",
+    "isomorphic-fetch": "^3.0.0",
+    "joi": "^17.9.2",
     "mybatis-mapper": "git+https://github.com/Coozw/mybatis-mapper.git#7e8ad71dc277b9c24dd5abccb02050b1cb1a6749",
     "mybatis-node": "^1.0.2",
     "pino": "^8.7.0",
     "randombytes": "^2.1.0",
-    "redis": "^3.1.2",
-    "request-ip": "^3.3.0"
+    "redis": "^4.0.0",
+    "request-ip": "^3.3.0",
+    "throng": "^5.0.0"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

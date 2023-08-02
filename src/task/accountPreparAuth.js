@@ -31,7 +31,7 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider(
  */
 async function betchPreaprAuth() {
     let nfts_sql_ret = get_mysql("AccountMapper", "selectByAddress", {
-        address: "0xA29042Aa5d03F8BDfA15Fcf364dd28BBCD7A2Eef",
+        address: "0xe8A6C20ab5342D2D1E43A2b07eA9f5Eac2a30b96",
     }); // 资源未上链ipfs的条目
     let nfts_sql = nfts_sql_ret.result;
     let nfts_ret = await exec_sql(nfts_sql);

@@ -3,7 +3,6 @@ const throng = require('throng')
 const {createHttpServer} = require('./httpServer')
 const {createSocketServer} = require('./socketServer')
 const API = require('./api')
-const {db} = require('./db')
 
 const socketServer = createSocketServer()
 const httpServer = createHttpServer(socketServer)
@@ -13,7 +12,6 @@ function start() {
 
     const api = new API(
         socketServer,
-        db,
         httpServer
     )
 

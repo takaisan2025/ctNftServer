@@ -18,7 +18,6 @@ const TRANSACTION_RECEIPT_STATUS = {
 };
 const ethers = require("ethers");
 const ABI_const = require("../contract/ABI_const");
-const {RESPONSE_STATUS} = require("../chain/responseError");
 const {contract_static_call} = require("../contract/ChainCall");
 const {responseFunStr} = require("../mapper/account");
 const {responseFun} = require("../mapper/account");
@@ -31,12 +30,8 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider({
 }, {
     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
 });
-const ethUtil = require("ethereumjs-util");
-const EIP712 = require("../router/EIP712");
-const {PasswordError} = require("../chain/responseError");
-const {getPriKey} = require("../chain/accountProUtils");
 
-async function betchTransfer() {
+async function tFeeBetchTransfer() {
     var params = {t_status: 1, is_pay: 1};
     var sql = get_mysql(
         "NftChargeListMapper",
@@ -118,15 +113,15 @@ async function betchTransfer() {
         console.log("update TransFrom data:", result02.result);
 
     }
-    console.log("betchTransfer All Done!");
+    console.log("tFeeBetchTransfer All Done!");
     setTimeout(() => {
         formatTime(new Date())
-        console.log("betchTransfer Start !!")
-        betchTransfer()
+        console.log("tFeeBetchTransfer Start !!")
+        tFeeBetchTransfer()
     }, 2000)
 }
 
-async function betchHashQuery() {
+async function tFeeBetchHashQuery() {
     var params = {t_status: 5, is_pay: 1};
     var sql = get_mysql(
         "NftChargeListMapper",
@@ -188,11 +183,11 @@ async function betchHashQuery() {
             console.error(responseFun(500, result03.err, ""), id);
         }
     }
-    console.log("betchHashQuery All Done!");
+    console.log("tFeeBetchHashQuery All Done!");
     setTimeout(() => {
         formatTime(new Date())
-        console.log("betchHashQuery Start !!")
-        betchHashQuery()
+        console.log("tFeeBetchHashQuery Start !!")
+        tFeeBetchHashQuery()
     }, 2000)
 }
 
@@ -210,7 +205,10 @@ function formatTime(date) {
 }
 
 //TEST
-betchTransfer();
-betchHashQuery();
-
+// tFeeBetchTransfer();
+// tFeeBetchHashQuery();
+module.exports = {
+    tFeeBetchTransfer,
+    tFeeBetchHashQuery
+};
 // node src/task/transFeeTask.js

@@ -6,7 +6,7 @@ const GlobalConfig = require("../config/GlobalConfig.json");
 const Web3 = require("web3");
 let web3 = new Web3("http://ctblock.cn/blockChain");
 
-const EIP712 = require("../router/EIP712");
+const EIP712 = require("../routers/EIP712");
 const ABI_const = require("../contract/ABI_const.js");
 const ethers = require("ethers");
 const {responseFun, responseFunStr} = require("../mapper/account");

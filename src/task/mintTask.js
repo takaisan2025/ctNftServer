@@ -92,8 +92,8 @@ function Mint1155Data(
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
  */
 
-async function fileUploadIpfs() {
-    // let nftSql = get_mysql("nft","");
+async function mintFileUploadIpfs() {
+    console.time('mintFileUploadIpfs')
     let nfts_sql_ret = get_mysql("nft", "selectByStatus", {
         status: 0,
     }); // 资源未上链ipfs的条目
@@ -222,19 +222,13 @@ async function fileUploadIpfs() {
             console.trace(responseFunStr(500, e, ""), id);
         }
     }
-
-    console.log("fileUploadIpfs All Done!");
-    setTimeout(() => {
-        formatTime(new Date());
-        console.log("fileUploadIpfs Start !!");
-        fileUploadIpfs();
-    }, 2000);
+    console.timeEnd('mintFileUploadIpfs')
 }
 
 let excloudAddr = ""
 
-async function betchMint() {
-
+async function mintBetchMint() {
+    console.time('mintBetchMint')
     let paramset1 = {
         status: 6,
     }
@@ -292,7 +286,7 @@ async function betchMint() {
             // try {
             let wallet;
 
-            if(type == 10) {
+            if (type == 10) {
                 let contractAddressDetailAsync;
 
                 if (collectDetail.owner.toLowerCase() == address.toLowerCase()) {
@@ -311,7 +305,7 @@ async function betchMint() {
                 } else {
                     wallet = decWalletResultq.result;
                 }
-               let privateKeyA = wallet.privateKey
+                let privateKeyA = wallet.privateKey
                 let {err, hash} = await transfer(
                     privateKeyA,
                     ethers.utils.parseEther(String(1.2)),
@@ -779,16 +773,11 @@ async function betchMint() {
             continue;
         }
     }
-    console.log("betchMint All Done!");
-    setTimeout(() => {
-        formatTime(new Date());
-        console.log("betchMint Start !!");
-        betchMint();
-    }, 2000);
+    console.timeEnd('mintBetchMint')
 }
 
 const ethUtil = require("ethereumjs-util");
-const EIP712 = require("../router/EIP712");
+const EIP712 = require("../routers/EIP712");
 const sigUtil = require("eth-sig-util");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 
@@ -982,7 +971,9 @@ function formatTime(date) {
     return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 
-async function betchHashQuery() {
+async function mintBetchHashQuery() {
+    console.time('mintBetchHashQuery')
+
     let nfts = nftSelectSelectiveStatus(10); // 上链成功  没有回调的
     let transList = await nfts
         .then((ret) => {
@@ -1026,22 +1017,18 @@ async function betchHashQuery() {
             continue;
         }
     }
-    console.log("betchHashQuery All Done!");
-    setTimeout(() => {
-        formatTime(new Date());
-        console.log("betchHashQuery Start !!");
-        betchHashQuery();
-    }, 2000);
+    console.timeEnd('mintBetchHashQuery')
 }
 
 //TEST
-fileUploadIpfs();
-// test();
-betchMint();
-betchHashQuery();
+// mintFileUploadIpfs();
+// mintBetchMint();
+// mintBetchHashQuery();
 
 module.exports = {
-    fileUploadIpfs,
+    mintFileUploadIpfs,
+    mintBetchMint,
+    mintBetchHashQuery
 };
 
 // node src\task\mintTask.js

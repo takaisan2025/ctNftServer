@@ -469,7 +469,7 @@ function id_fun(str) {
         .substring(0, 8)}`;
 }
 
-const EIP712 = require("../router/EIP712");
+const EIP712 = require("../routers/EIP712");
 const sigUtil = require("eth-sig-util");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 

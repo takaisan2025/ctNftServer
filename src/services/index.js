@@ -4,9 +4,6 @@
 // const cancelall = require('./cancelall')
 // const requestquote = require('./requestquote')
 module.exports = {
-    // submitorder2,
-    // submitorder3,
     // cancelorder,
-    // cancelall,
     // requestquote
 };

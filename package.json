@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=dev nodemon src/index.js",
     "start": "node src/index.js",
-    "dev1": "cross-env NODE_ENV=dev nodemon ./bin/www.js",
-    "prd": "cross-env NODE_ENV=production nodemon ./bin/www.js",
     "background": "node src/background.js"
   },
   "author": "",

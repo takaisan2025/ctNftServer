@@ -13,18 +13,6 @@ const createHttpServer = (socketServer) => {
     const expressApp = express();
     const server = createServer(expressApp);
 
-    const httpMessages = [
-        "requestquote",
-        "submitorder",
-        "submitorder2",
-        "submitorder3",
-        "orderreceiptreq",
-        "dailyvolumereq",
-        "refreshliquidity",
-        "marketsreq",
-        "cancelorder2",
-    ];
-
     expressApp.all("*", function (req, res, next) {
         req.headers["content-type"] = "application/json"; //  解决 application/json; charset=utf-8;
         next();

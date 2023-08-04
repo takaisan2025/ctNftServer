@@ -1,4 +1,6 @@
 const throng = require('throng')
+const dotenv = require('dotenv')
+dotenv.config()
 
 const {createHttpServer} = require('./httpServer')
 const {createSocketServer} = require('./socketServer')

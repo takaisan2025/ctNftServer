@@ -5,8 +5,6 @@ const {createSocketServer} = require('./socketServer')
 const API = require('./api')
 const {db} = require('./db')
 
-const {publisher, redis, subscriber} = require('./redisClient')
-
 const socketServer = createSocketServer()
 const httpServer = createHttpServer(socketServer)
 
@@ -16,10 +14,7 @@ function start() {
     const api = new API(
         socketServer,
         db,
-        httpServer,
-        redis,
-        subscriber,
-        publisher
+        httpServer
     )
 
     api.start(port).then(() => {

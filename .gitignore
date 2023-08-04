@@ -23,3 +23,6 @@ ctServer.zip
 .idea/
 src/test/*
 src/config
+.vscode
+package-lock.json
+.env

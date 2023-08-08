@@ -1,5 +1,5 @@
 const {
-    betchCallFund
+    mintBetchCallFund
 } = require('./task/mintReCallTask');
 const {
     tFeeBetchTransfer,
@@ -7,9 +7,9 @@ const {
 } = require('./task/transFeeTask');
 
 const {
-    fileUploadIpfs,
-    betchMint,
-    betchHashQuery
+    mintFileUploadIpfs,
+    mintBetchMint,
+    mintBetchHashQuery
 } = require('./task/mintTask');
 
 async function deleteOldOrders() {
@@ -30,10 +30,10 @@ async function start() {
     console.log('background.ts: Run startup')
     console.log('background.ts: Starting Update Functions')
     // mint
-    setInterval(fileUploadIpfs, 3000)
-    setInterval(betchMint, 3000)
-    setInterval(betchHashQuery, 3000)
-    setInterval(betchCallFund, 3000)
+    setInterval(mintFileUploadIpfs, 10000)
+    setInterval(mintBetchMint, 3000)
+    setInterval(mintBetchHashQuery, 3000)
+    setInterval(mintBetchCallFund, 3000)
     // transfer
 
     // fee

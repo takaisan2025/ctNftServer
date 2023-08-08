@@ -225,15 +225,15 @@ async function mintFileUploadIpfs() {
     console.timeEnd('mintFileUploadIpfs')
 }
 
-let excloudAddr = ""
-
 async function mintBetchMint() {
     console.time('mintBetchMint')
+    let excloudAddr = await getString('MINT_excloudAddr')
+    console.log('excloudAddr:',excloudAddr)
     let paramset1 = {
         status: 6,
     }
     if (!isEmpty(excloudAddr).flag) {
-        paramset1.address = excloudAddr
+        paramset1.address = await getString('MINT_excloudAddr')
     }
     let nfts_sql_ret = get_mysql("nft", "selectByStatus", paramset1); // 资源未上链ipfs的条目
     let nfts_sql = nfts_sql_ret.result;
@@ -274,13 +274,10 @@ async function mintBetchMint() {
             let collectDetail = collectDetail_ret.result;
             let isBal = await getString("BALANCE_" + collectDetail.owner)
             if (isBal == "1") {
-                excloudAddr = collectDetail.owner
+                await setString("MINT_excloudAddr", collectDetail.owner, 120)   // 300 5min   120 2 min
                 console.log("合约草田分余额不足:", collectDetail.owner)
-                continue;
-            } else {
-                excloudAddr = null
+                break;
             }
-
             let accountDetail_ret = await exec_sql(sqlResult.result);
             let accountItem = accountDetail_ret.result;
             // try {
@@ -396,6 +393,7 @@ async function mintBetchMint() {
                     if (Number(etherString) < Number(String(10))) {
                         // 合约持有者余额不足十个,将进行充值 1155铸造者
                         console.log("合约持有者余额不足, 请进行充值!", address);
+                        await setString("BALANCE_" + address, "1", 300);
                         // await delNonce(address);
                         continue;
                     } else {

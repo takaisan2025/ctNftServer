@@ -328,6 +328,9 @@ function mintRouters(app) {
             var params = {address: collectAddress};
             var sql = get_mysql("collect", "selectByAddress", params).result;
 
+            // 查询账户实名状况
+
+
             let collectRet02 = await exec_sql(sql);
             if (collectRet02.err != null) {
                 console.log("ERR:", collectRet02.err);
@@ -340,6 +343,10 @@ function mintRouters(app) {
                 throw "collectAddress is error";
             }
 
+            let isBal = await getString("BALANCE_" + collectRet.owner);
+            if (isBal == "1") {
+                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
+            }
             // 查询账户实名状况
 
             // 判断商家身份

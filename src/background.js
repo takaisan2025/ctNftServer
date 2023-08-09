@@ -37,8 +37,8 @@ async function start() {
     // transfer
 ``
     // fee
-    setInterval(tFeeBetchTransfer, 3000)
-    setInterval(tFeeBetchHashQuery, 3000)
+    // setInterval(tFeeBetchTransfer, 6000)
+    // setInterval(tFeeBetchHashQuery, 6000)
 }
 
 start()

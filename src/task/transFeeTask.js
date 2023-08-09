@@ -205,10 +205,10 @@ function formatTime(date) {
 }
 
 //TEST
-// tFeeBetchTransfer();
-// tFeeBetchHashQuery();
+tFeeBetchTransfer();
+tFeeBetchHashQuery();
 module.exports = {
-    tFeeBetchTransfer,
-    tFeeBetchHashQuery
+    // tFeeBetchTransfer,
+    // tFeeBetchHashQuery
 };
 // node src/task/transFeeTask.js

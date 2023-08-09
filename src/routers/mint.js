@@ -1,5 +1,6 @@
 const {
     getString,
+    setString,
 } = require("../redis/redis-client");
 
 const {
@@ -342,18 +343,20 @@ function mintRouters(app) {
             ) {
                 throw "collectAddress is error";
             }
-            wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
-            let balance = await wallet.provider.getBalance(collectRet.owner);
-            let etherString = ethers.utils.formatEther(balance);
-            console.log("Balance: ", etherString);
-            if (Number(etherString) < Number(10)) {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
-            }
 
             let isBal = await getString("BALANCE_" + collectRet.owner);
             if (isBal == "1") {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
             }
+            wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+            let balance = await wallet.provider.getBalance(collectRet.owner);
+            let etherString = ethers.utils.formatEther(balance);
+            console.log("Balance: ", etherString);
+            if (Number(etherString) < Number(10)) {
+                await setString("BALANCE_" + collectRet.owner, "1", 120);  // 2 min
+                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
+            }
+
             // 查询账户实名状况
 
             // 判断商家身份

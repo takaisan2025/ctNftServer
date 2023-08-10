@@ -37,38 +37,14 @@ const {
     checkURL,
     isEmpty,
 } = require("../rules/rules");
-const TRANSACTION_RECEIPT_STATUS = {
-    SUCCESS: 1,
-    REVERTED: 0,
-};
-// const {
-//   getString,
-//   setString,
-//   removeString,
-//   rpush,
-//   lrange,
-//   lrem,
-// } = require("../redis/redis-client");
-// const gasConfig = require("../config/gasConfig.json");
 const pino = require("pino");
 // const expressPino = require('express-pino-logger');
 const logger = pino({level: process.env.LOG_LEVEL || "debug"});
-const xss = require("xss");
 const ethers = require("ethers");
-const fetch = require("node-fetch");
-const formidable = require("formidable");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const ABI_const = require("../contract/ABI_const.js");
-let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 const Web3 = require("web3");
-let web3 = new Web3("http://ctblock.cn/blockChain");
-const ipfsAPI = require("ipfs-api");
-const ipfsNode = ipfsAPI({
-    host: GlobalConfig.IPFS[0].HOST,
-    port: GlobalConfig.IPFS[0].PORT,
-    "api-path": GlobalConfig.IPFS[0].API_PATH,
-    protocol: GlobalConfig.IPFS[0].PROTOCOL,
-});
+
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let customHttpProvider = new ethers.providers.JsonRpcProvider(

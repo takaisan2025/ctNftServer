@@ -7,11 +7,7 @@ const {
 const fs = require("fs");
 const ipfsAPI = require("ipfs-api");
 const GlobalConfig = require("../config/GlobalConfig.json");
-const ipfsNode = ipfsAPI({
-    host: GlobalConfig.IPFS[1].HOST,
-    port: GlobalConfig.IPFS[1].PORT,
-    protocol: GlobalConfig.IPFS[1].PROTOCOL,
-});
+
 const gasConfig = require("../config/gasConfig.json");
 const FormData = require("form-data");
 const Web3 = require("web3");
@@ -94,6 +90,19 @@ function Mint1155Data(
 
 async function mintFileUploadIpfs() {
     console.time('mintFileUploadIpfs')
+
+    const {create} = await import('ipfs-http-client')
+    const client = create({
+        timeout: 10000,
+        protocol: GlobalConfig.IPFS[0].PROTOCOL,
+        host: GlobalConfig.IPFS[0].HOST,
+        port: GlobalConfig.IPFS[0].PORT,
+        apiPath: GlobalConfig.IPFS[0].API_PATH,
+        headers: {
+            authorization: 'Basic ' + Buffer.from(GlobalConfig.IPFS[0].TOKEN).toString('base64')
+        }
+    })
+
     let nfts_sql_ret = get_mysql("nft", "selectByStatus", {
         status: 0,
     }); // 资源未上链ipfs的条目
@@ -130,9 +139,8 @@ async function mintFileUploadIpfs() {
 
         // 元数据上传ipfs
         if (isEmpty(ipfsAdd).flag == true) {
-            let imgResponseRet = await ipfsNode
+            let imgResponseRet = await client
                 .add(data)
-                // .add(Buffer.from(data))
                 .then((imgResponse) => {
                     // return imgResponse;
                     return {err: null, data: imgResponse};
@@ -144,10 +152,7 @@ async function mintFileUploadIpfs() {
             if (imgResponseRet.err == null) {
                 let imgResponse = imgResponseRet.data;
                 console.log("imgResponse:", imgResponse);
-                //PIN
-                ipfsNode.pin.add(imgResponse[0].path);
-                console.log("img ping success");
-                imgIpfsAddress = imgResponse[0].path;
+                imgIpfsAddress = imgResponse.cid.toString();
                 await setString(
                     "FILE_" + md5,
                     imgIpfsAddress,
@@ -186,7 +191,7 @@ async function mintFileUploadIpfs() {
         reqdata.description = reqdataRet.desc;
         reqdata.flydate = "Summer 2022";
         reqdata.data = reqdataRet;
-        let response = await ipfsNode
+        let response = await client
             .add(Buffer.from(JSON.stringify(reqdata), "utf-8"))
             .then((response) => {
                 return response;
@@ -194,17 +199,16 @@ async function mintFileUploadIpfs() {
             .catch((err) => {
                 console.trace(responseFunStr(500, err, {}), id);
             });
-        console.log("metaData:", response[0].path);
+        console.log("metaData:", response);
         try {
-            ipfsNode.pin.add(response[0].path);
-            tokenURI = response[0].path;
+            tokenURI = response.cid.toString();
             // 设置一个新值，返回交易
             // save db
             let nft = {
                 isFinish: 0,
                 tokenId: tokenId,
                 imgPath: reqdata.image,
-                metaData: response[0].path,
+                metaData: response.cid.toString(),
                 metaDataSource: JSON.stringify(reqdata),
                 hash: "",
                 status: 6, // 资源已上传ipfs,未上链
@@ -228,7 +232,7 @@ async function mintFileUploadIpfs() {
 async function mintBetchMint() {
     console.time('mintBetchMint')
     let excloudAddr = await getString('MINT_excloudAddr')
-    console.log('excloudAddr:',excloudAddr)
+    console.log('excloudAddr:', excloudAddr)
     let paramset1 = {
         status: 6,
     }

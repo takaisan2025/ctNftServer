@@ -30,10 +30,10 @@ async function start() {
     console.log('background.ts: Run startup')
     console.log('background.ts: Starting Update Functions')
     // mint
-    setInterval(mintFileUploadIpfs, 30000)
-    setInterval(mintBetchMint, 3000)
-    setInterval(mintBetchHashQuery, 3000)
-    setInterval(mintBetchCallFund, 3000)
+    setInterval(mintFileUploadIpfs, 10000)
+    setInterval(mintBetchMint, 6000)
+    setInterval(mintBetchHashQuery, 6000)
+    setInterval(mintBetchCallFund, 6000)
     // transfer
 ``
     // fee

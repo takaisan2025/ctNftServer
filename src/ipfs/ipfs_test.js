@@ -15,7 +15,7 @@ async function main() {
         port: GlobalConfig.IPFS[index].PORT,
         apiPath: GlobalConfig.IPFS[index].API_PATH,
         headers: {
-            authorization: 'Basic ' + Buffer.from(GlobalConfig.IPFS[0].TOKEN).toString('base64')
+            authorization: 'Basic ' + Buffer.from(GlobalConfig.IPFS[index].TOKEN).toString('base64')
         }
     })
     // call Core API methods

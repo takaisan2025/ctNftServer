@@ -93,7 +93,7 @@ async function mintFileUploadIpfs() {
 
     const {create} = await import('ipfs-http-client')
     const client = create({
-        timeout: 10000,
+        timeout: 20000,
         protocol: GlobalConfig.IPFS[0].PROTOCOL,
         host: GlobalConfig.IPFS[0].HOST,
         port: GlobalConfig.IPFS[0].PORT,

@@ -3,7 +3,7 @@ const fs = require("fs");
 
 let index = 1
 async function main() {
-
+    console.log(Buffer.from(GlobalConfig.IPFS[index].TOKEN).toString('base64'))
     console.time('main')
     let fileName = "C:\\Users\\Zq\\Pictures\\2023-8-7\\DSC09956.JPG"
     var data = fs.readFileSync(fileName);

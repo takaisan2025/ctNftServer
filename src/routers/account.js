@@ -133,7 +133,7 @@ function accountRouters(app) {
                 //等待其它程序处理上链
                 let sender = s_address;
                 let authTime = 1766841499; // 没有用的参数
-                let authExpiry = Date.now() + 1 * 60 * 60 * 24 * 180; // 六个月
+                let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
                 let isAuth = true;
                 let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
                 let expandData = expand_data;
@@ -344,7 +344,7 @@ function accountRouters(app) {
                 //等待其它程序处理上链
                 let sender = s_address;
                 let authTime = 1766841499; // 没有用的参数
-                let authExpiry = Date.now() + 1 * 60 * 60 * 24 * 180; // 六个月
+                let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
                 let isAuth = true;
                 let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
                 let expandData = expand_data;
@@ -578,7 +578,7 @@ function accountRouters(app) {
                     //等待其它程序处理上链
                     let sender = s_address;
                     let authTime = 1766841499; // 没有用的参数
-                    let authExpiry = Date.now() + 1 * 60 * 60 * 24 * 180; // 六个月
+                    let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
                     let isAuth = true;
                     let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
                     let expandData = expand_data;

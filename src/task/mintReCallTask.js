@@ -124,7 +124,7 @@ function formatTime(date) {
     return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
 
-// mintBetchCallFund();
+mintBetchCallFund();
 module.exports = {
     mintBetchCallFund
 };

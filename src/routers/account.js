@@ -887,10 +887,31 @@ function accountRouters(app) {
         if (parentauthsa.data == null) {
             result = {
                 isAuth: false,
+                isNotExpired: false,
             }
         } else {
+
+            let parentauthsa = await contract_static_call(
+                ethers,
+                authContractAddress,
+                ABI_const["AuthController"].abi,
+                "parentauthsa",
+                customHttpProvider,
+                [address, 0]
+            );
+
+            let isAuth = await contract_static_call(
+                ethers,
+                authContractAddress,
+                ABI_const["AuthController"].abi,
+                "authsSingle",
+                customHttpProvider,
+                [address]
+            );
+
             result = {
                 isAuth: true,
+                isNotExpired: isAuth.data,
                 parthAddr: parentauthsa.data
             }
         }

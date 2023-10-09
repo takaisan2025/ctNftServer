@@ -205,4 +205,4 @@ function formatTime(date) {
 
 betchPreaprAuth();
 
-// node src\task\accountPreparAuthTask.js
+// node src\task\accountPreparAuthTask01.js

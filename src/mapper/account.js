@@ -127,7 +127,6 @@ const nftPreInsertSelective = (nft) => {
     tokenId,
     tokenIdDecmial,
     nonce,
-    serverPath,
     fileName,
     tempPath,
     creator) values ('${xss(nft.address)}',
@@ -143,7 +142,6 @@ const nftPreInsertSelective = (nft) => {
  '${xss(nft.tokenId)}',
  '${xss(nft.tokenIdDecmial)}',
  ${nft.nonce},
-${xss(JSON.stringify(nft.serverPath))},
  '${xss(nft.fileName)}',
  ${xss(JSON.stringify(nft.tempPath))},
  '${xss(nft.creator)}'  )`;

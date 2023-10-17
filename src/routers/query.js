@@ -32,6 +32,8 @@ function queryRouters(app) {
     // 查询 transaction
     app.post("/api/account/queryTransaction", async (req, res, next) => {
         const {orderId} = req.body;
+
+        // 这里首先查询链上, 链上不存在再查询数据库
         var sqlQueryByOrderId = get_mysql(
             "trans_form_list",
             "selectByOrderId",
@@ -40,7 +42,6 @@ function queryRouters(app) {
             }
         ).result;
         let ex_orderId_ret = await exec_sql(sqlQueryByOrderId);
-        console.log("query_orderId_ret:", ex_orderId_ret)
         if (ex_orderId_ret.result != null) {
             let statusDesc = '';
             switch (ex_orderId_ret.result.t_status) {

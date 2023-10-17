@@ -22,8 +22,7 @@ const TRANSACTION_RECEIPT_STATUS = {
 };
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
-let CtTransferExecutorAddress = "0xF41d25234dB41465450F5cCfE1e302A1fA0E2fEF";
-CtTransferExecutorAddress = "0xD7F34361dA7eeDD62974C9bcD5CE5937E73968C8";
+let CtTransferExecutorAddress = GlobalConfig.CtTransferExecutorAddress;
 const ethers = require("ethers");
 // 通过定制 URL 连接 :
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];

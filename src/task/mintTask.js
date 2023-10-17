@@ -122,50 +122,9 @@ async function mintFileUploadIpfs() {
             continue;
         }
         // console.log(nftArr[retKey]);
-        let {id, premetadata, tokenId, serverPath, tempPath} = nftArr[retKey];
+        let {id, premetadata, tokenId, tempPath} = nftArr[retKey];
         const searchRegExp = new RegExp('\\\\"', "g"); // // 抛出 SyntaxError 异常
         premetadata = premetadata.replace(searchRegExp, '"');
-        // 这里上传IPFS资源文件
-        // 图片资源上传ipfs
-        // let data = await fs.readFileSync(serverPath);
-
-        // 计算文件hash
-        // const hash = crypto.createHash('md5');
-        // hash.update(data, 'utf8');
-        // let md5 = hash.digest('hex');
-        // console.log("FILE MD5:", md5)
-        // let ipfsAdd = await getString("FILE_" + md5);
-        // let imgIpfsAddress;
-
-        // 元数据上传ipfs
-        // if (isEmpty(ipfsAdd).flag == true) {
-            // let imgResponseRet = await client
-            //     .add(data)
-            //     .then((imgResponse) => {
-            //         // return imgResponse;
-            //         return {err: null, data: imgResponse};
-            //     })
-            //     .catch((err) => {
-            //         console.trace(responseFunStr(500, err, {}));
-            //         return {err: err, data: null};
-            //     });
-            // if (imgResponseRet.err == null) {
-            //     let imgResponse = imgResponseRet.data;
-            //     console.log("imgResponse:", imgResponse);
-            //     imgIpfsAddress = imgResponse.cid.toString();
-            //     await setString(
-            //         "FILE_" + md5,
-            //         imgIpfsAddress,
-            //         300
-            //     );
-            //
-            // } else {
-            //     console.trace("ipfs upload err:", imgResponseRet.err);
-            //     continue;
-            // }
-        // } else {
-        //     imgIpfsAddress = ipfsAdd;
-        // }
 
         let reqdataRet;
 
@@ -181,7 +140,6 @@ async function mintFileUploadIpfs() {
 
         console.log(reqdataRet)
         const reqdata = {};
-        // const reqdata = JSON.parse(JSON.stringify(premetadata));
         reqdata.fileName = tempPath.substring(tempPath.lastIndexOf("/") + 1);
         // reqdata.image =
         //     "https://dream.chaonft.cn/ipfs/api/v0/cat/" + imgIpfsAddress;

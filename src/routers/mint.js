@@ -197,26 +197,9 @@ function mintRouters(app) {
                 .then((dataBuffer) => {
                     return dataBuffer;
                 });
-            const basePath = "/public/files/" + Date.now();
             // 创建目录
-            createDir(basePath);
             // 写入文件
             var originalFilename = file.substring(file.lastIndexOf("/") + 1);
-            console.log(originalFilename);
-            let {err} = await new Promise((resolve, reject) => {
-                fs.writeFile(
-                    path.join(basePath, originalFilename),
-                    Buffer.from(dataBuffer),
-                    (err) => {
-                        resolve({err});
-                    }
-                );
-            }).then((ret) => {
-                return ret;
-            });
-            if (err) {
-                throw err;
-            }
 
             // 这里查询数据库有没有交易记录, 有的话,使用数据库的, 没有就查询链上
             // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
@@ -231,7 +214,6 @@ function mintRouters(app) {
                 tokenId: tokenId,
                 owner: address,
                 creator: address,
-                serverPath: xss(JSON.stringify(path.join(basePath, originalFilename))),
                 fileName: originalFilename,
                 tempPath: file,
                 tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),
@@ -380,32 +362,8 @@ function mintRouters(app) {
             // privateKey: wallet.privateKey,
             //    单个藏品铸造
             const tokenId = address + "c1234567890" + Date.now();
-            // 读文件
-            let dataBuffer = await fetch(file)
-                .then((res) => res.arrayBuffer())
-                .then((dataBuffer) => {
-                    return dataBuffer;
-                });
-            const basePath = "/public/files/" + Date.now();
-            // 创建目录
-            createDir(basePath);
-            // 写入文件
+
             var originalFilename = file.substring(file.lastIndexOf("/") + 1);
-            console.log(originalFilename);
-            let {err} = await new Promise((resolve, reject) => {
-                fs.writeFile(
-                    path.join(basePath, originalFilename),
-                    Buffer.from(dataBuffer),
-                    (err) => {
-                        resolve({err});
-                    }
-                );
-            }).then((ret) => {
-                return ret;
-            });
-            if (err) {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, ""));
-            }
 
             // 这里查询数据库有没有交易记录, 有的话,使用数据库的, 没有就查询链上
             // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
@@ -434,7 +392,6 @@ function mintRouters(app) {
                 tokenId: tokenId,
                 owner: address,
                 creator: address,
-                serverPath: xss(JSON.stringify(path.join(basePath, originalFilename))),
                 fileName: originalFilename,
                 tempPath: file,
                 tokenIdDecmial: Web3.utils.hexToNumberString(tokenId),

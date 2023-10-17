@@ -35,7 +35,7 @@ async function start() {
     setInterval(mintBetchHashQuery, 6000)
     setInterval(mintBetchCallFund, 6000)
     // transfer
-``
+
     // fee
     // setInterval(tFeeBetchTransfer, 6000)
     // setInterval(tFeeBetchHashQuery, 6000)

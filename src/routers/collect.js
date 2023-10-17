@@ -1,6 +1,4 @@
 const ethers = require("ethers");
-const fetch = require("node-fetch");
-const formidable = require("formidable");
 const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
@@ -34,20 +32,6 @@ function Part(account, value) {
         account,
         value,
     };
-}
-
-function Mint721Data(tokenId, tokenURI, creators, royalties, signatures) {
-    return {
-        tokenId,
-        tokenURI,
-        creators,
-        royalties,
-        signatures,
-    };
-}
-
-// 创建收藏夹 ERC721 支持懒铸造
-async function createCollectV2Erc721(req, res) {
 }
 
 // 创建收藏夹 ERC1155 支持懒铸造
@@ -453,8 +437,6 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
 }
 
 module.exports = {
-    createCollectV1Erc1155,
-    createCollectV1Erc1155Call,
     createCollectV2,
     createCollectV2Call,
     collectInit,

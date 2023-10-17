@@ -1,38 +1,17 @@
 const {
     getString,
     setString,
-    removeString,
-    rpush,
-    lrange,
-    lrem,
 } = require("../redis/redis-client");
-const EIP712 = require("./EIP712");
-const sigUtil = require("eth-sig-util");
-const ethUtil = require("ethereumjs-util");
 const {
-    nftSelectSelective,
     exec_sql,
-    nftSelectSelectiveCreator,
-    nftInsertSelective,
-    nftPreInsertSelective,
 } = require("../controller/ctnft");
 const {
-    contract_call,
     contract_static_call,
 } = require("../contract/ChainCall");
-const requestIp = require("request-ip");
 const {
-    createCollectV1Erc1155,
-    createCollectV1Erc1155Call,
-    createCollectV2,
-    createCollectV2Call,
-    collectInit,
-    collectInitCall,
     sendCTI,
 } = require("./collect");
 const {
-    isJson,
-    stripHexPrefix,
     validateAddress,
     checkURL,
     isEmpty,
@@ -57,27 +36,13 @@ let customHttpProvider = new ethers.providers.JsonRpcProvider(
 );
 
 const {
-    balanceQuery,
     queryBalanceAndTokenBalance,
 } = require("../chain/balanceQuery");
 
 const {getPriKey} = require("../chain/accountProUtils");
 
-const fs = require("fs");
-const path = require("path");
 let result = null;
 // 非初始化合约地址设置
-const ERC721CtnftExample = "0x0F4b3B9EcfD11444cB139dB98DB9aB0Ec417705E";
-const ERC1155CtnftExample = "0xeB3AD009272D6C5f045f3d5EaD0ef0e47930877d";
-const ERC1155CtnftOwnerExample = "0xbE23EBD6fC9b07945251382A8db82C477ddd5683";
-let collectAddressExample = {
-    9: ERC721CtnftExample,
-    10: ERC1155CtnftExample,
-    12: ERC1155CtnftOwnerExample,
-};
-let gasPrice = "5000100000000";
-let isGasPrice = false;
-var util = require("ethereumjs-util");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");

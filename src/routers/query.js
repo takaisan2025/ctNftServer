@@ -10,14 +10,6 @@ const {
 } = require("../chain/balanceQuery");
 
 // 非初始化合约地址设置
-const ERC721CtnftExample = "0x0F4b3B9EcfD11444cB139dB98DB9aB0Ec417705E";
-const ERC1155CtnftExample = "0xeB3AD009272D6C5f045f3d5EaD0ef0e47930877d";
-const ERC1155CtnftOwnerExample = "0xbE23EBD6fC9b07945251382A8db82C477ddd5683";
-let collectAddressExample = {
-    9: ERC721CtnftExample,
-    10: ERC1155CtnftExample,
-    12: ERC1155CtnftOwnerExample,
-};
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {RESPONSE_STATUS} = require("../chain/responseError");

@@ -9,14 +9,7 @@ const TRANSACTION_RECEIPT_STATUS = {
 };
 const Lottery = require("../contract/Lottery.json");
 const ethers = require("ethers");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
+const {customHttpProvider} = require("./taskConst");
 let gasPrice = "5000100000000";
 let isGasPrice = false;
 

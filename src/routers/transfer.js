@@ -23,18 +23,7 @@ const ethers = require("ethers");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const ABI_const = require("../contract/ABI_const.js");
 const Web3 = require("web3");
-
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-let customHttpProvider = new ethers.providers.JsonRpcProvider(
-    {
-        ...rpc,
-    },
-    {
-        chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-    }
-);
-
+const {customHttpProvider} = require("../task/taskConst");
 const {
     queryBalanceAndTokenBalance,
 } = require("../chain/balanceQuery");

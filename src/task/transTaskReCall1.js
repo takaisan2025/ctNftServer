@@ -1,9 +1,13 @@
 const {
     exec_sql,
-    exec_sql_all
 } = require("../controller/ctnft");
+const GlobalConfig = require("../config/GlobalConfig.json");
 const FormData = require("form-data");
+const Web3 = require("web3");
+let web3 = new Web3("http://ctblock.cn/blockChain");
+// let web3 = new Web3("https://exploder.coozw.com/blockChain");
 const fetch = require("node-fetch");
+const {exec_sql_all} = require("../controller/ctnft");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {
@@ -15,19 +19,22 @@ const {
     lrem,
 } = require("../redis/redis-client");
 
-const betchCallFundFlag = "betchCallFund_START";
+const betchCallFund1Flag = "betchCall1Fund1_START";
 
-async function betchCallFund() {
-    if (await getString(betchCallFundFlag) == "1") {
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+
+async function betchCallFund1() {
+    // 设置列表
+    if (await getString(betchCallFund1Flag) == "1") {
         console.log('===================wait start betchCallFund')
         return
     } else {
-        await setString(betchCallFundFlag, "1", 60)
-        console.time("betchCallFund")
+        await setString(betchCallFund1Flag, "1", 60)
+        console.time("betchCallFund1")
         // 设置列表
         var sql
         var params;
-        params = {t_status: 6};
+        var params = {t_status: 8};
         sql = get_mysql(
             "trans_form_list",
             "selectByStatus",
@@ -74,7 +81,7 @@ async function betchCallFund() {
                     method: "POST",
                     body: formdata,
                     redirect: "follow",
-                    timeout: 5000
+                    timeout: 30000
                 };
 
                 let responseRet = await fetch(reback_url, requestOptions)
@@ -121,7 +128,7 @@ async function betchCallFund() {
                 } else if (response != null && response.msg == "作品不存在") {
 
                     let trans_from_obj = {
-                        t_status: 8, // 上链成功
+                        t_status: 18, // 上链成功
                         id: id
                     };
                     console.log("nftUpdateSelective:", trans_from_obj);
@@ -137,7 +144,7 @@ async function betchCallFund() {
                     console.log("回调接口失败,", orderId);
                     //
                     let trans_from_obj = {
-                        t_status: 8, // 上链成功
+                        t_status: 18, // 上链成功
                         id: id
                     };
                     console.log("nftUpdateSelective:", trans_from_obj);
@@ -156,8 +163,8 @@ async function betchCallFund() {
                 continue;
             }
         }
-        await removeString(betchCallFundFlag)
-        console.timeEnd("betchCallFund");
+        await removeString(betchCallFund1Flag)
+        console.timeEnd("betchCallFund1");
     }
 }
 
@@ -175,5 +182,5 @@ function formatTime(date) {
 }
 
 module.exports = {
-    betchCallFund
+    betchCallFund1
 };

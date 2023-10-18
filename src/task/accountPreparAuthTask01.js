@@ -14,24 +14,14 @@ const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
 const {exec_sql, exec_sql_all} = require("../controller/ctnft");
 const {get_mysql} = require("../db/genSql");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-
-let customHttpProvider = new ethers.providers.JsonRpcProvider(
-    {
-        ...rpc,
-    },
-    {
-        chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-    }
-);
+const {customHttpProvider} = require("./taskConst");
 
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
  */
 async function betchPreaprAuth() {
     let nfts_sql_ret = get_mysql("AccountMapper", "selectByAddress", {
-        address: "0xe739b207E3325471a223472811eA91466776f840"
+        address: "0x39a1e670db3f586122150067f79937716dd48230"
     }); // 资源未上链ipfs的条目
     let nfts_sql = nfts_sql_ret.result;
     let nfts_ret = await exec_sql(nfts_sql);
@@ -76,7 +66,7 @@ async function betchPreaprAuth() {
             //等待其它程序处理上链
             let sender = s_wallet.address;
             let authTime = 1766841499; // 没有用的参数
-            let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
+            let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
             let isAuth = true;
             let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
             let expandData = '{hash: \\"\\", version: \\"v1.0.0\\"}';
@@ -182,26 +172,9 @@ async function betchPreaprAuth() {
         console.trace(e);
     }
     console.log("betchPreaprAuth All Done!");
-    setTimeout(() => {
-        formatTime(new Date());
-        console.log("betchPreaprAuth Start !!");
-        betchPreaprAuth();
-    }, 2000);
-}
-
-
-function formatTime(date) {
-    console.log("formatTime", date)
-    //let date = new Date(value)	// 时间戳为毫秒：13位数
-    let year = date.getFullYear()
-    let month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1
-    let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate()
-    let hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours()
-    let minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
-    let second = date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
 
 }
+
 
 betchPreaprAuth();
 

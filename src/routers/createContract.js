@@ -17,17 +17,7 @@ const {
 const ethers = require("ethers");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const ABI_const = require("../contract/ABI_const.js");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-let customHttpProvider = new ethers.providers.JsonRpcProvider(
-    {
-        ...rpc,
-    },
-    {
-        chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-    }
-);
-
+const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
 
 let result = null;
@@ -149,10 +139,6 @@ function createContractRouters(app) {
             if (Number(etherString) < Number(necelibyTotal)) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户余额不足!", {}));
             }
-            let nonce = await customHttpProvider.getTransactionCount(
-                address,
-                "latest"
-            );
             //    创建合约
             let collectAddress = await createCollectV2(
                 wallet,

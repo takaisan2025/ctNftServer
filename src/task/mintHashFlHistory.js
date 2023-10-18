@@ -14,11 +14,6 @@ const ethers = require("ethers");
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let blockNumberCreate = 1090551;   // 合约的创建区块号
 let blockNumberCurr = 0;   // 当前最新区块号
-let customHttpProvider = new ethers.providers.JsonRpcProvider({
-    ...rpc
-}, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
 
 let startBlockNumber = 0;
 

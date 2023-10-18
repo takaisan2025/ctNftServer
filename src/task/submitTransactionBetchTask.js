@@ -17,14 +17,7 @@ const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const ABI_const = require("../contract/ABI_const.js");
 const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
 const ethers = require("ethers");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-
-let customHttpProvider = new ethers.providers.JsonRpcProvider({
-    ...rpc
-}, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
+const {customHttpProvider} = require("./taskConst");
 const ethUtil = require("ethereumjs-util");
 const {exec_sql_all} = require("../controller/ctnft");
 const {responseFun} = require("../mapper/account");
@@ -171,13 +164,6 @@ async function betchTransfer() {
     }
 
     console.log("betchTransfer All Done!");
-}
-
-function id_fun(str) {
-    return `0x${ethUtil
-        .keccak256(Buffer.from(str))
-        .toString("hex")
-        .substring(0, 8)}`;
 }
 
 //TEST

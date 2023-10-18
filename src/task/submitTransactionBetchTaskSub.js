@@ -17,14 +17,7 @@ const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const ABI_const = require("../contract/ABI_const.js");
 const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
 const ethers = require("ethers");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-
-let customHttpProvider = new ethers.providers.JsonRpcProvider({
-    ...rpc
-}, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
+const {customHttpProvider} = require("./taskConst");
 const ethUtil = require("ethereumjs-util");
 const {exec_sql_all} = require("../controller/ctnft");
 const {responseFun} = require("../mapper/account");
@@ -159,13 +152,6 @@ async function betchTransfer() {
     process.exit();
 }
 
-function id_fun(str) {
-    return `0x${ethUtil
-        .keccak256(Buffer.from(str))
-        .toString("hex")
-        .substring(0, 8)}`;
-}
-
 async function transfer(privateKey, value, toAddress) {
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
     let tx = {
@@ -190,19 +176,6 @@ async function transfer(privateKey, value, toAddress) {
         console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
         return {err, hash: null};
     }
-}
-
-function formatTime(date) {
-    console.log("formatTime", date)
-    //let date = new Date(value)	// 时间戳为毫秒：13位数
-    let year = date.getFullYear()
-    let month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1
-    let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate()
-    let hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours()
-    let minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
-    let second = date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
-
 }
 
 //TEST

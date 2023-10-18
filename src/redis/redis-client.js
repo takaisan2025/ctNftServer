@@ -51,7 +51,7 @@ const removeString = (key) => {
             if (err) {
                 reject(err)
             }
-            client.expire(key, parseInt(-1))
+            redisClient.expire(key, parseInt(-1))
             resolve(result)
         })
     })

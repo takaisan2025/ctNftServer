@@ -1,11 +1,7 @@
 const GlobalConfig = require("../config/GlobalConfig.json");
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 const ethers = require("ethers");
-let customHttpProvider = new ethers.providers.JsonRpcProvider({
-    ...rpc
-}, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
+const {customHttpProvider} = require("../task/taskConst");
 const Web3 = require("web3");
 const ethUtil = require("ethereumjs-util");
 const CtTransferExecutor = require("../contract/CtTransferExecutor.json");

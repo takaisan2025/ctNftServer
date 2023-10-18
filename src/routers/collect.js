@@ -8,13 +8,7 @@ const JiFenToken = require("../contract/JiFenToken.json");
 const GlobalConfig = require("../config/GlobalConfig.json");
 let privateKeyJifen = GlobalConfig.SCORE_ACCOUNT.private_key; // mint pri
 
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
+const {customHttpProvider} = require("../task/taskConst");
 const Web3 = require("web3");
 let web3 = new Web3(
     new Web3.providers.HttpProvider(rpc.url, {

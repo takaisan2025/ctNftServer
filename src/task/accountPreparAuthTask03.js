@@ -14,18 +14,7 @@ const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
 const {exec_sql, exec_sql_all} = require("../controller/ctnft");
 const {get_mysql} = require("../db/genSql");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-
-let customHttpProvider = new ethers.providers.JsonRpcProvider(
-    {
-        ...rpc,
-    },
-    {
-        chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-    }
-);
-
+const {customHttpProvider} = require("./taskConst");
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
  */
@@ -212,7 +201,6 @@ async function betchPreaprAuth() {
 
 
 function formatTime(date) {
-    console.log("formatTime", date)
     //let date = new Date(value)	// 时间戳为毫秒：13位数
     let year = date.getFullYear()
     let month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1

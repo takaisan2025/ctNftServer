@@ -15,12 +15,7 @@ const {get_mysql} = require("../db/genSql");
 let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let blockNumberCreate = 1090551;   // 合约的创建区块号
 let blockNumberCurr = 0;   // 当前最新区块号
-let customHttpProvider = new ethers.providers.JsonRpcProvider(  {
-        ...rpc
-    }, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
-
+const {customHttpProvider} = require("./taskConst");
 let startBlockNumber = 0;
 
 function setBlockNumber() {

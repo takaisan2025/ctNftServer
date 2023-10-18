@@ -21,15 +21,7 @@ const ScoreToken = require("../contract/ScoreToken.json");
 const ethers = require("ethers");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-
-let customHttpProvider = new ethers.providers.JsonRpcProvider({
-    ...rpc
-}, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
-
+const {customHttpProvider} = require("./taskConst");
 let typeMapper = {
     1: "每天登录",
     2: "拉新用户",
@@ -172,7 +164,6 @@ async function betchGive() {
     }
     console.log("betchGive All Done!");
     setTimeout(() => {
-        formatTime(new Date())
         console.log("betchGive Start !!")
         betchGive();
     }, 2000);
@@ -239,23 +230,9 @@ async function betchHashQuery() {
     }
     console.log("betchHashQuery All Done!");
     setTimeout(() => {
-        formatTime(new Date())
         console.log("betchHashQuery Start !!")
         betchHashQuery();
     }, 2000);
-}
-
-function formatTime(date) {
-    console.log("formatTime", date)
-    //let date = new Date(value)	// 时间戳为毫秒：13位数
-    let year = date.getFullYear()
-    let month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1
-    let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate()
-    let hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours()
-    let minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
-    let second = date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
-
 }
 
 betchGive();

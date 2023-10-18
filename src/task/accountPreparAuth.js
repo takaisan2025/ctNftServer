@@ -14,17 +14,6 @@ const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
 const {exec_sql, exec_sql_all} = require("../controller/ctnft");
 const {get_mysql} = require("../db/genSql");
-// 通过定制 URL 连接 :
-let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
-
-let customHttpProvider = new ethers.providers.JsonRpcProvider(
-    {
-        ...rpc,
-    },
-    {
-        chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-    }
-);
 
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.

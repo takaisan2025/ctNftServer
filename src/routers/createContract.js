@@ -2,7 +2,6 @@
 const {
     exec_sql,
 } = require("../controller/ctnft");
-const requestIp = require("request-ip");
 const {
     createCollectV2,
     createCollectV2Call,
@@ -20,7 +19,6 @@ const ABI_const = require("../contract/ABI_const.js");
 const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
 
-let result = null;
 // 非初始化合约地址设置
 const ERC721CtnftExample = "0x0F4b3B9EcfD11444cB139dB98DB9aB0Ec417705E";
 const ERC1155CtnftExample = "0xeB3AD009272D6C5f045f3d5EaD0ef0e47930877d";
@@ -31,7 +29,6 @@ let collectAddressExample = {
     12: ERC1155CtnftOwnerExample,
 };
 let gasPrice = "4800000000000";
-var util = require("ethereumjs-util");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
@@ -135,7 +132,7 @@ function createContractRouters(app) {
             let etherString = ethers.utils.formatEther(balance);
             console.log("Balance: ", etherString);
             // 计算初始化合约费用
-            console.log("余额是否充足:", Number(balance) > Number(necelibyTotal));
+            console.log("余额是否充足:", Number(balance) < Number(necelibyTotal));
             if (Number(etherString) < Number(necelibyTotal)) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户余额不足!", {}));
             }

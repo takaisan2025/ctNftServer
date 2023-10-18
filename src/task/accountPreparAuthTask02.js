@@ -9,6 +9,7 @@ let web3 = new Web3("http://ctblock.cn/blockChain");
 const EIP712 = require("../routers/EIP712");
 const ABI_const = require("../contract/ABI_const.js");
 const ethers = require("ethers");
+const {formatTime} = require("./taskConst");
 const {responseFun, responseFunStr} = require("../mapper/account");
 const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
@@ -200,18 +201,6 @@ async function betchPreaprAuth() {
     }, 2000);
 }
 
-
-function formatTime(date) {
-    //let date = new Date(value)	// 时间戳为毫秒：13位数
-    let year = date.getFullYear()
-    let month = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1
-    let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate()
-    let hour = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours()
-    let minute = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
-    let second = date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
-
-}
 
 betchPreaprAuth();
 

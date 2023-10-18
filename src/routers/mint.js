@@ -18,36 +18,21 @@ const {
     isEmpty,
 } = require("../rules/rules");
 
-
-const pino = require("pino");
-const xss = require("xss");
 const ethers = require("ethers");
 const fetch = require("node-fetch");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const ABI_const = require("../contract/ABI_const.js");
 const Web3 = require("web3");
-let web3 = new Web3("http://ctblock.cn/blockChain");
 const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
 
 const fs = require("fs");
-const path = require("path");
 
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
-
-/**
- * 判断目录是否存在，不存在则创建
- * { recursive: true } 表示多层目录时递归创建
- */
-function createDir(path) {
-    if (!fs.existsSync(path)) {
-        fs.mkdirSync(path, {recursive: true});
-    }
-}
 
 function mintRouters(app) {
 

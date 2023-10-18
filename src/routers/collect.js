@@ -6,27 +6,11 @@ const CtnftMToken = require("../contract/CtnftMToken.json");
 const JiFenToken = require("../contract/JiFenToken.json");
 
 const GlobalConfig = require("../config/GlobalConfig.json");
+const {TRANSACTION_RECEIPT_STATUS} = require("../task/taskConst");
+const {web3} = require("../task/taskConst");
 let privateKeyJifen = GlobalConfig.SCORE_ACCOUNT.private_key; // mint pri
 
 const {customHttpProvider} = require("../task/taskConst");
-const Web3 = require("web3");
-let web3 = new Web3(
-    new Web3.providers.HttpProvider(rpc.url, {
-        headers: rpc.headers
-    })
-);
-
-const TRANSACTION_RECEIPT_STATUS = {
-    SUCCESS: 1,
-    REVERTED: 0,
-};
-
-function Part(account, value) {
-    return {
-        account,
-        value,
-    };
-}
 
 // 创建收藏夹 ERC1155 支持懒铸造
 async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
@@ -75,92 +59,6 @@ async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
     }
     // 好了 合约已部署。
     return contract.address;
-}
-
-async function createCollectV1Erc1155(
-    name,
-    symbol,
-    tokenUrlPrefix,
-    contractUrl,
-    wallet,
-    gasPrice,
-    gasLimit,
-    wait
-) {
-    let overrides = {
-        // The maximum units of gas for the transaction to use
-        gasLimit: web3.utils.numberToHex(gasLimit),
-        // The price (in wei) per unit of gas
-        gasPrice: web3.utils.numberToHex(gasPrice),
-    };
-    // 常见合约工厂实例
-    let factory = new ethers.ContractFactory(
-        CtnftMToken.abi,
-        CtnftMToken.bytecode,
-        wallet
-    );
-    // 请注意，我们将 "Hello World" 作为参数传递给合约构造函数constructor
-    let contract = await factory.deploy(
-        name,
-        symbol,
-        tokenUrlPrefix,
-        contractUrl,
-        overrides
-    );
-    // 部署交易有一旦挖出，合约地址就可用
-    // 参考: https://ropsten.etherscan.io/address/0x2bd9aaa2953f988153c8629926d22a6a5f69b14e
-    console.log(contract.address);
-    // "0x2bD9aAa2953F988153c8629926D22A6a5F69b14E"
-    // 发送到网络用来部署合约的交易
-    // 查看: https://ropsten.etherscan.io/tx/0x159b76843662a15bd67e482dcfbee55e8e44efad26c5a614245e12a00d4b1a51
-    console.log(contract.deployTransaction.hash);
-    // "0x159b76843662a15bd67e482dcfbee55e8e44efad26c5a614245e12a00d4b1a51"
-    //合约还没有部署;我们必须等到它被挖出
-    if (wait == true) {
-        let recept = await contract.deployed();
-    }
-    // 好了 合约已部署。
-    return contract.address;
-}
-
-async function createCollectV1Erc1155Call(
-    name,
-    symbol,
-    tokenUrlPrefix,
-    contractUrl,
-    wallet
-) {
-    // 常见合约工厂实例
-    let factory = new ethers.ContractFactory(
-        CtnftMToken.abi,
-        CtnftMToken.bytecode,
-        wallet
-    );
-    // 请注意，我们将 "Hello World" 作为参数传递给合约构造函数constructor
-    let data = await factory.getDeployTransaction(
-        name,
-        symbol,
-        tokenUrlPrefix,
-        contractUrl
-    );
-    let {err, gaslimit} = await new Promise((resolve, reject) => {
-        web3.eth.estimateGas(
-            {
-                data: data.data,
-                value: 0,
-                from: wallet.address,
-            },
-            (err, gaslimit) => {
-                console.log("err\n:" + err);
-                console.log("gas:\n" + gaslimit);
-                resolve({err, gaslimit});
-            }
-        );
-    }).then((ret) => {
-        return ret;
-    });
-    console.log({err, gaslimit});
-    return {err, gaslimit};
 }
 
 async function createCollectV2Call(type, wallet) {

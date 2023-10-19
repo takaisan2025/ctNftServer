@@ -8,19 +8,18 @@ let web3 = new Web3("http://ctblock.cn/blockChain");
 
 const EIP712 = require("../routers/EIP712");
 const ABI_const = require("../contract/ABI_const.js");
-const ethers = require("ethers");
 const {responseFun, responseFunStr} = require("../mapper/account");
 const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
-const {exec_sql, exec_sql_all} = require("../controller/ctnft");
+const {exec_sql} = require("../controller/ctnft");
 const {get_mysql} = require("../db/genSql");
 
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
  */
-async function betchPreaprAuth() {
+async function betchPreaprAuth(authAddress) {
     let nfts_sql_ret = get_mysql("AccountMapper", "selectByAddress", {
-        address: "0xe8A6C20ab5342D2D1E43A2b07eA9f5Eac2a30b96",
+        address: authAddress,
     }); // 资源未上链ipfs的条目
     let nfts_sql = nfts_sql_ret.result;
     let nfts_ret = await exec_sql(nfts_sql);
@@ -59,11 +58,10 @@ async function betchPreaprAuth() {
 
             // 判断商家身份
             let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-            // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
             //等待其它程序处理上链
             let sender = AUTH_CONTROLLER_SYSTEM_ADDRESS;
             let authTime = 1766841499; // 没有用的参数
-            let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
+            let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
             let isAuth = true;
             let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
             let expandData = '{hash: \\"\\", version: \\"v1.0.0\\"}';
@@ -173,7 +171,7 @@ async function betchPreaprAuth() {
 
 }
 
-
-betchPreaprAuth();
+betchPreaprAuth("0xe8A6C20ab5342D2D1E43A2b07eA9f5Eac2a30b96");
 
 // node src\task\accountPreparAuth.js
+// https://ctblock.cn/address/0x709bBc0aD7581D02244E00C356d0EFcbC79AE9f3/write-contract  // 添加白名单

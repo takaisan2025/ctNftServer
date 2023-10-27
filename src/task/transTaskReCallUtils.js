@@ -139,7 +139,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                             console.log("回调接口失败,", responseRet.ori_data.orderId);
                             //
                             let query_params = {
-                                t_status: 8, // 上链成功
+                                t_status: endStatus, // 上链成功
                                 id: responseRet.ori_data.id
                             };
                             console.log("nftUpdateSelective:", query_params);
@@ -175,7 +175,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
 
                     })
             )).then(async responseRet => {
-                console.log(responseRet)
+                // console.log(responseRet)
             });
         } catch (e) {
             console.error(e)

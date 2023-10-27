@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=dev nodemon src/index.js",
     "start": "node src/index.js",
-    "background": "node src/background.js"
+    "background": "node src/background.js",
+    "testBackground": "node src/testBackground.js"
   },
   "author": "",
   "license": "ISC",

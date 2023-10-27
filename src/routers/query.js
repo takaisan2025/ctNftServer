@@ -115,8 +115,6 @@ function queryRouters(app) {
 
     // 回调  TODO 这个可能需要考虑是否需要回调
     app.post("/api/account/callFun", async (req, res, next) => {
-        const {tokenId, status, key} = req.body;
-
         return res.status(200).json({code: 0});
     })
 

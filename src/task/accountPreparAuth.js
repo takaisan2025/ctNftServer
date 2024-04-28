@@ -11,31 +11,23 @@ const ABI_const = require("../contract/ABI_const.js");
 const {responseFun, responseFunStr} = require("../mapper/account");
 const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
-const {exec_sql} = require("../controller/ctnft");
-const {get_mysql} = require("../db/genSql");
+const {findAccount, createAccount} = require("../Orm/AccountService");
+const {createNftTransaction} = require("../Orm/NftTransactionService");
 
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
  */
 async function betchPreaprAuth(authAddress) {
-    let nfts_sql_ret = get_mysql("AccountMapper", "selectByAddress", {
-        address: authAddress,
-    }); // 资源未上链ipfs的条目
-    let nfts_sql = nfts_sql_ret.result;
-    let nfts_ret = await exec_sql(nfts_sql);
+
+    let nfts_ret = await findAccount(_where = {address: authAddress})
+
     let accountArr = [];
-    if (nfts_ret.err != null) {
+    if (nfts_ret.code !== 0) {
         console.trace(responseFunStr(500, nfts_ret.err, {}));
     } else {
-        accountArr = nfts_ret.result;
+        accountArr = nfts_ret.result[0].toJSON();
     }
-
-    // console.log(ret[retKey]);
     try {
-        const {
-            address
-        } = accountArr;
-
         let orderId = new Date().getTime();
         // 计算签名
         let orderIdEcc = `0x${ethUtil
@@ -52,7 +44,6 @@ async function betchPreaprAuth(authAddress) {
         let c_wallet;
         if (c_decWalletResult.err != null) {
             console.trace(PasswordError)
-            console.log(c_decWalletResult.err)
         } else {
             c_wallet = c_decWalletResult.result;
 
@@ -61,7 +52,7 @@ async function betchPreaprAuth(authAddress) {
             //等待其它程序处理上链
             let sender = AUTH_CONTROLLER_SYSTEM_ADDRESS;
             let authTime = 1766841499; // 没有用的参数
-            let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
+            let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 3600; // 六个月
             let isAuth = true;
             let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
             let expandData = '{hash: \\"\\", version: \\"v1.0.0\\"}';
@@ -122,47 +113,33 @@ async function betchPreaprAuth(authAddress) {
             let origin_data_json = [auth, orderIdEcc];
             // 存储上链数据
             // 插入数据库
-            let nft_transaction_aql = get_mysql(
-                "NftTransactionMapper",
-                "insertSelective",
-                {
-                    from: AUTH_CONTROLLER_SYSTEM_ADDRESS,
-                    to: contractAddress,
-                    status: 0,
-                    // "hash": "",
-                    // "block_number": "",
-                    type: 1,
-                    is_reback: 0,
-                    order_id: orderId,
-                    value: "0",
-                    // "origin_data": JSON.stringify(origin_data_json),
-                    origin_data: origin_data_json,
-                    contract_address: contractAddress,
-                    method:
-                        ABI_const["AuthController"].contractName +
-                        "#" +
-                        "authentication",
-                    origin_value: "0",
-                }
-            );
-            let nft_transaction_aql_result = await exec_sql(
-                nft_transaction_aql.result
-            );
-            if (nft_transaction_aql_result.err != null) {
-                if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
-                    return responseFun(500, "OrderId 冲突!", {});
-                } else {
-                    return responseFun(500, "操作失败,请重试!", {});
-                }
-            }
-            console.log(responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
-                s_address: AUTH_CONTROLLER_SYSTEM_ADDRESS,
-                address: address,
-                orderId: orderId,
-            }))
+            let nft_transaction = {
+                from: AUTH_CONTROLLER_SYSTEM_ADDRESS,
+                to: contractAddress,
+                status: 0,
+                // "hash": "",
+                // "block_number": "",
+                type: 1,
+                is_reback: 0,
+                order_id: orderId,
+                value: "0",
+                "origin_data": JSON.stringify(origin_data_json),
+                // origin_data: origin_data_json,
+                contract_address: contractAddress,
+                method:
+                    ABI_const["AuthController"].contractName +
+                    "#" +
+                    "authentication",
+                // origin_value: `{"name":"张三","id":"110101200007286800","mobile":"16602190060"}`,
+                origin_value: `0`,
+            };
+
+            let result02 = await createNftTransaction(_obj = nft_transaction)
+
+            console.log(result02)
         }
 
-        console.log("操作成功!", {address: address})
+        console.log("操作成功!", {address: authAddress})
 
     } catch (e) {
         console.trace(e);
@@ -171,7 +148,9 @@ async function betchPreaprAuth(authAddress) {
 
 }
 
-betchPreaprAuth("0xe8A6C20ab5342D2D1E43A2b07eA9f5Eac2a30b96");
+betchPreaprAuth("0x477ae6c38D8F1E6e25D7fdb38960AA043452D072");
+// LOCAL
+// betchPreaprAuth("0x1d517aa4a3a5f489b9cF5fD58A80C08F54Ad8fB6");
 
 // node src\task\accountPreparAuth.js
 // https://ctblock.cn/address/0x709bBc0aD7581D02244E00C356d0EFcbC79AE9f3/write-contract  // 添加白名单

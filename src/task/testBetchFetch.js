@@ -30,4 +30,5 @@ Promise.all(urls.map(url =>
     })
 )).then(texts => {
     console.log(texts);
+    console.log(JSON.stringify(texts));
 });

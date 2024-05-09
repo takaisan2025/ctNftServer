@@ -139,7 +139,7 @@ async function betchPreaprAuth(authAddress) {
             console.log(result02)
         }
 
-        console.log("操作成功!", {address: authAddress})
+        console.log("操作成功!", {address: orderId})
 
     } catch (e) {
         console.trace(e);

@@ -130,8 +130,8 @@ async function betchPreaprAuth(authAddress) {
                     ABI_const["AuthController"].contractName +
                     "#" +
                     "authentication",
-                origin_value: `{"name":"张三","id":"110101200007286800","mobile":"16602190060"}`,
-                // origin_value: `0`,
+                // origin_value: `{"name":"张三","id":"110101200007286800","mobile":"16602190060"}`,
+                origin_value: `0`,
             };
 
             let result02 = await createNftTransaction(_obj = nft_transaction)
@@ -148,9 +148,9 @@ async function betchPreaprAuth(authAddress) {
 
 }
 
-// betchPreaprAuth("0xFe6AcF30e5E1f8d05f47533bE66Fa1335074AFec");
+betchPreaprAuth("0xFe6AcF30e5E1f8d05f47533bE66Fa1335074AFec");
 // LOCAL
-betchPreaprAuth("0x1d517aa4a3a5f489b9cF5fD58A80C08F54Ad8fB6");
+// betchPreaprAuth("0x1d517aa4a3a5f489b9cF5fD58A80C08F54Ad8fB6");
 
 // node src\task\accountPreparAuth.js
 // https://ctblock.cn/address/0x709bBc0aD7581D02244E00C356d0EFcbC79AE9f3/write-contract  // 添加白名单

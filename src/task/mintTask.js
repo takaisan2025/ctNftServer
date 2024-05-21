@@ -1016,6 +1016,9 @@ async function mintBetchCallFund() {
                 var requestOptions = {
                     method: "POST",
                     body: formdata,
+                    headers: {
+                        "Content-Type": `multipart/form-data; boundary=${formdata.getBoundary()}`
+                    },
                     redirect: "follow",
                 };
 

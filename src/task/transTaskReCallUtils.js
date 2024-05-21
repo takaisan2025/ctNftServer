@@ -73,6 +73,9 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                 method: "POST",
                 body: formdata,
                 redirect: "follow",
+                headers: {
+                    "Content-Type": `multipart/form-data; boundary=${formdata.getBoundary()}`
+                },
                 timeout: 5000
             };
             urls.push({url: reback_url, requestOptions: requestOptions, orderId: orderId, id: id});

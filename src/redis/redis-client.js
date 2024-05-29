@@ -1,7 +1,7 @@
 // redis-client.js
 // 引用redisClient对象
 const redisClient = require('./redis')
-const redisPrefix = require('./redis-prefix.json')
+const redisPrefix = require('./redis-prefix.json').REDIS_GLOBAL_PREFIX
 /**
  * redis setString function
  * @param key
@@ -32,6 +32,17 @@ const getString = (key) => {
     key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.get(key, function (err, result) {
+            if (err) {
+                reject(err)
+            }
+            resolve(result)
+        })
+    })
+}
+const getKeys = (key) => {
+    key = redisPrefix + key;
+    return new Promise((resolve, reject) => {
+        redisClient.keys(key, function (err, result) {
             if (err) {
                 reject(err)
             }
@@ -113,6 +124,7 @@ module.exports = {
     rpush,
     lrange,
     lrem,
-    pttl
+    pttl,
+    getKeys
 }
 

@@ -1,19 +1,20 @@
 const ABI_const = require("../contract/ABI_const.js");
 const ethers = require("ethers");
-
+const pino = require("pino");
+const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 const {
     getString,
     setString,
     removeString,
     rpush,
     lrange,
-    lrem,
+    lrem, getKeys,
 } = require("../redis/redis-client");
 const ethUtil = require("ethereumjs-util");
-
+const {Op} = require('sequelize')
 const {customHttpProvider} = require("./taskConst");
 const {responseFun} = require("../mapper/account");
-const {PasswordError} = require("../chain/responseError");
+const {PasswordError, RESPONSE_STATUS} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
 const {findAccount} = require("../Orm/AccountService");
 const {findNftTransaction, updateNftTransaction} = require("../Orm/NftTransactionService");
@@ -41,8 +42,21 @@ async function SubmitTransactionTask() {
 
         try {
 
+            let newVar = await getKeys("BALANCE_*");
+
+            let andfrom = [];
+            for (let newVarElement of newVar) {
+                let stringAddress = newVarElement.split('BALANCE_')[1];
+                andfrom.push(stringAddress)
+            }
+
             const nftTransactions = await findNftTransaction(_where = {
-                where: {status: 0,},
+                where: {
+                    status: 0,
+                    from: {
+                        [Op.ne]: andfrom.toString()
+                    }
+                },
                 offset: 0,
                 limit: 500
             });
@@ -58,6 +72,11 @@ async function SubmitTransactionTask() {
                         origin_value,
                         origin_data, method
                     } = transList[retKey].toJSON();
+
+                    let isBal = await getString("BALANCE_" + from);
+                    if (isBal == "1") {
+                        break;
+                    }
                     try {
 
                         let wallet;
@@ -152,8 +171,14 @@ async function SubmitTransactionTask() {
                             ).then((ret) => {
                                 return {err: null, data: ret};
                             })
-                                .catch((err) => {
+                                .catch(async (err) => {
                                     console.trace("err:", err.reason);
+
+                                    if (err.reason === 'cannot estimate gas; transaction may fail or may require manual gas limit') {
+                                        await setString("BALANCE_" + from, "1", 300);
+                                        logger.debug("手续费余额不足:address:%s", from);
+                                    }
+
                                     return {err: err.reason, data: null};
                                 });
                             tx = txCallRet.data;

@@ -25,7 +25,7 @@ async function betchPreaprAuth(authAddress) {
     if (nfts_ret.code !== 0) {
         console.trace(responseFunStr(500, nfts_ret.err, {}));
     } else {
-        accountArr = nfts_ret.result[0].toJSON();
+        accountArr = nfts_ret.result[0]
     }
     try {
         let orderId = new Date().getTime();

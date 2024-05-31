@@ -1,10 +1,6 @@
 const {
     isEmpty
 } = require("../rules/rules");
-const {
-    exec_sql,
-    exec_sql_all
-} = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
@@ -15,7 +11,7 @@ const {
     removeString,
     rpush,
     lrange,
-    lrem,
+    lrem, getKeys,
 } = require("../redis/redis-client");
 
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
@@ -30,10 +26,20 @@ const {contract_static_call} = require("../contract/ChainCall");
 const {responseFun} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
-const {get_mysql} = require("../db/genSql");
 let excloudAddr = ""
 
 const betchTransferFlag = "betchTransfer_START";
+
+const EIP712 = require("../routers/EIP712");
+const sigUtil = require("eth-sig-util");
+const {id_fun} = require("./taskConst");
+const {customHttpProvider} = require("./taskConst");
+const {RESPONSE_STATUS} = require("../chain/responseError");
+const {findTransFormListAll, updateTransFormList} = require("../Orm/TransFormListService");
+const {Op} = require('sequelize')
+const {findAccount} = require("../Orm/AccountService");
+const {findCollect} = require("../Orm/CollectService");
+const {updateNftTransaction, createNftTransaction} = require("../Orm/NftTransactionService");
 
 async function betchTransfer() {
     if (await getString(betchTransferFlag) == "1") {
@@ -45,28 +51,31 @@ async function betchTransfer() {
         console.time("betchTransfer")
 
         var sql
-        var params;
-        if (isEmpty(excloudAddr).flag) {
-            params = {t_status: 1};
-            sql = get_mysql(
-                "trans_form_list",
-                "selectByStatus",
-                params
-            ).result;
-        } else {
-            params = {t_status: 1, t_from: excloudAddr};
-            sql = get_mysql(
-                "trans_form_list",
-                "selectByStatusAndNoFrom",
-                params
-            ).result;
+
+        let newVar = await getKeys("BALANCE_*");
+
+        let andfrom = [];
+        for (let newVarElement of newVar) {
+            let stringAddress = newVarElement.split('BALANCE_')[1];
+            andfrom.push(stringAddress)
         }
-        sql = sql.replace("! =", "!=")
+
+
+        let transList_ret = await findTransFormListAll(_param = {
+            where: {
+                t_status: 1,
+                t_from: {
+                    [Op.not]: andfrom
+                }
+            },
+            offset: 0,
+            limit: 500,
+        })
+
         // console.log("betchTransferThread", sql)
-        let transList_ret = await exec_sql_all(sql)
         let transList = []
-        if (transList_ret.err != null) {
-            console.trace("ERR:", transList_ret.err);
+        if (transList_ret.code != 0) {
+            console.trace("ERR:", transList_ret.result);
         }
         transList = transList_ret.result;
         for (let retKey in transList) {
@@ -85,32 +94,22 @@ async function betchTransfer() {
                 update_time
             } = transList[retKey];
             try {
+                console.log(collectAddress)
+                let accountDetail_ret01 = await findAccount(_where = {address: t_from})
+                let accountDetail = accountDetail_ret01.result[0]
 
-                let sqlResult = get_mysql("AccountMapper", "selectByAddress", {address: t_from})
-                let accountDetail_ret01 = await exec_sql(sqlResult.result);
-                let accountDetail = accountDetail_ret01.result
-                var params1 = {address: collectAddress};
-                var sql1 = get_mysql(
-                    "collect",
-                    "selectByAddress",
-                    params1
-                ).result;
-                let collectDetail_ret02 = await exec_sql(sql1)
+                let collectDetail_ret02 = await findCollect(_where = {address: collectAddress})
 
-                if (collectDetail_ret02.err != null) {
-                    console.trace("ERR:", collectDetail_ret02.err);
+                if (collectDetail_ret02.code != 0) {
+                    console.trace("ERR:", collectDetail_ret02.result);
                 }
 
-                let collectDetail = collectDetail_ret02.result
-
-
+                let collectDetail = collectDetail_ret02.result[0]
                 let contractAddressDetailAsync;
-
                 if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
                     contractAddressDetailAsync = accountDetail;
                 } else {
-                    let sqlResult = get_mysql("AccountMapper", "selectByAddress", {address: collectDetail.owner})
-                    let contractAddressDetailAsync_ret = await exec_sql(sqlResult.result);
+                    let contractAddressDetailAsync_ret = await findAccount(_where = {address: collectDetail.owner});
                     contractAddressDetailAsync = contractAddressDetailAsync_ret.result
                 }
                 let contractAddressDetail = contractAddressDetailAsync;
@@ -315,39 +314,25 @@ async function betchTransfer() {
                     });
                 if (gasLimitRet.err != null) {
                     console.trace(gasLimitRet.err);
-                    // console.log(minted721TokenStr == gasLimitRet.err)
                     if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err ||
-                        "execution reverted: ERC1155: burn amount exceeds balance" == gasLimitRet.err
+                        "execution reverted: ERC1155: burn amount exceeds balance" == gasLimitRet.err ||
+                        "execution reverted: ERC1155: transfer to non ERC1155Receiver implementer" == gasLimitRet.err
                     ) {
                         let trans_from_obj = {
-                            t_status: 3, // 上链失败
-                            id: id
+                            t_status: 3  // 上链失败
                         };
-                        console.log("nftUpdateSelective:", trans_from_obj);
 
-                        var paramsUp = trans_from_obj;
-                        var sqlUp = get_mysql(
-                            "trans_form_list",
-                            "updateByPrimaryKeySelective",
-                            paramsUp
-                        ).result;
-                        await exec_sql(sqlUp);
+                        console.log("nftUpdateSelective:", trans_from_obj);
+                        await updateTransFormList(_params = trans_from_obj, _where = {id: id})
                     } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
                         // 计算手续费导致的错误, 稍后重试
                     } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
                         // 计算手续费导致的错误, 稍后重试
                         let trans_from_obj = {
-                            t_status: 6, // 上链成功
-                            id: id
+                            t_status: 6  // 上链成功
                         };
-
-                        var paramsUp1 = trans_from_obj;
-                        var sqlUp1 = get_mysql(
-                            "trans_form_list",
-                            "updateByPrimaryKeySelective",
-                            paramsUp1
-                        ).result;
-                        await exec_sql(sqlUp1);
+                        let newVar1 = await updateTransFormList(_params = trans_from_obj, _where = {id: id});
+                        console.log(newVar1)
                     } else if ("replacement fee too low" == gasLimitRet.err) {
                     } else {
                     }
@@ -404,39 +389,24 @@ async function betchTransfer() {
                         // save db
                         let trans_from_obj = {
                             hash: tx.hash,
-                            t_status: 5, // 上链成功
-                            id: id
+                            t_status: 5  // 上链成功
                         };
                         console.log("nftUpdateSelective:", trans_from_obj);
 
-                        var paramsUp = trans_from_obj;
-                        var sqlUp = get_mysql(
-                            "trans_form_list",
-                            "updateByPrimaryKeySelective",
-                            paramsUp
-                        ).result;
-                        let result002 = await exec_sql(sqlUp)
+                        let result002 = await updateTransFormList(_params = trans_from_obj, _where = {id: id})
 
-                        if (result002.err != null) {
-                            console.trace(responseFun(500, result002.err, ""), id);
+                        if (result002.code != 0) {
+                            console.trace(responseFun(500, result002.result, ""), id);
                         }
                         console.log("update TransFrom data:", result002.result);
                         continue;
                     } else {
                         if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
                             let trans_from_obj = {
-                                t_status: 3, // 上链成功
-                                id: id
+                                t_status: 3 // 上链成功
                             };
                             console.log("nftUpdateSelective:", trans_from_obj);
-
-                            var paramsUp = trans_from_obj;
-                            var sqlUp = get_mysql(
-                                "trans_form_list",
-                                "updateByPrimaryKeySelective",
-                                paramsUp
-                            ).result;
-                            await exec_sql(sqlUp);
+                            await updateTransFormList(_params = trans_from_obj, _where = {id: id})
                             continue;
                         }
                         if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
@@ -450,17 +420,10 @@ async function betchTransfer() {
                         if ("execution reverted: order has been processed!" == gasLimitRet.err) {
                             // 计算手续费导致的错误, 稍后重试
                             let trans_from_obj = {
-                                t_status: 6, // 上链成功
-                                id: id
+                                t_status: 6  // 上链成功
                             };
 
-                            var paramsUp1 = trans_from_obj;
-                            var sqlUp1 = get_mysql(
-                                "trans_form_list",
-                                "updateByPrimaryKeySelective",
-                                paramsUp1
-                            ).result;
-                            await exec_sql(sqlUp1);
+                            await updateTransFormList(_params = trans_from_obj, _where = {id: id})
                             continue;
                         }
                         if ("replacement fee too low" == txRet.err) {
@@ -486,12 +449,6 @@ async function betchTransfer() {
 
     }
 }
-
-const EIP712 = require("../routers/EIP712");
-const sigUtil = require("eth-sig-util");
-const {id_fun} = require("./taskConst");
-const {customHttpProvider} = require("./taskConst");
-const {RESPONSE_STATUS} = require("../chain/responseError");
 
 async function authUser(walletUser) {
 
@@ -574,34 +531,31 @@ async function authUser(walletUser) {
     let origin_data_json = [auth, orderIdEcc];
     // 存储上链数据
     // 插入数据库
-    let nft_transaction_aql = get_mysql(
-        "NftTransactionMapper",
-        "insertSelective",
-        {
-            from: s_wallet.address,
-            to: contractAddress,
-            status: 0,
-            // "hash": "",
-            // "block_number": "",
-            type: 1,
-            is_reback: 0,
-            order_id: orderId,
-            value: "0",
-            // "origin_data": JSON.stringify(origin_data_json),
-            origin_data: origin_data_json,
-            contract_address: contractAddress,
-            method:
-                ABI_const["AuthController"].contractName +
-                "#" +
-                "authentication",
-            origin_value: "0",
-        }
-    );
-    let nft_transaction_aql_result = await exec_sql(
-        nft_transaction_aql.result
-    );
-    if (nft_transaction_aql_result.err != null) {
-        if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
+    let nft_transaction = {
+        from: s_wallet.address,
+        to: contractAddress,
+        status: 0,
+        // "hash": "",
+        // "block_number": "",
+        type: 1,
+        is_reback: 0,
+        order_id: orderId,
+        value: "0",
+        // "origin_data": JSON.stringify(origin_data_json),
+        origin_data: origin_data_json,
+        contract_address: contractAddress,
+        method:
+            ABI_const["AuthController"].contractName +
+            "#" +
+            "authentication",
+        origin_value: "0",
+    };
+
+
+    let nft_transaction_aql_result = await createNftTransaction(_obj = nft_transaction)
+
+    if (nft_transaction_aql_result.code != 0) {
+        if (nft_transaction_aql_result.result == "ER_DUP_ENTRY") {
             return responseFunStr(500, "OrderId 冲突!", {});
         } else {
             return responseFunStr(500, "操作失败,请重试!", {});
@@ -661,7 +615,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-
+// betchTransfer();
 module.exports = {
     betchTransfer
 };

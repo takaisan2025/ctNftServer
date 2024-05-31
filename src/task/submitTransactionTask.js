@@ -54,7 +54,7 @@ async function SubmitTransactionTask() {
                 where: {
                     status: 0,
                     from: {
-                        [Op.ne]: andfrom.toString()
+                        [Op.not]: andfrom
                     }
                 },
                 offset: 0,
@@ -71,7 +71,7 @@ async function SubmitTransactionTask() {
                         value,
                         origin_value,
                         origin_data, method
-                    } = transList[retKey].toJSON();
+                    } = transList[retKey];
 
                     let isBal = await getString("BALANCE_" + from);
                     if (isBal == "1") {
@@ -85,7 +85,7 @@ async function SubmitTransactionTask() {
                         } else {
                             let sUserAccountDetail01 = await findAccount(_where = {address: from})
                             if (sUserAccountDetail01.code === 0) {
-                                let sUserAccountDetail = sUserAccountDetail01.result[0].toJSON()
+                                let sUserAccountDetail = sUserAccountDetail01.result[0]
                                 // 直接上链
                                 let decWalletResult = await getPriKey(sUserAccountDetail, sUserAccountDetail.psd);
                                 // 这里暂时指定私钥, 后面不能指定
@@ -252,17 +252,11 @@ async function SubmitTransactionTask() {
                     }
 
                 }
-                await removeString(SubmitTransactionTaskFlag)
-                console.timeEnd("SubmitTransactionTask");
-
-            } else {
-                console.log("操作失败！\n" + error);
-                console.trace("ERR:", error);
-                return error;
             }
-
-
+            await removeString(SubmitTransactionTaskFlag)
+            console.timeEnd("SubmitTransactionTask");
         } catch (error) {
+            await removeString(SubmitTransactionTaskFlag)
             console.log("操作失败！\n" + error);
             console.trace("ERR:", error);
             return error;

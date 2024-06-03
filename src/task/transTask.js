@@ -50,8 +50,6 @@ async function betchTransfer() {
 
         console.time("betchTransfer")
 
-        var sql
-
         let newVar = await getKeys("BALANCE_*");
 
         let andfrom = [];
@@ -94,7 +92,6 @@ async function betchTransfer() {
                 update_time
             } = transList[retKey];
             try {
-                console.log(collectAddress)
                 let accountDetail_ret01 = await findAccount(_where = {address: t_from})
                 let accountDetail = accountDetail_ret01.result[0]
 
@@ -105,12 +102,15 @@ async function betchTransfer() {
                 }
 
                 let collectDetail = collectDetail_ret02.result[0]
+
+                console.log(collectDetail)
+
                 let contractAddressDetailAsync;
                 if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
                     contractAddressDetailAsync = accountDetail;
                 } else {
                     let contractAddressDetailAsync_ret = await findAccount(_where = {address: collectDetail.owner});
-                    contractAddressDetailAsync = contractAddressDetailAsync_ret.result
+                    contractAddressDetailAsync = contractAddressDetailAsync_ret.result[0]
                 }
                 let contractAddressDetail = contractAddressDetailAsync;
 

@@ -123,7 +123,7 @@ function accountRouters(app) {
                 //等待其它程序处理上链
                 let sender = s_address;
                 let authTime = 1766841499; // 没有用的参数
-                let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
+                let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
                 let isAuth = true;
                 let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
                 let expandData = expand_data;
@@ -334,7 +334,7 @@ function accountRouters(app) {
                 //等待其它程序处理上链
                 let sender = s_address;
                 let authTime = 1766841499; // 没有用的参数
-                let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
+                let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
                 let isAuth = true;
                 let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
                 let expandData = expand_data;
@@ -568,7 +568,7 @@ function accountRouters(app) {
                     //等待其它程序处理上链
                     let sender = s_address;
                     let authTime = 1766841499; // 没有用的参数
-                    let authExpiry = Math.round(new Date ().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
+                    let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
                     let isAuth = true;
                     let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
                     let expandData = expand_data;
@@ -878,6 +878,7 @@ function accountRouters(app) {
             result = {
                 isAuth: false,
                 isNotExpired: false,
+                authExpiryTime: 0,
             }
         } else {
 
@@ -890,18 +891,39 @@ function accountRouters(app) {
                 [address, 0]
             );
 
-            let isAuth = await contract_static_call(
+            // let isAuth = await contract_static_call(
+            //     ethers,
+            //     authContractAddress,
+            //     ABI_const["AuthController"].abi,
+            //     "authsSingle",
+            //     customHttpProvider,
+            //     [address]
+            // );
+
+            let authExpiry = await contract_static_call(
                 ethers,
                 authContractAddress,
                 ABI_const["AuthController"].abi,
-                "authsSingle",
+                "auths",
                 customHttpProvider,
                 [address]
             );
+            let authExpiryTime = authExpiry.data.toNumber()
+            // 获取当前时间的毫秒级时间戳
+            const milliseconds = Date.now();
 
+// 将毫秒级时间戳转换为秒级时间戳，并使用Math.floor取整
+            const timestamp = Math.floor(milliseconds / 1000);
+            let isAuth
+            if (authExpiryTime === 0 || timestamp > authExpiryTime) {
+                isAuth = false;
+            } else {
+                isAuth = true;
+            }
             result = {
                 isAuth: true,
-                isNotExpired: isAuth.data,
+                isNotExpired: isAuth,
+                authExpiryTime: authExpiryTime,
                 parthAddr: parentauthsa.data
             }
         }

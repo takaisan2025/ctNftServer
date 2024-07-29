@@ -286,8 +286,6 @@ function mintRouters(app) {
             var sql = get_mysql("collect", "selectByAddress", params).result;
 
             // 查询账户实名状况
-
-
             let collectRet02 = await exec_sql(sql);
             if (collectRet02.err != null) {
                 console.log("ERR:", collectRet02.err);

@@ -36,6 +36,7 @@ let opAccount = [
         tokenId: "0x159Ea8A62C4f23369467a858e75a7F39c6819077c12345678901711168018705"
     },
     {
+        // 1
         address: "0x0DC66883d0B3d9C1C469ef01D50B284aFa179879",
         password: "1234567890",
         contract: "0x9BbF7e79De3f1115B6FD46744F8ed833bE710Af1",
@@ -270,8 +271,8 @@ function main() {
     // })
 
 //     发送交易
-    transferNft1155(acc.address, acc.password, acc.contract, acc.tokenId, accTo.address).then(r => {
-        console.log(r.result)
+    transferNft1155(acc.address, acc.password, accTo.contract, accTo.tokenId, accTo.address).then(r => {
+        console.log("调用结果:", acc.address, accTo.tokenId, r.result)
         // setTimeout(main, getRandomNumber())
     })
     setTimeout(main, getRandomNumber())

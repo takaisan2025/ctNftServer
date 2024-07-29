@@ -541,8 +541,8 @@ async function authUser(walletUser) {
         is_reback: 0,
         order_id: orderId,
         value: "0",
-        // "origin_data": JSON.stringify(origin_data_json),
-        origin_data: origin_data_json,
+        origin_data: JSON.stringify(origin_data_json),
+        // origin_data: origin_data_json,
         contract_address: contractAddress,
         method:
             ABI_const["AuthController"].contractName +

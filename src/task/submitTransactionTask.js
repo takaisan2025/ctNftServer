@@ -21,7 +21,12 @@ const {findNftTransaction, updateNftTransaction} = require("../Orm/NftTransactio
 const GlobalConfig = require("../config/GlobalConfig.json");
 const {log} = require("forever");
 const {transferOutline} = require("./transferOutline");
+const {get_mysql} = require("../db/genSql");
+const {exec_sql} = require("../controller/ctnft");
 const SubmitTransactionTaskFlag = "SubmitTransactionTask_START"
+const TransactionHashQueryTaskFlag = "TransactionHashQueryTask_START"
+const Web3 = require("web3");
+let web3 = new Web3("http://ctblock.cn/blockChain");
 
 function mightBeJson(str) {
     const regex = /^\{.*\}$|^\[.*\]$/;
@@ -212,8 +217,9 @@ async function SubmitTransactionTask() {
                                 switch (txCallRet.err) {
                                     case "execution reverted: ERC1155: insufficient balance for transfer":
                                         trans_from_obj = {
-                                            t_status: 3, // 上链失败
-                                            id: id
+                                            status: 2, // 上链失败
+                                            id: id,
+                                            vm_err: gasLimitRet.err
                                         };
                                         console.log("nftUpdateSelective:", trans_from_obj);
                                         await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}},)
@@ -264,7 +270,100 @@ async function SubmitTransactionTask() {
     }
 }
 
+async function TransactionHashQueryTask() {
+    if (await getString(TransactionHashQueryTaskFlag) == "1") {
+        console.log('===================wait start TransactionHashQueryTask')
+        return
+    } else {
+        await setString(TransactionHashQueryTaskFlag, "1", 60)
+        console.time("TransactionHashQueryTask")
+
+        try {
+
+            // 示例使用：
+            const date = new Date('2024-08-10');
+            const nftTransactions = await findNftTransaction(_where = {
+                where: {
+                    status: 1,
+                    create_time: {
+                        [Op.gte]: date
+                    }
+                },
+                offset: 0,
+                limit: 500
+            });
+
+            if (nftTransactions.code === 0) {
+                let transList = nftTransactions.result;
+
+                for (let retKey in transList) {
+                    const {
+                        id, hash, update_time
+                    } = transList[retKey];
+
+                    if (!hash || hash === "" || hash == null) {
+                        continue;
+                    }
+
+                    try {
+
+
+                        let recept = await web3.eth.getTransactionReceipt(hash);
+                        let currTime = new Date().getTime();
+                        if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
+                            continue;
+                        } else {
+                            let t_statusStorage;
+                            if (recept != null && recept.status == true) {
+                                t_statusStorage = 3;
+                            } else {
+
+                                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+                                // save db
+                                // if (recept.data.transaction == null || recept.data.transaction.status == null) {
+                                if (currTime - update_time.getTime() < 60000) {
+                                    continue;
+                                } else {
+                                    t_statusStorage = 0;
+                                    console.log("查询hash结果false,", hash);
+                                }
+                            }
+
+                            let trans_from_obj = {
+                                status: t_statusStorage, // 6 成功,7 失败
+                                id: id
+                            };
+                            console.log("nftUpdateSelective:", trans_from_obj);
+
+                            let paramsUp = trans_from_obj;
+
+                            console.log("nftUpdateSelective:", trans_from_obj);
+                            if (t_statusStorage == 3) {
+                                await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}})
+                            }
+                            continue;
+                        }
+                    } catch (e) {
+                        console.error(e)
+                        console.trace(e)
+                        continue;
+                    }
+                }
+            }
+            await removeString(TransactionHashQueryTaskFlag)
+            console.timeEnd("TransactionHashQueryTask");
+        } catch (error) {
+            await removeString(TransactionHashQueryTaskFlag)
+            console.log("操作失败！\n" + error);
+            console.trace("ERR:", error);
+            return error;
+        }
+    }
+}
+
 // SubmitTransactionTask()
+// TransactionHashQueryTask()
 module.exports = {
-    SubmitTransactionTask
+    SubmitTransactionTask,
+    TransactionHashQueryTask
 };

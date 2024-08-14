@@ -60,11 +60,11 @@ async function tFeeBetchTransfer() {
 
             // 这里首先判断toAddress的实名情况, 否则转手续费会失败
             if (GlobalConfig.CAN_AUTH) {
-                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
                 let isAuth = await contract_static_call(
                     ethers,
                     authContractAddress,
-                    ABI_const["AuthController"].abi,
+                    ABI_const["AuthControllerV2"].abi,
                     "authsSingle",
                     customHttpProvider,
                     [address]

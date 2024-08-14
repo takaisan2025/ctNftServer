@@ -232,11 +232,11 @@ function transferRouters(app) {
             // 判断商家身份
             if (GlobalConfig.CAN_AUTH) {
                 if (address != collectDetail.owner) {
-                    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+                    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
                     let isAuth = await contract_static_call(
                         ethers,
                         authContractAddress,
-                        ABI_const["AuthController"].abi,
+                        ABI_const["AuthControllerV2"].abi,
                         "authsSingle",
                         customHttpProvider,
                         [address]

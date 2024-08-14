@@ -1,5 +1,5 @@
 const {betchCallByTime} = require("./task/transTaskReCallByTime");
-const {SubmitTransactionTask} = require("./task/submitTransactionTask");
+const {SubmitTransactionTask, TransactionHashQueryTask} = require("./task/submitTransactionTask");
 const {betchCallFund1} = require("./task/transTaskReCall1");
 const {betchCallFund} = require("./task/transTaskReCall");
 const {betchHashQuery} = require("./task/transTaskHashQuery");
@@ -44,6 +44,7 @@ async function start() {
 
     // auth
     setInterval(SubmitTransactionTask, 5000)
+    setInterval(TransactionHashQueryTask, 5000)
 }
 
 start()

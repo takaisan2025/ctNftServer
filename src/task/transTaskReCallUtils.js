@@ -83,86 +83,13 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
         }
         try {
 
-            Promise.all(urls.map(url =>
-                fetch(url.url, url.requestOptions)
-                    .then(responseData => {
-                        console.log("回调返回原始内容status:", responseData.status);
-                        console.log("回调返回原始内容statusText:", responseData.statusText);
-                        return responseData.json()
-                    })
-                    .then(async responseData => {
-                        console.log("回调返回处理结果:", responseData);
-                        // return {data: response, err: null, ori_data: url};
+            Promise.all(urls.map(async url => {
 
-                        let responseRet = {data: responseData, err: null, ori_data: url};
-                        //处理响应结果
-                        console.log("responseRet", responseRet)
-                        let response = responseData
-                        //处理响应结果
-                        console.log("response", response);
-                        if (response != null && (response.status == 1 || response.status == 200)) {
-
-                            let query_params = {
-                                t_status: 4, // 上链成功
-                                id: responseRet.ori_data.id
-                            };
-                            console.log("nftUpdateSelective:", query_params);
-
-                            let sqlUp = get_mysql(
-                                "trans_form_list",
-                                "updateByPrimaryKeySelective",
-                                query_params
-                            ).result;
-                            await exec_sql(sqlUp)
-                                .then((ret) => {
-                                    return ret;
-                                })
-                                .catch((err) => {
-                                    console.trace(responseFun(500, err, ""), responseRet.ori_data.id);
-                                    return responseFun(500, err, "");
-                                });
-                        } else if (response != null && response.msg == "作品不存在") {
-
-                            let query_params = {
-                                t_status: endStatus, // 上链成功
-                                id: responseRet.ori_data.id
-                            };
-                            console.log("nftUpdateSelective:", query_params);
-
-                            let sqlUp = get_mysql(
-                                "trans_form_list",
-                                "updateByPrimaryKeySelective",
-                                query_params
-                            ).result;
-                            await exec_sql(sqlUp);
-                        } else {
-                            console.trace("回调错误:", response, ",orderId", url.orderId);
-                            // return {data: null, err: err, ori_data: url};
-
-                            console.log("回调接口失败,", responseRet.ori_data.orderId);
-                            //
-                            let query_params = {
-                                t_status: endStatus, // 上链成功
-                                id: responseRet.ori_data.id
-                            };
-                            console.log("nftUpdateSelective:", query_params);
-
-                            let sqlUp = get_mysql(
-                                "trans_form_list",
-                                "updateByPrimaryKeySelective",
-                                query_params
-                            ).result;
-                            await exec_sql(sqlUp);
-                        }
-                    })
-                    .catch(async (err) => {
-                        console.trace("回调错误:", err, ",orderId", url.orderId);
-                        // return {data: null, err: err, ori_data: url};
-
-                        let responseRet = {data: null, err: err, ori_data: url};
+                    if (url.url.indexOf("chaonft.cn/") !== -1) {
+                        console.log("The string contains 'chaonft.cn/'.");
+                        let responseRet = {data: null, err: "The string contains 'chaonft.cn/'.", ori_data: url};
 
                         console.log("回调接口失败,", responseRet.ori_data.orderId);
-                        //
                         let query_params = {
                             t_status: endStatus, // 回调失败
                             id: responseRet.ori_data.id
@@ -175,8 +102,103 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                             query_params
                         ).result;
                         await exec_sql(sqlUp);
+                    } else {
+                        console.log("The string does not contain 'chaonft.cn/'.");
+                        fetch(url.url, url.requestOptions)
+                            .then(responseData => {
+                                console.log("回调返回原始内容status:", responseData.status);
+                                console.log("回调返回原始内容statusText:", responseData.statusText);
+                                return responseData.json()
+                            })
+                            .then(async responseData => {
+                                console.log("回调返回处理结果:", responseData);
+                                // return {data: response, err: null, ori_data: url};
 
-                    })
+                                let responseRet = {data: responseData, err: null, ori_data: url};
+                                //处理响应结果
+                                console.log("responseRet", responseRet)
+                                let response = responseData
+                                //处理响应结果
+                                console.log("response", response);
+                                if (response != null && (response.status == 1 || response.status == 200)) {
+
+                                    let query_params = {
+                                        t_status: 4, // 上链成功
+                                        id: responseRet.ori_data.id
+                                    };
+                                    console.log("nftUpdateSelective:", query_params);
+
+                                    let sqlUp = get_mysql(
+                                        "trans_form_list",
+                                        "updateByPrimaryKeySelective",
+                                        query_params
+                                    ).result;
+                                    await exec_sql(sqlUp)
+                                        .then((ret) => {
+                                            return ret;
+                                        })
+                                        .catch((err) => {
+                                            console.trace(responseFun(500, err, ""), responseRet.ori_data.id);
+                                            return responseFun(500, err, "");
+                                        });
+                                } else if (response != null && response.msg == "作品不存在") {
+
+                                    let query_params = {
+                                        t_status: endStatus, // 上链成功
+                                        id: responseRet.ori_data.id
+                                    };
+                                    console.log("nftUpdateSelective:", query_params);
+
+                                    let sqlUp = get_mysql(
+                                        "trans_form_list",
+                                        "updateByPrimaryKeySelective",
+                                        query_params
+                                    ).result;
+                                    await exec_sql(sqlUp);
+                                } else {
+                                    console.trace("回调错误:", response, ",orderId", url.orderId);
+                                    // return {data: null, err: err, ori_data: url};
+
+                                    console.log("回调接口失败,", responseRet.ori_data.orderId);
+                                    //
+                                    let query_params = {
+                                        t_status: endStatus, // 上链成功
+                                        id: responseRet.ori_data.id
+                                    };
+                                    console.log("nftUpdateSelective:", query_params);
+
+                                    let sqlUp = get_mysql(
+                                        "trans_form_list",
+                                        "updateByPrimaryKeySelective",
+                                        query_params
+                                    ).result;
+                                    await exec_sql(sqlUp);
+                                }
+                            })
+                            .catch(async (err) => {
+                                console.trace("回调错误:", err, ",orderId", url.orderId);
+                                // return {data: null, err: err, ori_data: url};
+
+                                let responseRet = {data: null, err: err, ori_data: url};
+
+                                console.log("回调接口失败,", responseRet.ori_data.orderId);
+                                //
+                                let query_params = {
+                                    t_status: endStatus, // 回调失败
+                                    id: responseRet.ori_data.id
+                                };
+                                console.log("nftUpdateSelective:", query_params);
+
+                                let sqlUp = get_mysql(
+                                    "trans_form_list",
+                                    "updateByPrimaryKeySelective",
+                                    query_params
+                                ).result;
+                                await exec_sql(sqlUp);
+
+                            })
+                    }
+                }
             )).then(async responseRet => {
                 // console.log(responseRet)
             });

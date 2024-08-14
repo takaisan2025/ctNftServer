@@ -1,4 +1,5 @@
 const AuthController = require("./AuthController.json");
+const AuthControllerV2 = require("./AuthControllerV2.json");
 const CtMultCall = require("./CtMultCall.json");
 const CtnftMToken = require("./CtnftMToken.json");
 const CtTransferExecutor = require("./CtTransferExecutor.json");
@@ -10,6 +11,7 @@ const Lottery = require("./Lottery.json");
 const ScoreToken = require("./ScoreToken.json");
 const ABI_const = {
     AuthController,
+    AuthControllerV2,
     CtMultCall,
     CtnftMToken,
     CtTransferExecutor,

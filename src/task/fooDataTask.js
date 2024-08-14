@@ -169,7 +169,7 @@ async function createContract1155(address, password, name, symbol) {
         body: JSON.stringify({
             "address": address,
             "password": password,
-            "type": 12,
+            "type": "12",
             "cMetadata": {
                 "name": name,
                 "symbol": symbol,

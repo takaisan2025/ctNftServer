@@ -585,23 +585,6 @@ async function mintBetchMint() {
                             }
                         }
 
-                        // let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-                        // let isAuth = await contract_static_call(
-                        //     ethers,
-                        //     authContractAddress,
-                        //     ABI_const["AuthController"].abi,
-                        //     "authsSingle",
-                        //     customHttpProvider,
-                        //     [wallet.address]
-                        // );
-                        // if (isAuth.data != true) {
-                        //     // 这里进行预先实名
-                        //     await authUser(wallet)
-                        //     console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
-                        //     continue;
-                        // }
-
-
                         let overrides = {
                             // The maximum units of gas for the transaction to use
                             gasLimit: web3.utils.numberToHex(gasLimit),
@@ -856,11 +839,11 @@ async function transfer(privateKey, value, toAddress, walletUser) {
 
     // 这里首先判断toAddress的实名情况, 否则转手续费会失败
     // if (GlobalConfig.CAN_AUTH) {
-    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
     let isAuth = await contract_static_call(
         ethers,
         authContractAddress,
-        ABI_const["AuthController"].abi,
+        ABI_const["AuthControllerV2"].abi,
         "authsSingle",
         customHttpProvider,
         [walletUser.address]

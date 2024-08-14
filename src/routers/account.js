@@ -695,11 +695,11 @@ function accountRouters(app) {
 
         if (!validateAddress(s_address).flag) {
             // 判断商家身份
-            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
             let isAuth = await contract_static_call(
                 ethers,
                 authContractAddress,
-                ABI_const["AuthController"].abi,
+                ABI_const["AuthControllerV2"].abi,
                 "authsSingle",
                 customHttpProvider,
                 [address]
@@ -890,15 +890,6 @@ function accountRouters(app) {
                 customHttpProvider,
                 [address, 0]
             );
-
-            // let isAuth = await contract_static_call(
-            //     ethers,
-            //     authContractAddress,
-            //     ABI_const["AuthController"].abi,
-            //     "authsSingle",
-            //     customHttpProvider,
-            //     [address]
-            // );
 
             let authExpiry = await contract_static_call(
                 ethers,

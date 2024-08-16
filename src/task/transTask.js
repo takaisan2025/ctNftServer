@@ -41,6 +41,25 @@ const {findAccount} = require("../Orm/AccountService");
 const {findCollect} = require("../Orm/CollectService");
 const {updateNftTransaction, createNftTransaction} = require("../Orm/NftTransactionService");
 
+// 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
+const provider = new ethers.providers.JsonRpcProvider("https://ctblock.cn/blockChain");
+
+// 获取账户的 nonce
+async function getNonce(address) {
+    let nonce = await getString(address + '_NONCE');
+    if (Number(nonce) > 0) {
+        nonce = Number(nonce) + 1;
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+
+    } else {
+        nonce = await provider.getTransactionCount(address, "latest");
+        console.log(address + "Nonce:", nonce);
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+    }
+
+    return nonce;
+}
+
 async function betchTransfer() {
     if (await getString(betchTransferFlag) == "1") {
         console.log('===================wait start mintBetchCallFund')
@@ -220,6 +239,9 @@ async function betchTransfer() {
                     if (gasLimitRet.err != null) {
                         continue;
                     }
+
+                    let nonce = await getNonce(t_from);
+
                     let gasLimitA = gasLimitRet.gasLimit
                     let txApproveRet = await contractWithSignerToken.setApprovalForAll(
                         CtTransferExecutorAddress,
@@ -230,7 +252,7 @@ async function betchTransfer() {
                             // The price (in wei) per unit of gas
                             // gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                             // The nonce to use in the transaction
-                            // nonce: nonce,
+                            nonce: nonce,
                             // The amount to send with the transaction (i.e. msg.value)
                             // value: utils.parseEther('1.0'),
                             // The chain ID (or network ID) to use
@@ -344,6 +366,7 @@ async function betchTransfer() {
 
                     let gasLimit = gasLimitRet.gasLimit;
                     console.log("gasLimit:", gasLimit.toString());
+                    let nonce = await getNonce(t_from);
 
                     let overrides = {
                         // The maximum units of gas for the transaction to use
@@ -352,7 +375,7 @@ async function betchTransfer() {
                         // The price (in wei) per unit of gas
                         // gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
                         // The nonce to use in the transaction
-                        // nonce: nonce,
+                        nonce: nonce,
                         // The amount to send with the transaction (i.e. msg.value)
                         // value: utils.parseEther('1.0'),
                         // The chain ID (or network ID) to use
@@ -389,6 +412,7 @@ async function betchTransfer() {
                         // save db
                         let trans_from_obj = {
                             hash: tx.hash,
+                            nonce: nonce,
                             t_status: 5  // 上链成功
                         };
                         console.log("nftUpdateSelective:", trans_from_obj);
@@ -591,12 +615,14 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     // }
 
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
+    let nonce = await getNonce(walletSys.address)
     let tx = {
         to: toAddress,
         // ... or supports ENS names
         // to: "ricmoo.firefly.eth"
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
+        nonce: nonce,
         value: web3.utils.toHex(value),
     };
 

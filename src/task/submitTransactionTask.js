@@ -28,6 +28,24 @@ const TransactionHashQueryTaskFlag = "TransactionHashQueryTask_START"
 const Web3 = require("web3");
 let web3 = new Web3("http://ctblock.cn/blockChain");
 
+// 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
+const provider = new ethers.providers.JsonRpcProvider("https://ctblock.cn/blockChain");
+
+// 获取账户的 nonce
+async function getNonce(address) {
+    let nonce = await getString(address + '_NONCE');
+    if (Number(nonce) > 0) {
+        nonce = Number(nonce) + 1;
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+
+    } else {
+        nonce = await provider.getTransactionCount(address, "latest");
+        console.log(address + "Nonce:", nonce);
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+    }
+
+    return nonce;
+}
 function mightBeJson(str) {
     const regex = /^\{.*\}$|^\[.*\]$/;
     if (str === null) {
@@ -158,7 +176,7 @@ async function SubmitTransactionTask() {
 
                         } else {
                             let gasLimitA = gasLimitRet.gasLimit
-
+                            let nonce = await getNonce(wallet.address)
                             let txCallRet = await contractWithSignerToken[methodName](
                                 ...funData,
                                 {
@@ -167,7 +185,7 @@ async function SubmitTransactionTask() {
                                     // The price (in wei) per unit of gas
                                     // gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                                     // The nonce to use in the transaction
-                                    // nonce: nonce,
+                                    nonce: nonce,
                                     // The amount to send with the transaction (i.e. msg.value)
                                     value: ethers.utils.parseEther(value),
                                     // The chain ID (or network ID) to use
@@ -270,6 +288,8 @@ async function SubmitTransactionTask() {
     }
 }
 
+
+
 async function TransactionHashQueryTask() {
     if (await getString(TransactionHashQueryTaskFlag) == "1") {
         console.log('===================wait start TransactionHashQueryTask')
@@ -306,7 +326,6 @@ async function TransactionHashQueryTask() {
                     }
 
                     try {
-
 
                         let recept = await web3.eth.getTransactionReceipt(hash);
                         let currTime = new Date().getTime();

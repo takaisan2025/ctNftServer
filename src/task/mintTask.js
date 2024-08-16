@@ -28,6 +28,26 @@ let minted721TokenStr = "execution reverted: ERC721: token already minted";
 let minted1155TokenStr = "execution reverted: more than supply";
 const {Op} = require('sequelize')
 
+
+// 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
+const provider = new ethers.providers.JsonRpcProvider("https://ctblock.cn/blockChain");
+
+// 获取账户的 nonce
+async function getNonce(address) {
+    let nonce = await getString(address + '_NONCE');
+    if (Number(nonce) > 0) {
+        nonce = Number(nonce) + 1;
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+
+    } else {
+        nonce = await provider.getTransactionCount(address, "latest");
+        console.log(address + "Nonce:", nonce);
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+    }
+
+    return nonce;
+}
+
 function Part(account, value) {
     return {
         account,
@@ -212,7 +232,6 @@ async function mintBetchMint() {
                     metaDataSource,
                     tokenId,
                     supply,
-                    nonce,
                 } = nftArr[retKey];
                 let collectDetail_ret = await findCollect(_where = {address: collectAddress})
                 if (collectDetail_ret.code != 0) {
@@ -584,7 +603,7 @@ async function mintBetchMint() {
 
                             }
                         }
-
+                        let nonce = await getNonce(wallet.address);
                         let overrides = {
                             // The maximum units of gas for the transaction to use
                             gasLimit: web3.utils.numberToHex(gasLimit),
@@ -593,7 +612,7 @@ async function mintBetchMint() {
                             //     parseInt(gasConfig.mint721.gas / Number(gasLimit))
                             // ),
                             // The nonce to use in the transaction
-                            // nonce: nonce,
+                            nonce: nonce,
                             // nonce: transactionCount1Mint,
                             // The amount to send with the transaction (i.e. msg.value)
                             // value: utils.parseEther('1.0'),
@@ -858,10 +877,12 @@ async function transfer(privateKey, value, toAddress, walletUser) {
 
 
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
+    let nonce = await getNonce(walletSys.address);
     let tx = {
         to: toAddress,
         // ... or supports ENS names
         // to: "ricmoo.firefly.eth"
+        nonce: nonce,
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
         value: web3.utils.toHex(value),
@@ -1052,7 +1073,7 @@ async function mintBetchCallFund() {
         console.timeEnd('mintBetchCallFund')
     }
 }
-mintFileUploadIpfs();
+// mintFileUploadIpfs();
 module.exports = {
     mintFileUploadIpfs,
     mintBetchMint,

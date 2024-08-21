@@ -212,7 +212,7 @@ async function createNft1155(address, password, contract, author, authorDesc, de
 }
 
 async function transferNft1155(address, password, contract, tokenid, toAddr) {
-    return await fetch(API_PREFIX + "api/account/transfer_f", {
+    return await fetch(API_PREFIX + "api/account/transfe1r_f", {
         method: "POST",
         redirect: "follow",
         timeout: 5000,
@@ -227,9 +227,9 @@ async function transferNft1155(address, password, contract, tokenid, toAddr) {
             "rebackUrl": "https://chaonft.cn/index.php?a=NftChainTransReturn"
         })
     }).then(resp => {
-        return resp.json()
-    }).then(ret => {
-        return {code: 500, result: ret}
+        return {code: 200, result: resp.json()}
+    }).catch(err => {
+        return {code: 500, result: err}
     })
 }
 
@@ -272,7 +272,7 @@ function main() {
 
 //     发送交易
     transferNft1155(acc.address, acc.password, accTo.contract, accTo.tokenId, accTo.address).then(r => {
-        console.log("调用结果:", acc.address, accTo.tokenId, r.result)
+        console.log("调用结果:", acc.address, accTo.tokenId, r.code, r.result)
         // setTimeout(main, getRandomNumber())
     })
     setTimeout(main, getRandomNumber())

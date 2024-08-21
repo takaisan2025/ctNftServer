@@ -118,8 +118,8 @@ function main2() {
 
     console.log(env)
 // 计算keccak256散列
-    const hash = web3.utils.keccak256(web3.eth.abi.encodeParameters(['address', 'address'], [_from, _to]));
-    // const hash = web3.utils.keccak256("0x5216964c075426651b949c6d9c2d7682c5bd81dd6331384fd95eedc4c5ce96d4bdfe14d7fc365554");
+    const hash = Web3.utils.keccak256(web3.eth.abi.encodeParameters(['address', 'address'], [_from, _to]));
+    // const hash = Web3.utils.keccak256("0x5216964c075426651b949c6d9c2d7682c5bd81dd6331384fd95eedc4c5ce96d4bdfe14d7fc365554");
     console.log(hash);  //0x0e11fc7ad4191b6de8b9a13638fd17c99e0cb510c03c7ca71c05adac61b5f106
 }
 

@@ -3,12 +3,12 @@ let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 const ethers = require("ethers");
 const ethUtil = require("ethereumjs-util");
 
-let customHttpProvider = new ethers.providers.JsonRpcProvider({
-    ...rpc
-}, {
-    chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
-});
-
+// let customHttpProvider = new ethers.providers.JsonRpcProvider({
+//     ...rpc
+// }, {
+//     chainId: GlobalConfig.BLOCK_CHAIN.RPC_CHAIN_ID,
+// });
+const customHttpProvider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 
 function id_fun(str) {
     return `0x${ethUtil

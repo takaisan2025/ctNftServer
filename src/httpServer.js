@@ -27,7 +27,7 @@ const createHttpServer = (socketServer) => {
     // expressApp.use(formidableMiddleware());
     // Log Requests
     expressApp.use((req, res, next) => {
-        console.log(req.method, req.url, req.body, req.headers.origin);
+        // console.log(req.method, req.url, req.body, req.headers.origin);
         next();
     });
     expressApp.use((req, res, next) => {

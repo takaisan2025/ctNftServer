@@ -133,7 +133,7 @@ async function collectInit(
                     return ret;
                 })
                 .catch((err) => {
-                    logger.debug("err:", err);
+                    logger.debug("err:%s", err);
                     return err;
                 });
 
@@ -143,7 +143,7 @@ async function collectInit(
                     return ret;
                 })
                 .catch((err) => {
-                    logger.debug("err:", err);
+                    logger.debug("err:%s", err);
                 });
             // logger.debug(recept);
             validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, 'Transaction Reverted');
@@ -187,7 +187,7 @@ async function collectInitCall(
             return {err: null, gaslimit: ret};
         })
         .catch((err) => {
-            logger.debug("err:", err);
+            logger.debug("err:%s", err);
             return {err: err, gaslimit: null};
         });
     return {err, gaslimit};
@@ -209,7 +209,7 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
                 return ret;
             })
             .catch((err) => {
-                logger.debug("err:", err);
+                logger.debug("err:%s", err);
                 return err;
             });
         let recept = await customHttpProvider
@@ -218,7 +218,7 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
                 return ret;
             })
             .catch((err) => {
-                logger.debug("err:", err);
+                logger.debug("err:%s", err);
             });
         // logger.debug(recept);
         validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, "Transaction Reverted")

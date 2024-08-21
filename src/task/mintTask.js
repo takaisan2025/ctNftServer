@@ -1,9 +1,11 @@
+import {validate} from "../routers/fcommon";
+
 const {isEmpty} = require("../rules/rules");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const FormData = require("form-data");
 const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
-let web3 = new Web3("http://ctblock.cn/blockChain");
+let web3 = new Web3(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 const {
     getString,
     setString,
@@ -30,7 +32,7 @@ const {Op} = require('sequelize')
 
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
-const provider = new ethers.providers.JsonRpcProvider("https://ctblock.cn/blockChain");
+const provider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 
 // 获取账户的 nonce
 async function getNonce(address) {
@@ -263,11 +265,9 @@ async function mintBetchMint() {
                     }
                     let contractAddressDetail = contractAddressDetailAsync;
                     let decWalletResultq = await getPriKey(contractAddressDetail, contractAddressDetail.psd);
-                    if (decWalletResultq.err != null) {
-                        throw PasswordError;
-                    } else {
-                        wallet = decWalletResultq.result;
-                    }
+                    validate(decWalletResultq.err === null, PasswordError)
+                    wallet = decWalletResultq.result;
+
                     let privateKeyA = wallet.privateKey
                     let {err, hash} = await transfer(
                         privateKeyA,
@@ -283,11 +283,8 @@ async function mintBetchMint() {
                 }
 
                 let decWalletResult = await getPriKey(accountItem, accountItem.psd);
-                if (decWalletResult.err != null) {
-                    throw PasswordError;
-                } else {
-                    wallet = decWalletResult.result;
-                }
+                validate(decWalletResult.err === null, PasswordError)
+                wallet = decWalletResult.result;
                 wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
 
                 // 使用Provider 连接合约，将只有对合约的可读权限
@@ -367,9 +364,9 @@ async function mintBetchMint() {
                         } else {
                             let overrides = {
                                 // The maximum units of gas for the transaction to use
-                                gasLimit: web3.utils.numberToHex(gasLimit),
+                                gasLimit: Web3.utils.numberToHex(gasLimit),
                                 // The price (in wei) per unit of gas
-                                // gasPrice: web3.utils.numberToHex(
+                                // gasPrice: Web3.utils.numberToHex(
                                 //     parseInt(gasConfig.mint1155.gas / Number(gasLimit))
                                 // ),
                                 // The nonce to use in the transaction
@@ -606,9 +603,9 @@ async function mintBetchMint() {
                         let nonce = await getNonce(wallet.address);
                         let overrides = {
                             // The maximum units of gas for the transaction to use
-                            gasLimit: web3.utils.numberToHex(gasLimit),
+                            gasLimit: Web3.utils.numberToHex(gasLimit),
                             // The price (in wei) per unit of gas
-                            // gasPrice: web3.utils.numberToHex(
+                            // gasPrice: Web3.utils.numberToHex(
                             //     parseInt(gasConfig.mint721.gas / Number(gasLimit))
                             // ),
                             // The nonce to use in the transaction
@@ -775,7 +772,7 @@ async function authUser(walletUser) {
 
     let privateKeyStr = c_wallet.privateKey;
     let verifyingContract = contractAddress;
-    privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+    privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
     const privateKey = Buffer.from(privateKeyStr, "hex");
 
@@ -885,7 +882,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         nonce: nonce,
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
-        value: web3.utils.toHex(value),
+        value: Web3.utils.toHex(value),
     };
 
     let txTransfer = await walletSys.sendTransaction(tx);
@@ -1073,6 +1070,7 @@ async function mintBetchCallFund() {
         console.timeEnd('mintBetchCallFund')
     }
 }
+
 // mintFileUploadIpfs();
 module.exports = {
     mintFileUploadIpfs,

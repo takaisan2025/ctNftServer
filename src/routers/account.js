@@ -144,7 +144,7 @@ function accountRouters(app) {
 
                 let privateKeyStr = randomWallet.privateKey;
                 let verifyingContract = authContractAddress;
-                privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+                privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
                 const privateKey = Buffer.from(privateKeyStr, "hex");
 
@@ -355,7 +355,7 @@ function accountRouters(app) {
 
                 let privateKeyStr = randomWallet.privateKey;
                 let verifyingContract = authContractAddress;
-                privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+                privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
                 const privateKey = Buffer.from(privateKeyStr, "hex");
 
@@ -586,7 +586,7 @@ function accountRouters(app) {
 
                     let privateKeyStr = c_wallet.privateKey;
                     let verifyingContract = authContractAddress;
-                    privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+                    privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
                     const privateKey = Buffer.from(privateKeyStr, "hex");
 

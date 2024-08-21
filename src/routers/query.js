@@ -14,6 +14,10 @@ const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 
+async function dashFun(sql) {
+    return (await exec_sql(sql)).result['count(0)']
+}
+
 function queryRouters(app) {
 
     // 查询和批量查询
@@ -125,39 +129,39 @@ function queryRouters(app) {
 
         // 等待上传ipfs
         let sql1 = "SELECT count(0) from nft where `status` = 0;";
-        await exec_sql(sql1);
-        resultNFT["等待上传ipfs"] = await exec_sql(sql1);
+        await dashFun(sql1);
+        resultNFT["等待上传ipfs"] = await dashFun(sql1);
         // 等待上链
         let sql2 = "SELECT count(0) from nft where `status` = 6;";
-        resultNFT["等待上链"] = await exec_sql(sql2);
+        resultNFT["等待上链"] = await dashFun(sql2);
         // 等待hash查询
         let sql3 = "SELECT count(0) from nft where `status` = 10;";
-        resultNFT["等待hash查询"] = await exec_sql(sql3);
+        resultNFT["等待hash查询"] = await dashFun(sql3);
         // 上链成功
         let sql4 = "SELECT count(0) from nft where `status` = 7;";
-        resultNFT["上链成功"] = await exec_sql(sql4);
+        resultNFT["上链成功"] = await dashFun(sql4);
         // 上链失败
         let sql5 = "SELECT count(0) from nft where `status` = 8;";
-        resultNFT["上链失败"] = await exec_sql(sql5);
+        resultNFT["上链失败"] = await dashFun(sql5);
         // 回调失败
         let sql6 = "SELECT count(0) from nft where `status` = 9;";
-        resultNFT["回调失败"] = await exec_sql(sql6);
+        resultNFT["回调失败"] = await dashFun(sql6);
 
         // 等待上链
         let sql7 = "SELECT count(0) from trans_form_list where `t_status` = 1;";
-        resultTREANS["等待上链"] = await exec_sql(sql7);
+        resultTREANS["等待上链"] = await dashFun(sql7);
         // 等待hash查询
         let sql8 = "SELECT count(0) from trans_form_list where `t_status` = 5;";
-        resultTREANS["等待hash查询"] = await exec_sql(sql8);
+        resultTREANS["等待hash查询"] = await dashFun(sql8);
         // 上链成功
         let sql9 = "SELECT count(0) from trans_form_list where `t_status` = 6;";
-        resultTREANS["上链成功"] = await exec_sql(sql9);
+        resultTREANS["上链成功"] = await dashFun(sql9);
         // 上链失败
         let sql10 = "SELECT count(0) from trans_form_list where `t_status` = 7;";
-        resultTREANS["上链失败"] = await exec_sql(sql10);
+        resultTREANS["上链失败"] = await dashFun(sql10);
         // 回调失败
         let sql11 = "SELECT count(0) from trans_form_list where `t_status` = 8;";
-        resultTREANS["回调失败"] = await exec_sql(sql11);
+        resultTREANS["回调失败"] = await dashFun(sql11);
         result = {
             NFT: resultNFT,
             TRANS: resultTREANS,

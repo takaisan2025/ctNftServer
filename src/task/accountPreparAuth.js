@@ -4,7 +4,6 @@ const {RESPONSE_STATUS} = require("../chain/responseError");
 const GlobalConfig = require("../config/GlobalConfig.json");
 
 const Web3 = require("web3");
-let web3 = new Web3("http://ctblock.cn/blockChain");
 
 const EIP712 = require("../routers/EIP712");
 const ABI_const = require("../contract/ABI_const.js");
@@ -71,7 +70,7 @@ async function betchPreaprAuth(authAddress) {
 
             let privateKeyStr = c_wallet.privateKey;
             let verifyingContract = contractAddress;
-            privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+            privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
             const privateKey = Buffer.from(privateKeyStr, "hex");
 

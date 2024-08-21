@@ -6,7 +6,6 @@ const {
     validateAddress,
     checkURL
 } = require("../rules/rules");
-let web3 = new Web3("http://ctblock.cn/blockChain");
 async function graphiqlHashQuery(hash) {
     let req_url = "https://ctblock.cn/graphiql";
     let receptRet = await fetch(req_url, {

@@ -33,7 +33,9 @@ const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
-
+const {validate} = require("./fcommon");
+const pino = require("pino");
+const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 function mintRouters(app) {
 
     // 异步铸造721接口
@@ -47,31 +49,21 @@ function mintRouters(app) {
         try {
             //  判断参数是否满足规范
             let ret01 = validateAddress(address);
-            if (!ret01.flag) {
-                throw ret01.err;
-            }
+            validate(ret01.flag, ret01.err);
 
             let ret02 = validateAddress(collectAddress);
-
-            if (!ret02.flag) {
-                throw ret02.err;
-            }
+            validate(ret02.flag, ret02.err);
 
             let ret03 = isJson(data);
-            if (!ret03.flag) {
-                throw ret03.err;
-            }
+            validate(ret03.flag, ret03.err);
 
             let checkURLRet = checkURL(rebackUrl);
-            if (!checkURLRet.flag) {
-                throw checkURLRet.err;
-            }
+            validate(checkURLRet.flag, checkURLRet.err);
 
             let checkURLRet1 = checkURL(file);
-            if (!checkURLRet1.flag) {
-                throw checkURLRet1.err;
-            }
+            validate(checkURLRet1.flag, checkURLRet1.err);
         } catch (e) {
+            console.log(e)
             return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
         }
 
@@ -128,16 +120,13 @@ function mintRouters(app) {
         let wallet;
         // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
         let decWalletResult = await getPriKey(ret, password);
-        if (decWalletResult.err != null) {
-            throw PasswordError;
-        } else {
-            wallet = decWalletResult.result;
-        }
+        validate(decWalletResult.err === null, PasswordError);
+        wallet = decWalletResult.result;
         wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
         let balance = await wallet.provider.getBalance(collectDetail.owner);
         // 余额是 BigNumber (in wei); 格式化为 ether 字符串
         let etherString = ethers.utils.formatEther(balance);
-        console.log("Balance: ", etherString);
+        logger.debug("Balance: %s", etherString);
         // 计算初始化合约费用
         if (Number(etherString) < Number(10)) {
             return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
@@ -153,14 +142,13 @@ function mintRouters(app) {
                     return ret;
                 })
                 .catch((err) => {
-                    console.log("ERR:", err);
+                    logger.debug("ERR:%s", err);
                     return err;
                 });
             collectRet02.err;
             let collectRet = collectRet02.result;
-            if (collectRet == null || collectRet.type !== 9) {
-                throw "collectAddress is error";
-            }
+            validate(collectRet !== null, "collectAddress is error")
+            validate(collectRet.type === 9, "collectAddress is error")
             // address: wallet.address,
             // privateKey: wallet.privateKey,
             //    单个藏品铸造
@@ -207,7 +195,7 @@ function mintRouters(app) {
                     }));
                 })
                 .catch((err) => {
-                    console.log("ERR:", err);
+                    logger.debug("ERR:%s", err);
                     return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
                 });
         } catch (err) {
@@ -227,30 +215,20 @@ function mintRouters(app) {
         try {
             //  判断参数是否满足规范
             let ret01 = validateAddress(address);
-            if (!ret01.flag) {
-                throw ret01.err;
-            }
+            validate(ret01.flag, ret01.err);
 
             let ret02 = validateAddress(collectAddress);
-            if (!ret02.flag) {
-                throw ret02.err;
-            }
+            validate(ret02.flag, ret02.err);
 
             let ret03 = isJson(data);
-            if (!ret03.flag) {
-                throw ret03.err;
-            }
+            validate(ret03.flag, ret03.err);
+
             let checkURLRet = checkURL(rebackUrl);
-            if (!checkURLRet.flag) {
-                throw checkURLRet.err;
-            }
+            validate(checkURLRet.flag, checkURLRet.err)
 
             let checkURLRet1 = checkURL(file);
-            if (!checkURLRet1.flag) {
-                throw checkURLRet1.err;
-            }
+            validate(checkURLRet1.flag, checkURLRet1.err)
         } catch (e) {
-            return;
             return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
         }
         if (supply < 1) {
@@ -288,15 +266,11 @@ function mintRouters(app) {
             // 查询账户实名状况
             let collectRet02 = await exec_sql(sql);
             if (collectRet02.err != null) {
-                console.log("ERR:", collectRet02.err);
+                logger.debug("ERR:%s", collectRet02.err);
             }
             let collectRet = collectRet02.result;
-            if (
-                collectRet == null ||
-                (collectRet.type !== 10 && collectRet.type !== 12)
-            ) {
-                throw "collectAddress is error";
-            }
+            validate(collectRet !== null, "collectAddress is error")
+            validate(collectRet.type === 10 || collectRet.type === 12, "collectAddress is error")
 
             let isBal = await getString("BALANCE_" + collectRet.owner);
             if (isBal == "1") {
@@ -305,7 +279,7 @@ function mintRouters(app) {
             wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
             let balance = await wallet.provider.getBalance(collectRet.owner);
             let etherString = ethers.utils.formatEther(balance);
-            console.log("Balance: ", etherString);
+            logger.debug("Balance: %s", etherString);
             if (Number(etherString) < Number(10)) {
                 await setString("BALANCE_" + collectRet.owner, "1", 120);  // 2 min
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
@@ -383,7 +357,7 @@ function mintRouters(app) {
                     }));
                 })
                 .catch((err) => {
-                    console.log("ERR:", err);
+                    logger.debug("ERR:%s", err);
                     return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err.code, {}));
                 });
         } catch (err) {

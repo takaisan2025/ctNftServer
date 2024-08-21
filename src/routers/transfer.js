@@ -30,13 +30,22 @@ const {
 
 const {getPriKey} = require("../chain/accountProUtils");
 
-let result = null;
 // 非初始化合约地址设置
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
+const {validate} = require("./fcommon");
+const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
+const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
+const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
+
+const contractMap = {
+    9: ERC721Ctnft,
+    10: ERC1155Ctnft,
+    12: ERC1155CtnftOwner
+};
 
 function transferRouters(app) {
     app.get("/v1/test", async (req, res, next) => {
@@ -62,11 +71,8 @@ function transferRouters(app) {
                 }
 
                 let decWalletResult = await getPriKey(ret, password);
-                if (decWalletResult.err != null) {
-                    throw "invalid password";
-                } else {
-                    wallet = decWalletResult.result;
-                }
+                validate(decWalletResult.err === null, "invalid password")
+                let wallet = decWalletResult.result;
             } catch (err) {
                 throw "invalid password";
             }
@@ -81,9 +87,7 @@ function transferRouters(app) {
                     console.log("ERR:", err);
                     return err;
                 });
-            if (collectRet == null) {
-                throw "collectAddress is error";
-            }
+            validate(collectRet !== null, "collectAddress is error");
             let contractAddress = collectRet.address;
             let tamount;
             if (amount == undefined) {
@@ -97,9 +101,7 @@ function transferRouters(app) {
                 type,
                 tamount
             );
-            if (err != null) {
-                throw err;
-            }
+            validate(err === null, err)
             return res.status(200).json(
                 responseFun(RESPONSE_STATUS.SUCCESS, null, {
                     hash: hash,
@@ -125,14 +127,10 @@ function transferRouters(app) {
             let wallet;
             //  判断参数是否满足规范
             let ret01 = validateAddress(address);
-            if (!ret01.flag) {
-                throw ret01.err;
-            }
+            validate(ret01.flag, ret01.err)
 
             let ret02 = validateAddress(to);
-            if (!ret02.flag) {
-                throw ret02.err;
-            }
+            validate(ret02.flag, ret02.err)
             // if (address.toLowerCase() == to.toLowerCase()) {
             //     throw  "transfer is owner!"
             // }
@@ -168,9 +166,7 @@ function transferRouters(app) {
                 console.log("ERR:", nftObj_ret.err);
             }
             let nftObj = nftObj_ret.result;
-            if (nftObj == null) {
-                throw "nft is not exist!";
-            }
+            validate(nftObj !== null, "nft is not exist!")
             logger.debug("Over Query NFT:%s", new Date().getTime());
             let supply = nftObj["supply"];
             collectAddress = nftObj["collectAddress"];
@@ -196,10 +192,7 @@ function transferRouters(app) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "手续费余额不足!", {}));
             }
             logger.debug("Over Query Contract:%s", new Date().getTime());
-
-            if (collectDetail == null) {
-                throw "collectAddress is error";
-            }
+            validate(collectDetail !== null, "collectAddress is error")
 
             logger.debug("Start Query Account:%s", new Date().getTime());
             let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
@@ -213,9 +206,7 @@ function transferRouters(app) {
             }
 
             let checkURLRet = checkURL(rebackUrl);
-            if (!checkURLRet.flag) {
-                throw checkURLRet.err;
-            }
+            validate(checkURLRet.flag, checkURLRet.err)
 
             //
             logger.debug("Start dec account:%s", new Date().getTime());
@@ -252,15 +243,21 @@ function transferRouters(app) {
             let transObjFrom;
             let transObjTo;
             let juAmount = 0;
+
+            const contractData = contractMap[collectDetail["type"]];
+            if (contractData) {
+                contract = new ethers.Contract(
+                    collectAddress,
+                    contractData.abi, // 10 和 12 是同一个abi
+                    customHttpProvider
+                );
+            } else {
+                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "暂不受支持的合约!", null));
+            }
+
             switch (collectDetail["type"]) {
                 case 10:
                 case 12:
-                    contract = new ethers.Contract(
-                        collectAddress,
-                        ABI_const["ERC1155Ctnft"].abi, // 10 和 12 是同一个abi
-                        customHttpProvider
-                    );
-
                     // TODO 这里要进行余额判断
                     // 这里对藏品余额进行判断
                     // 这里对手续费余额进行判断
@@ -271,74 +268,67 @@ function transferRouters(app) {
                         tokenId
                     );
                     logger.debug("Over Query Balance:%s", new Date().getTime());
-                    if (balanceRet.err != null) {
-                        throw err;
-                    } else {
-                        let mainBalance = ethers.utils.formatEther(
-                            Web3.utils.hexToNumberString(balanceRet.data.balance)
-                        );
-                        let tokenBalance = Web3.utils.hexToNumberString(
-                            balanceRet.data.tokenBalance
-                        );
-                        // 这里如果是合约发行方的话, 做手续费判断   1155协议
-                        if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
-                            if (mainBalance < 50) {
-                                await setString("BALANCE_" + address, "1", 300);
-                                logger.debug("手续费余额不足:address:%s", address);
-                                throw "手续费余额不足";
-                            }
-                        }
-
-                        if (tokenBalance < amount) {
-                            logger.debug("藏品库存不足:address:%s,collectAddress:%s, tokenId:%s,",
-                                address,
-                                collectAddress,
-                                tokenId);
-                            throw "藏品库存不足";
-                        }
-                        // save db
-                        //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
-                        var sqlQueryByTokenIdAndForm = get_mysql(
-                            "trans_form_list",
-                            "insertSelective",
-                            {
-                                t_from: address,
-                                t_to: to,
-                                collectAddress: collectAddress,
-                                amount: amount,
-                                reback_url: rebackUrl,
-                                token_id: tokenId,
-                                orderId: orderId,
-                                type: collectDetail["type"],
-                                t_status: 1,
-                            }
-                        ).result;
-                        let ex_ret = await exec_sql(sqlQueryByTokenIdAndForm);
-
-                        if (ex_ret.err != null) {
-                            console.log("ERR:", ex_ret.err);
-                            console.log("ERR_JUDGE:", "ER_DUP_ENTRY" == ex_ret.err);
-                            if ("ER_DUP_ENTRY" == ex_ret.err) {
-                                await setString(orderId, "1", 300);
-                            }
-                            let isDump = await getString(orderId);
-                            console.log("isDump:", isDump);
-                            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, ""));
-                        } else {
-                            logger.debug("Out:%s", new Date().getTime());
-                            return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
-                                orderId: orderId,
-                            }));
-                        }
-
-                        break;
-                    }
-                case 9:
-                    contract = new ethers.Contract(
-                        collectAddress,
-                        ABI_const["ERC721Ctnft"].abi, // 10 和 12 是同一个abi
-                        customHttpProvider
+                    validate(balanceRet.err === null, balanceRet.err)
+                    let mainBalance = ethers.utils.formatEther(
+                        Web3.utils.hexToNumberString(balanceRet.data.balance)
                     );
+                    let tokenBalance = Web3.utils.hexToNumberString(
+                        balanceRet.data.tokenBalance
+                    );
+                    // 这里如果是合约发行方的话, 做手续费判断   1155协议
+                    if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
+                        if (mainBalance < 50) {
+                            await setString("BALANCE_" + address, "1", 300);
+                            logger.debug("手续费余额不足:address:%s", address);
+                            throw "手续费余额不足";
+                        }
+                    }
+
+                    if (tokenBalance < amount) {
+                        logger.debug("藏品库存不足:address:%s,collectAddress:%s, tokenId:%s,",
+                            address,
+                            collectAddress,
+                            tokenId);
+                        throw "藏品库存不足";
+                    }
+                    // save db
+                    //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
+                    var sqlQueryByTokenIdAndForm = get_mysql(
+                        "trans_form_list",
+                        "insertSelective",
+                        {
+                            t_from: address,
+                            t_to: to,
+                            collectAddress: collectAddress,
+                            amount: amount,
+                            reback_url: rebackUrl,
+                            token_id: tokenId,
+                            orderId: orderId,
+                            type: collectDetail["type"],
+                            t_status: 1,
+                        }
+                    ).result;
+                    let ex_ret = await exec_sql(sqlQueryByTokenIdAndForm);
+
+                    if (ex_ret.err != null) {
+                        console.log("ERR:", ex_ret.err);
+                        console.log("ERR_JUDGE:", "ER_DUP_ENTRY" == ex_ret.err);
+                        if ("ER_DUP_ENTRY" == ex_ret.err) {
+                            await setString(orderId, "1", 300);
+                        }
+                        let isDump = await getString(orderId);
+                        console.log("isDump:", isDump);
+                        return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, ""));
+                    } else {
+                        logger.debug("Out:%s", new Date().getTime());
+                        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                            orderId: orderId,
+                        }));
+                    }
+
+                    break;
+                case 9:
+
                     //    Query 协议tokenId的总发行
                     supply = 1;
 
@@ -400,16 +390,12 @@ function transferRouters(app) {
                     //判断是否是发行方,然后根据发行量进行判断
                     if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
                         // if (!supply > 0) {   // 这里再判断一次, 按理9是都是为空的
-                        if (supply - juAmount <= 0) {
-                            throw "db balance is enough!";
-                        }
+                        validate(supply - juAmount > 0, "db balance is enough!");
                         // }
                     } else {
                         // 根据数据库的转账数量来判断
                         // 不是发行方,根据数据库转入转出记录判断
-                        if (Number(juAmount) <= 0) {
-                            throw "db balance is enough!";
-                        }
+                        validate(Number(juAmount) > 0, "db balance is enough!");
                     }
 
                     // save db
@@ -442,8 +428,6 @@ function transferRouters(app) {
                     }
 
                     break;
-                default:
-                    return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "暂不受支持的合约!", null));
             }
         } catch (err) {
             return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, null));

@@ -93,7 +93,7 @@ async function betchPreaprAuth() {
 
                 let privateKeyStr = c_wallet.privateKey;
                 let verifyingContract = contractAddress;
-                privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+                privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
                 const privateKey = Buffer.from(privateKeyStr, "hex");
 
@@ -196,7 +196,6 @@ async function betchPreaprAuth() {
         betchPreaprAuth();
     }, 2000);
 }
-
 
 betchPreaprAuth();
 

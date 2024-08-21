@@ -10,6 +10,7 @@ const TRANSACTION_RECEIPT_STATUS = {
 const Lottery = require("../contract/Lottery.json");
 const ethers = require("ethers");
 const {customHttpProvider} = require("./taskConst");
+const {validate} = require("../routers/fcommon");
 let gasPrice = "5000100000000";
 let isGasPrice = false;
 
@@ -85,9 +86,7 @@ async function setSettleTask() {
             console.log("err:", err);
         });
     console.log(recept);
-    if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-        throw "Transaction Reverted";
-    }
+    validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, "Transaction Reverted")
 
     console.log("setSettleTask All Done!");
     setTimeout(() => {
@@ -165,9 +164,7 @@ async function resetTask() {
             console.log("err:", err);
         });
     console.log(recept);
-    if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-        throw "Transaction Reverted";
-    }
+    validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, "Transaction Reverted")
     console.log("resetTask All Done!");
 }
 

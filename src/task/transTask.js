@@ -4,7 +4,6 @@ const {
 const GlobalConfig = require("../config/GlobalConfig.json");
 const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
-let web3 = new Web3("http://ctblock.cn/blockChain");
 const {
     getString,
     setString,
@@ -42,7 +41,7 @@ const {findCollect} = require("../Orm/CollectService");
 const {updateNftTransaction, createNftTransaction} = require("../Orm/NftTransactionService");
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
-const provider = new ethers.providers.JsonRpcProvider("https://ctblock.cn/blockChain");
+const provider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 
 // 获取账户的 nonce
 async function getNonce(address) {
@@ -248,9 +247,9 @@ async function betchTransfer() {
                         true,
                         {
                             // The maximum units of gas for the transaction to use
-                            gasLimit: web3.utils.numberToHex(gasLimitA),
+                            gasLimit: Web3.utils.numberToHex(gasLimitA),
                             // The price (in wei) per unit of gas
-                            // gasPrice: web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
+                            // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                             // The nonce to use in the transaction
                             nonce: nonce,
                             // The amount to send with the transaction (i.e. msg.value)
@@ -370,10 +369,10 @@ async function betchTransfer() {
 
                     let overrides = {
                         // The maximum units of gas for the transaction to use
-                        gasLimit: web3.utils.numberToHex(gasLimit),
-                        // gasLimit: web3.utils.numberToHex(80000),
+                        gasLimit: Web3.utils.numberToHex(gasLimit),
+                        // gasLimit: Web3.utils.numberToHex(80000),
                         // The price (in wei) per unit of gas
-                        // gasPrice: web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
+                        // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
                         // The nonce to use in the transaction
                         nonce: nonce,
                         // The amount to send with the transaction (i.e. msg.value)
@@ -513,7 +512,7 @@ async function authUser(walletUser) {
 
     let privateKeyStr = c_wallet.privateKey;
     let verifyingContract = contractAddress;
-    privateKeyStr = web3.utils.stripHexPrefix(privateKeyStr);
+    privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
     const privateKey = Buffer.from(privateKeyStr, "hex");
 
@@ -623,7 +622,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
         nonce: nonce,
-        value: web3.utils.toHex(value),
+        value: Web3.utils.toHex(value),
     };
 
     let txTransfer = await walletSys.sendTransaction(tx);

@@ -14,7 +14,6 @@ const {
     isEmpty,
 } = require("../rules/rules");
 const ethers = require("ethers");
-const GlobalConfig = require("../config/GlobalConfig.json");
 const ABI_const = require("../contract/ABI_const.js");
 const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
@@ -64,6 +63,7 @@ function createContractRouters(app) {
             let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
                 address: address,
             });
+
             let ret03 = await exec_sql(sqlResult.result);
 
             let ret = ret03.result;
@@ -114,16 +114,16 @@ function createContractRouters(app) {
             let necelibyInit = ethers.utils.formatEther(
                 (gasPrice * gaslimitInit).toString()
             );
-            logger.debug("neceliby*:", neceliby);
-            logger.debug("necelibyInit*:", necelibyInit);
-            logger.debug("gaslimitInit:", gaslimitInit);
+            logger.debug("neceliby*:%s", neceliby);
+            logger.debug("necelibyInit*:%s", necelibyInit);
+            logger.debug("gaslimitInit:%s", gaslimitInit);
             let necelibyTotal = Number(neceliby) + Number(necelibyInit);
             let balance = await wallet.provider.getBalance(address);
             // 余额是 BigNumber (in wei); 格式化为 ether 字符串
             let etherString = ethers.utils.formatEther(balance);
-            logger.debug("Balance: ", etherString);
+            logger.debug("Balance: %s", etherString);
             // 计算初始化合约费用
-            logger.debug("judge balance enough:", Number(balance) < Number(necelibyTotal));
+            logger.debug("judge balance enough:%s", Number(balance) < Number(necelibyTotal));
             if (Number(etherString) < Number(necelibyTotal)) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户余额不足!", {}));
             }

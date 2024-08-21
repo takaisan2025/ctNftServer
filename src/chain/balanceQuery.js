@@ -1,5 +1,4 @@
 const Web3 = require("web3");
-let web3 = new Web3("http://ctblock.cn/blockChain");
 
 const ethers = require("ethers");
 const GlobalConfig = require("../config/GlobalConfig.json");
@@ -21,7 +20,7 @@ async function balanceQuery(address, collectAddress, tokenId) {
         );
         return {
             err: null,
-            data: web3.utils.hexToNumberString(accountBalance)
+            data: Web3.utils.hexToNumberString(accountBalance)
         };
     } catch (err) {
         return {err: err, data: null}

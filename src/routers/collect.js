@@ -4,13 +4,15 @@ const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
 const JiFenToken = require("../contract/JiFenToken.json");
 const Web3 = require("web3");
-
+const pino = require("pino");
+const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 const GlobalConfig = require("../config/GlobalConfig.json");
 const {TRANSACTION_RECEIPT_STATUS} = require("../task/taskConst");
 const {web3} = require("../task/taskConst");
 let privateKeyJifen = GlobalConfig.SCORE_ACCOUNT.private_key; // mint pri
 
 const {customHttpProvider} = require("../task/taskConst");
+const {validate} = require("./fcommon");
 
 const contractMap = {
     9: ERC721Ctnft,
@@ -51,11 +53,11 @@ async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
     let contract = await factory.deploy(overrides);
     // 部署交易有一旦挖出，合约地址就可用
     // 参考: https://ropsten.etherscan.io/address/0x2bd9aaa2953f988153c8629926d22a6a5f69b14e
-    console.log(contract.address);
+    logger.debug(contract.address);
     // "0x2bD9aAa2953F988153c8629926D22A6a5F69b14E"
     // 发送到网络用来部署合约的交易
     // 查看: https://ropsten.etherscan.io/tx/0x159b76843662a15bd67e482dcfbee55e8e44efad26c5a614245e12a00d4b1a51
-    console.log(contract.deployTransaction.hash);
+    logger.debug(contract.deployTransaction.hash);
     // "0x159b76843662a15bd67e482dcfbee55e8e44efad26c5a614245e12a00d4b1a51"
     //合约还没有部署;我们必须等到它被挖出
     if (wait == true) {
@@ -91,8 +93,8 @@ async function createCollectV2Call(type, wallet) {
                 from: wallet.address,
             },
             (err, gaslimit) => {
-                // console.log("err\n:" + err);
-                // console.log("gas:\n" + gaslimit);
+                // logger.debug("err\n:" + err);
+                // logger.debug("gas:\n" + gaslimit);
                 resolve({err, gaslimit});
             }
         );
@@ -131,7 +133,7 @@ async function collectInit(
                     return ret;
                 })
                 .catch((err) => {
-                    console.log("err:", err);
+                    logger.debug("err:", err);
                     return err;
                 });
 
@@ -141,12 +143,10 @@ async function collectInit(
                     return ret;
                 })
                 .catch((err) => {
-                    console.log("err:", err);
+                    logger.debug("err:", err);
                 });
-            console.log(recept);
-            if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                throw "Transaction Reverted";
-            }
+            // logger.debug(recept);
+            validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, 'Transaction Reverted');
             return {err: null, hash: tx.hash};
         } catch (err) {
             return {err: err, hash: null};
@@ -187,7 +187,7 @@ async function collectInitCall(
             return {err: null, gaslimit: ret};
         })
         .catch((err) => {
-            console.log("err:", err);
+            logger.debug("err:", err);
             return {err: err, gaslimit: null};
         });
     return {err, gaslimit};
@@ -209,7 +209,7 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
                 return ret;
             })
             .catch((err) => {
-                console.log("err:", err);
+                logger.debug("err:", err);
                 return err;
             });
         let recept = await customHttpProvider
@@ -218,13 +218,10 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
                 return ret;
             })
             .catch((err) => {
-                console.log("err:", err);
+                logger.debug("err:", err);
             });
-        // console.log(recept);
-        if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-            throw "Transaction Reverted";
-        }
-
+        // logger.debug(recept);
+        validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, "Transaction Reverted")
         return {err: null, hash: tx.hash};
     } catch (err) {
         return {err: err, hash: null};

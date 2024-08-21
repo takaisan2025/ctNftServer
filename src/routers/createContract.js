@@ -18,7 +18,8 @@ const GlobalConfig = require("../config/GlobalConfig.json");
 const ABI_const = require("../contract/ABI_const.js");
 const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
-
+const pino = require("pino");
+const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 // 非初始化合约地址设置
 const ERC721CtnftExample = "0x0F4b3B9EcfD11444cB139dB98DB9aB0Ec417705E";
 const ERC1155CtnftExample = "0xeB3AD009272D6C5f045f3d5EaD0ef0e47930877d";
@@ -34,6 +35,7 @@ const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
+const {validate} = require("./fcommon");
 
 function createContractRouters(app) {
 
@@ -48,14 +50,10 @@ function createContractRouters(app) {
             }
 
             let ret01 = validateAddress(address);
-            if (!ret01.flag) {
-                throw ret01.err;
-            }
+            validate(ret01.flag, ret01.err);
 
             let ret02 = isJson(cMetadata);
-            if (!ret02.flag) {
-                throw ret02.err;
-            }
+            validate(ret02.flag, ret02.err);
 
             if (JSON.stringify(cMetadata).indexOf("{") == -1) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "invalid paramter data", {}));
@@ -63,7 +61,6 @@ function createContractRouters(app) {
 
             // 判断实名
             // 这里好像不需要判断实名, 因为这里一般都是项目方调用, 不会有手续费垫付的情况发生
-
             let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
                 address: address,
             });
@@ -74,15 +71,9 @@ function createContractRouters(app) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
             }
 
-            if (ret.psd != password) {
-                throw "invalid password";
-            }
-            if (!cMetadata.tokenUrlPrefix) {
-                throw "invalid tokenUrlPrefix";
-            }
-            if (!cMetadata.tokenUrlPrefix.endsWith("/")) {
-                throw "invalid tokenUrlPrefix endsWith /";
-            }
+            validate(ret.psd === password, "invalid password");
+            validate(cMetadata.tokenUrlPrefix, "invalid tokenUrlPrefix");
+            validate(cMetadata.tokenUrlPrefix.endsWith("/"), "invalid tokenUrlPrefix endsWith /");
 
             let wallet;
 
@@ -111,11 +102,11 @@ function createContractRouters(app) {
             errInit = initResult.err;
             gaslimitInit = initResult.gaslimit;
             if (err != null) {
-                console.log("createCollectV2Call faild");
+                logger.debug("createCollectV2Call faild");
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
             }
             if (errInit != null) {
-                console.log("createCollectV2Call faild");
+                logger.debug("createCollectV2Call faild");
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, errInit, {}));
             }
             //    赠送合约手续费
@@ -123,16 +114,16 @@ function createContractRouters(app) {
             let necelibyInit = ethers.utils.formatEther(
                 (gasPrice * gaslimitInit).toString()
             );
-            console.log("neceliby*:", neceliby);
-            console.log("necelibyInit*:", necelibyInit);
-            console.log("gaslimitInit:", gaslimitInit);
+            logger.debug("neceliby*:", neceliby);
+            logger.debug("necelibyInit*:", necelibyInit);
+            logger.debug("gaslimitInit:", gaslimitInit);
             let necelibyTotal = Number(neceliby) + Number(necelibyInit);
             let balance = await wallet.provider.getBalance(address);
             // 余额是 BigNumber (in wei); 格式化为 ether 字符串
             let etherString = ethers.utils.formatEther(balance);
-            console.log("Balance: ", etherString);
+            logger.debug("Balance: ", etherString);
             // 计算初始化合约费用
-            console.log("余额是否充足:", Number(balance) < Number(necelibyTotal));
+            logger.debug("judge balance enough:", Number(balance) < Number(necelibyTotal));
             if (Number(etherString) < Number(necelibyTotal)) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户余额不足!", {}));
             }
@@ -162,21 +153,18 @@ function createContractRouters(app) {
                 gaslimitInit
             );
             if (result1.err != null) {
-                console.log("txTransfer faild");
+                logger.debug("txTransfer faild");
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, result1.err, {}));
             }
-            let contractName;
-            if (type == 10) {
-                contractName = ABI_const["ERC721Ctnft"].contractName;
-            } else if (type == 12) {
-                contractName = ABI_const["ERC1155CtnftOwner"].contractName;
-            } else if (type == 9) {
-                contractName = ABI_const["ERC1155Ctnft"].contractName;
-            } else if (type == 1) {
-                contractName = ABI_const["CtnftMToken"].contractName;
-            } else {
-                contractName = "";
-            }
+            const contractMap = {
+                10: "ERC721Ctnft",
+                12: "ERC1155CtnftOwner",
+                9: "ERC1155Ctnft",
+                1: "CtnftMToken"
+            };
+
+            const contractName = contractMap[type] ? ABI_const[contractMap[type]].contractName : "";
+
             //  插入收藏夹到数据库
             let collect = {
                 address: collectAddress,
@@ -203,6 +191,7 @@ function createContractRouters(app) {
                 return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, ret04.err, {}));
             }
         } catch (err) {
+            logger.debug(err)
             return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }
     });

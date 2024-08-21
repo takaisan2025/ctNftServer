@@ -2,8 +2,8 @@ const ethers = require("ethers");
 const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
-const CtnftMToken = require("../contract/CtnftMToken.json");
 const JiFenToken = require("../contract/JiFenToken.json");
+const Web3 = require("web3");
 
 const GlobalConfig = require("../config/GlobalConfig.json");
 const {TRANSACTION_RECEIPT_STATUS} = require("../task/taskConst");
@@ -12,37 +12,41 @@ let privateKeyJifen = GlobalConfig.SCORE_ACCOUNT.private_key; // mint pri
 
 const {customHttpProvider} = require("../task/taskConst");
 
+const contractMap = {
+    9: ERC721Ctnft,
+    10: ERC1155Ctnft,
+    12: ERC1155CtnftOwner
+};
+
+const contractInitMap = {
+    9: "__ERC721Ctnft_init",
+    10: "__ERC1155Ctnft_init",
+    12: "__ERC1155Ctnft_init"
+};
+
 // 创建收藏夹 ERC1155 支持懒铸造
 async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
     let overrides = {
         // The maximum units of gas for the transaction to use
-        gasLimit: web3.utils.numberToHex(gasLimit),
+        gasLimit: Web3.utils.numberToHex(gasLimit),
         // The price (in wei) per unit of gas
-        gasPrice: web3.utils.numberToHex(gasPrice),
+        gasPrice: Web3.utils.numberToHex(gasPrice),
     };
+
+    const contractData = contractMap[type];
+
     // 常见合约工厂实例
     let factory;
-    if (type == 10) {
+    if (contractData) {
         factory = new ethers.ContractFactory(
-            ERC1155Ctnft.abi,
-            ERC1155Ctnft.bytecode,
-            wallet
-        );
-    } else if (type == 12) {
-        factory = new ethers.ContractFactory(
-            ERC1155CtnftOwner.abi,
-            ERC1155CtnftOwner.bytecode,
-            wallet
-        );
-    } else if (type == 9) {
-        factory = new ethers.ContractFactory(
-            ERC721Ctnft.abi,
-            ERC721Ctnft.bytecode,
+            contractData.abi,
+            contractData.bytecode,
             wallet
         );
     } else {
         return null;
     }
+
     // 请注意，我们将 "Hello World" 作为参数传递给合约构造函数constructor
     let contract = await factory.deploy(overrides);
     // 部署交易有一旦挖出，合约地址就可用
@@ -62,27 +66,15 @@ async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
 }
 
 async function createCollectV2Call(type, wallet) {
+
+    const contractData = contractMap[type];
+
     // 常见合约工厂实例
     let factory;
-    if (type == 10) {
-        //  1155
+    if (contractData) {
         factory = new ethers.ContractFactory(
-            ERC1155Ctnft.abi,
-            ERC1155Ctnft.bytecode,
-            wallet
-        );
-    } else if (type == 9) {
-        //  721
-        factory = new ethers.ContractFactory(
-            ERC721Ctnft.abi,
-            ERC721Ctnft.bytecode,
-            wallet
-        );
-    } else if (type == 12) {
-        //  721
-        factory = new ethers.ContractFactory(
-            ERC1155CtnftOwner.abi,
-            ERC1155CtnftOwner.bytecode,
+            contractData.abi,
+            contractData.bytecode,
             wallet
         );
     } else {
@@ -120,85 +112,21 @@ async function collectInit(
     wallet,
     gaslimitInit
 ) {
-    if (type == 10) {
-        try {
-            let contract = new ethers.Contract(
-                collectAddress,
-                ERC1155Ctnft.abi,
-                customHttpProvider
-            );
-            let contractWithSigner = contract.connect(wallet);
-            let tx = await contractWithSigner
-                .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {gasLimit: gaslimitInit})
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("err:", err);
-                    return err;
-                });
-            let recept = await customHttpProvider
-                .waitForTransaction(tx.hash)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("err:", err);
-                });
-            // console.log(recept);
-            if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                throw "Transaction Reverted";
-            }
 
-            return {err: null, hash: tx.hash};
-        } catch (err) {
-            return {err: err, hash: null};
-        }
-    } else if (type == 12) {
-        try {
-            let contract = new ethers.Contract(
-                collectAddress,
-                ERC1155CtnftOwner.abi,
-                customHttpProvider
-            );
-            let contractWithSigner = contract.connect(wallet);
-            let tx = await contractWithSigner
-                .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {gasLimit: gaslimitInit})
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("err:", err);
-                    return err;
-                });
-            let recept = await customHttpProvider
-                .waitForTransaction(tx.hash)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("err:", err);
-                });
-            // console.log(recept);
-            if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-                throw "Transaction Reverted";
-            }
+    const contractData = contractMap[type];
+    let contract = new ethers.Contract(
+        collectAddress,
+        contractData.abi,
+        customHttpProvider
+    );
 
-            return {err: null, hash: tx.hash};
-        } catch (err) {
-            return {err: err, hash: null};
-        }
-    } else if (type == 9) {
-        // 721
+    const contractInitData = contractInitMap[type];
+
+    let contractWithSigner = contract.connect(wallet);
+    if (contractData) {
         try {
-            let contract = new ethers.Contract(
-                collectAddress,
-                ERC721Ctnft.abi,
-                customHttpProvider
-            );
-            let contractWithSigner = contract.connect(wallet);
             let tx = await contractWithSigner
-                .__ERC721Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {gasLimit: gaslimitInit})
+                [contractInitData](name, symbol, tokenUrlPrefix, contractUrl, {gasLimit: gaslimitInit})
                 .then((ret) => {
                     return ret;
                 })
@@ -206,6 +134,7 @@ async function collectInit(
                     console.log("err:", err);
                     return err;
                 });
+
             let recept = await customHttpProvider
                 .waitForTransaction(tx.hash)
                 .then((ret) => {
@@ -218,7 +147,6 @@ async function collectInit(
             if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
                 throw "Transaction Reverted";
             }
-
             return {err: null, hash: tx.hash};
         } catch (err) {
             return {err: err, hash: null};
@@ -226,6 +154,7 @@ async function collectInit(
     } else {
         return {err: "未实现的合约类型", hash: null};
     }
+
 }
 
 async function collectInitCall(
@@ -237,58 +166,32 @@ async function collectInitCall(
     collectAddressMap,
     wallet,
 ) {
-    if (type == 10) {
-        let contract = new ethers.Contract(
-            collectAddressMap['10'],
-            ERC1155Ctnft.abi,
-            customHttpProvider
-        );
-        let {err, gaslimit} = await contract.estimateGas
-            .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {from: "0x269153639cd53a0e41841801a149824c320f1d29"})
-            .then((ret) => {
-                return {err: null, gaslimit: ret};
-            })
-            .catch((err) => {
-                // console.log("err:", err);
-                return {err: err, gaslimit: null};
-            });
-        return {err, gaslimit};
-    } else if (type == 12) {
-        let contract = new ethers.Contract(
-            collectAddressMap['12'],
-            ERC1155CtnftOwner.abi,
-            customHttpProvider
-        );
-        let {err, gaslimit} = await contract.estimateGas
-            .__ERC1155Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {from: "0x269153639cd53a0e41841801a149824c320f1d29"})
-            .then((ret) => {
-                return {err: null, gaslimit: ret};
-            })
-            .catch((err) => {
-                console.log("err:", err);
-                return {err: err, gaslimit: null};
-            });
-        return {err, gaslimit};
-    } else if (type == 9) {
-        // 721
-        let contract = new ethers.Contract(
-            collectAddressMap['9'],
-            ERC721Ctnft.abi,
-            customHttpProvider
-        );
-        let {err, gaslimit} = await contract.estimateGas
-            .__ERC721Ctnft_init(name, symbol, tokenUrlPrefix, contractUrl, {from: "0x269153639cd53a0e41841801a149824c320f1d29"})
-            .then((ret) => {
-                return {err: null, gaslimit: ret};
-            })
-            .catch((err) => {
-                console.log("err:", err);
-                return {err: err, gaslimit: null};
-            });
-        return {err, gaslimit};
+
+    const contractData = contractMap[type];
+    let contract = new ethers.Contract(
+        collectAddressMap[String(type)],
+        contractData.abi,
+        customHttpProvider
+    );
+
+    const contractInitData = contractInitMap[type];
+    if (contractData) {
+
     } else {
         return {err: "未实现的合约类型", gaslimit: null};
     }
+
+    let {err, gaslimit} = await contract.estimateGas
+        [contractInitData](name, symbol, tokenUrlPrefix, contractUrl, {from: "0x269153639cd53a0e41841801a149824c320f1d29"})
+        .then((ret) => {
+            return {err: null, gaslimit: ret};
+        })
+        .catch((err) => {
+            console.log("err:", err);
+            return {err: err, gaslimit: null};
+        });
+    return {err, gaslimit};
+
 }
 
 async function sendCTI(collectAddress, toAddress, type, amount) {
@@ -317,7 +220,7 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
             .catch((err) => {
                 console.log("err:", err);
             });
-        console.log(recept);
+        // console.log(recept);
         if (recept.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
             throw "Transaction Reverted";
         }

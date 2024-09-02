@@ -15,6 +15,7 @@ const {
     lrange,
     lrem,
 } = require("../redis/redis-client");
+const {updateTransFormList} = require("../Orm/TransFormListService");
 
 async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
     const betchCallFundFlag = name + "_START";
@@ -90,18 +91,10 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                         let responseRet = {data: null, err: "The string contains 'chaonft.cn/'.", ori_data: url};
 
                         console.log("回调接口失败,", responseRet.ori_data.orderId);
-                        let query_params = {
-                            t_status: endStatus, // 回调失败
-                            id: responseRet.ori_data.id
-                        };
-                        console.log("nftUpdateSelective:", query_params);
-
-                        let sqlUp = get_mysql(
-                            "trans_form_list",
-                            "updateByPrimaryKeySelective",
-                            query_params
-                        ).result;
-                        await exec_sql(sqlUp);
+                        let trans_from_obj = {
+                            t_status: 21, // 永不回调
+                        }
+                        await updateTransFormList(_params = trans_from_obj, _where = {id: responseRet.ori_data.id})
                     } else {
                         console.log("The string does not contain 'chaonft.cn/'.");
                         fetch(url.url, url.requestOptions)

@@ -40,6 +40,8 @@ const TransFormListModel = sequelize.define('trans_form_list', {
     nonce: DataTypes.STRING,
     // '交易对应的nonce',
 
+    vm_err: DataTypes.STRING, // '错误信息',
+    remark: DataTypes.STRING, // '备注',
 }, {
     //默认false修改表名为复数,true不修改表名，与数据库表名同步
     freezeTableName: true,

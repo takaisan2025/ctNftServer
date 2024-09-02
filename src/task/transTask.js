@@ -340,7 +340,8 @@ async function betchTransfer() {
                         "execution reverted: ERC1155: transfer to non ERC1155Receiver implementer" == gasLimitRet.err
                     ) {
                         let trans_from_obj = {
-                            t_status: 3  // 上链失败
+                            t_status: 3,  // 上链失败
+                            vm_err: gasLimitRet.err
                         };
 
                         console.log("nftUpdateSelective:", trans_from_obj);
@@ -426,7 +427,8 @@ async function betchTransfer() {
                     } else {
                         if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
                             let trans_from_obj = {
-                                t_status: 3 // 上链成功
+                                t_status: 3, // 上链失败
+                                vm_err: gasLimitRet.err
                             };
                             console.log("nftUpdateSelective:", trans_from_obj);
                             await updateTransFormList(_params = trans_from_obj, _where = {id: id})

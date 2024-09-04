@@ -4,8 +4,8 @@ const RESPONSE_STATUS = {
     SUCCESS: 200,
     ERROR: 500,
 };
-let PasswordError = responseFun(500, "invalid password", {})
-let PasswordEmpty = responseFun(500, "password 不能为空!", {})
+let PasswordError = responseFun(RESPONSE_STATUS.ERROR, "invalid password", {})
+let PasswordEmpty = responseFun(RESPONSE_STATUS.ERROR, "password 不能为空!", {})
 
 module.exports = {
     PasswordError,

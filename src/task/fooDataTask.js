@@ -180,7 +180,7 @@ async function createContract1155(address, password, name, symbol) {
     }).then(resp => {
         return resp.json()
     }).then(ret => {
-        return {code: 500, result: ret}
+        return {code: RESPONSE_STATUS.ERROR, result: ret}
     })
 }
 
@@ -207,7 +207,7 @@ async function createNft1155(address, password, contract, author, authorDesc, de
     }).then(resp => {
         return resp.json()
     }).then(ret => {
-        return {code: 500, result: ret}
+        return {code: RESPONSE_STATUS.ERROR, result: ret}
     })
 }
 
@@ -229,9 +229,9 @@ async function transferNft1155(address, password, contract, tokenid, toAddr) {
     }).then(resp => {
         return resp.json()
     }).then(ret => {
-        return {code: 200, result: ret}
+        return {code: RESPONSE_STATUS.SUCCESS, result: ret}
     }).catch(err => {
-        return {code: 500, result: err}
+        return {code: RESPONSE_STATUS.ERROR, result: err}
     })
 }
 
@@ -263,7 +263,7 @@ function main() {
 
     //铸造藏品
     // createNft1155(acc.address, acc.password, acc.contract, auth.author, auth.description, auth.work, auth.file, auth.title).then(r => {
-    //     if (r.code && r.code === 500) {
+    //     if (r.code && r.code === RESPONSE_STATUS.ERROR) {
     //         //     出错了
     //         console.log(r.code)
     //         console.log(r.result)

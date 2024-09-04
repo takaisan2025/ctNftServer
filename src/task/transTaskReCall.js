@@ -5,7 +5,7 @@ async function betchCallFund() {
         "betchCallFund",
         8,
         "selectByStatusAndLimit",
-        {t_status: 6, limit: 100}
+        {t_status: 6}
     );
 }
 

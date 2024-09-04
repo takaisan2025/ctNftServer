@@ -1,14 +1,6 @@
-const {
-    exec_sql,
-    exec_sql_all,
-} = require("../controller/ctnft");
 const Web3 = require("web3");
 let web3 = new Web3("http://ctblock.cn/blockChain");
 
-const TRANSACTION_RECEIPT_STATUS = {
-    SUCCESS: 1,
-    REVERTED: 0,
-};
 
 const {
     getString,
@@ -18,8 +10,7 @@ const {
     lrange,
     lrem,
 } = require("../redis/redis-client");
-const ethUtil = require("ethereumjs-util");
-const {get_mysql} = require("../db/genSql");
+const {updateTransFormList, findTransFormListAll} = require("../Orm/TransFormListService");
 const betchHashQueryFlag = "betchHashQuery_START";
 
 async function betchHashQuery() {
@@ -29,13 +20,15 @@ async function betchHashQuery() {
     } else {
         await setString(betchHashQueryFlag, "1", 60)
         console.time("betchHashQuery")
-        let params = {t_status: 5};
-        let sql = get_mysql(
-            "trans_form_list",
-            "selectByStatus",
-            params
-        ).result;
-        let transList_ret = await exec_sql_all(sql)
+
+        let transList_ret = await findTransFormListAll(_param = {
+            where: {
+                t_status: 5
+            },
+            offset: 0,
+            limit: 500,
+        })
+
         let transList = []
         if (transList_ret.err != null) {
             console.trace("ERR:", transList_ret.err);
@@ -76,18 +69,11 @@ async function betchHashQuery() {
                     }
                     let trans_from_obj = {
                         t_status: t_statusStorage, // 6 成功,7 失败
-                        id: id
                     };
                     console.log("nftUpdateSelective:", trans_from_obj);
 
-                    let paramsUp = trans_from_obj;
-                    let sqlUp = get_mysql(
-                        "trans_form_list",
-                        "updateByPrimaryKeySelective",
-                        paramsUp
-                    ).result;
-                    await exec_sql(sqlUp);
-
+                    console.log("nftUpdateSelective:", trans_from_obj);
+                    await updateTransFormList(_params = trans_from_obj, _where = {id: id})
                 }
             } catch (e) {
                 console.error(e)

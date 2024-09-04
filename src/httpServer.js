@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-const express = require("express");
+"use strict";const express = require("express");
 const {createServer} = require("http");
 const redisClient = require('./redis/redis')
 const accountRoutes = require("./routers/account");

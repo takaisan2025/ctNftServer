@@ -1,4 +1,4 @@
-const fetch = require("node-fetch");
+"use strict";const fetch = require("node-fetch");
 const Web3 = require("web3");
 const {
     isJson,

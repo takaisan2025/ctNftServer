@@ -1,3 +1,4 @@
+"use strict";
 const ethers = require("ethers");
 const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");

@@ -1,31 +1,32 @@
+"use strict";
 const NftTransaction = require('./NftTransactionModel');
-const Account = require("./AccountModel");
+const {pro_err} = require("./pErr");
 
 
 async function findNftTransaction(_param) {
     try {
         const nftTransactions = await NftTransaction.findAll(_param);
-        return {code: 0, result: nftTransactions};
+        return {err: null, result: nftTransactions};
     } catch (error) {
-        return {code: 1, result: error};
+        return {result: null, err: error};
     }
 }
 
 async function updateNftTransaction(_params, _where) {
     try {
         const res = await NftTransaction.update(_params, _where)
-        return {code: 0, result: res};
+        return {err: null, result: res};
     } catch (error) {
-        return {code: 1, result: error};
+        return {result: null, err: error};
     }
 }
 
 async function createNftTransaction(_obj) {
     try {
-        const res = NftTransaction.create(_obj)
-        return {code: 0, result: res};
+        const res = await NftTransaction.create(_obj)
+        return {err: null, result: res};
     } catch (error) {
-        return {code: 1, result: error};
+        return {result: null, err: pro_err(error)};
     }
 }
 

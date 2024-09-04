@@ -3,7 +3,6 @@ mybatisMapper.createMapper([
     "src/mapper/xml/collect.xml",
     "src/mapper/xml/nft.xml",
     "src/mapper/xml/TransFormListMapper.xml",
-    "src/mapper/xml/TransFormListMapper.xml",
     "src/mapper/xml/NftUserAccesListMapper.xml",
     "src/mapper/xml/NftUserAddressListMapper.xml",
     "src/mapper/xml/AccountMapper.xml",

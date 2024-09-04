@@ -9,6 +9,7 @@ const ERC1155CtnftOwner = require("./ERC1155CtnftOwner.json");
 const JiFenToken = require("./JiFenToken.json");
 const Lottery = require("./Lottery.json");
 const ScoreToken = require("./ScoreToken.json");
+const AuthCall = require("./AuthCall.json");
 const ABI_const = {
     AuthController,
     AuthControllerV2,
@@ -20,6 +21,7 @@ const ABI_const = {
     ERC1155CtnftOwner,
     JiFenToken,
     Lottery,
+    AuthCall,
     ScoreToken
 }
 module.exports = ABI_const;

@@ -1,4 +1,4 @@
-const {isEmpty} = require("../rules/rules");
+"use strict";const {isEmpty} = require("../rules/rules");
 const {
     getString,
     setString,

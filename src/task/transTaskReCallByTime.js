@@ -1,5 +1,7 @@
 const {betchCallFundUtils} = require("./transTaskReCallUtils");
 const {formatTime} = require("./taskConst");
+const {Op} = require('sequelize')
+
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
 async function betchCallByTime() {
@@ -9,7 +11,11 @@ async function betchCallByTime() {
         "betchCallByTime",
         18,
         "selectByStatusAndCreateTime",
-        {t_status: 18, create_time: dataStr}
+        {
+            t_status: 18, create_time: {
+                [Op.gte]: dataStr
+            }
+        }
     );
 
 }

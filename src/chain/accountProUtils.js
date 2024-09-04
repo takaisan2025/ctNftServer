@@ -1,4 +1,4 @@
-const Web3 = require("web3");
+"use strict";const Web3 = require("web3");
 let web3 = new Web3("http://ctblock.cn/blockChain");
 const {PasswordError} = require("./responseError");
 const {
@@ -13,11 +13,11 @@ const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 async function getPriKey(account, password) {
     try {
 
-        if (isEmpty(account.private_key).flag == true) {
+        if (isEmpty(account.private_key)) {
 
             let privateKeyByRedis = await getString("PRIVATE_KEY" + account.address + "_" + password);
 
-            if (isEmpty(privateKeyByRedis).flag == true) {
+            if (isEmpty(privateKeyByRedis)) {
             // if (true) {
                 logger.debug("Decode privateKey, no found key!:%s", account.address);
                 let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(account.keystore).toLowerCase()), password);

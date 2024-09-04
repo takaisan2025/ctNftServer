@@ -82,7 +82,7 @@ async function SubmitTransactionTask() {
                 limit: 500
             });
 
-            if (nftTransactions.code === 0) {
+            if (nftTransactions.err === null) {
                 let transList = nftTransactions.result;
 
                 for (let retKey in transList) {
@@ -104,9 +104,9 @@ async function SubmitTransactionTask() {
                         if (GlobalConfig.FEE_ACCOUNT.address.toLowerCase() === from.toLowerCase()) {
                             wallet = new ethers.Wallet(GlobalConfig.FEE_ACCOUNT.private_key, customHttpProvider);
                         } else {
-                            let sUserAccountDetail01 = await findAccount(_where = {address: from})
-                            if (sUserAccountDetail01.code === 0) {
-                                let sUserAccountDetail = sUserAccountDetail01.result[0]
+                            let sUserAccountDetail01 = await findAccount({address: from})
+                            if (sUserAccountDetail01.err === null) {
+                                let sUserAccountDetail = sUserAccountDetail01.result
                                 // 直接上链
                                 let decWalletResult = await getPriKey(sUserAccountDetail, sUserAccountDetail.psd);
                                 // 这里暂时指定私钥, 后面不能指定
@@ -131,13 +131,13 @@ async function SubmitTransactionTask() {
                         let funData = JSON.parse(origin_data);
 
                         //  这里做特殊的实名处理
-                        if (mightBeJson(origin_value)) {
-                            let origin_value_json = JSON.parse(origin_value)
-                            funData[0].authLevel = 8;
-                            funData[0].expandData = `0x${ethUtil
-                                .keccak256(Buffer.from(`${origin_value_json.name}#${origin_value_json.id}#${origin_value_json.mobile}`))
-                                .toString("hex")}`;
-                        }
+                        // if (mightBeJson(origin_value)) {
+                        //     let origin_value_json = JSON.parse(origin_value)
+                        //     funData[0].authLevel = 8;
+                        //     funData[0].expandData = `0x${ethUtil
+                        //         .keccak256(Buffer.from(`${origin_value_json.name}#${origin_value_json.id}#${origin_value_json.mobile}`))
+                        //         .toString("hex")}`;
+                        // }
 
                         let contractWithSignerToken = contractToken.connect(wallet);
                         let gasLimitRet = await contractWithSignerToken.estimateGas[methodName](
@@ -218,7 +218,7 @@ async function SubmitTransactionTask() {
                                 let result02 = await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}},)
 
                                 if (result02.err != null) {
-                                    console.trace(responseFun(500, result02.err, ""), id);
+                                    console.trace(responseFun(RESPONSE_STATUS.ERROR, result02.err, ""), id);
                                     continue;
                                 }
 
@@ -311,7 +311,7 @@ async function TransactionHashQueryTask() {
                 limit: 500
             });
 
-            if (nftTransactions.code === 0) {
+            if (nftTransactions.err === null) {
                 let transList = nftTransactions.result;
 
                 for (let retKey in transList) {

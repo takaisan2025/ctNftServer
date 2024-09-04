@@ -157,7 +157,7 @@ async function betchGive() {
                 return ret;
             })
             .catch((err) => {
-                console.error(responseFun(500, err, ""), id);
+                console.error(responseFun(RESPONSE_STATUS.ERROR, err, ""), id);
             });
         console.log("update TransFrom data:", result);
         await updateNonce(wallet.address, transactionCount1Mint + 1);
@@ -225,7 +225,7 @@ async function betchHashQuery() {
                 return ret;
             })
             .catch((err) => {
-                console.error(responseFun(500, err, ""), id);
+                console.error(responseFun(RESPONSE_STATUS.ERROR, err, ""), id);
             });
     }
     console.log("betchHashQuery All Done!");

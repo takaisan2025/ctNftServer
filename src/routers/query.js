@@ -1,7 +1,4 @@
-const {
-    nftSelectSelective,
-    exec_sql,
-} = require("../controller/ctnft");
+"use strict";
 const ethers = require("ethers");
 const Web3 = require("web3");
 
@@ -11,25 +8,24 @@ const {
 
 // 非初始化合约地址设置
 const {responseFun} = require("../mapper/account");
-const {get_mysql} = require("../db/genSql");
 const {RESPONSE_STATUS} = require("../chain/responseError");
-
-async function dashFun(sql) {
-    return (await exec_sql(sql)).result['count(0)']
-}
+const {findTransFormListOne} = require("../Orm/TransFormListService");
+const {find_nfts, count_nft} = require("../services/nftService");
+const {count_trans} = require("../services/transFormListService");
+const {setString} = require("../redis/redis-client");
 
 function queryRouters(app) {
 
     // 查询和批量查询
     app.post("/api/account/queryNft", async (req, res, next) => {
         const {tokenIds} = req.body;
-        const result = nftSelectSelective(tokenIds);
+        const result = find_nfts(tokenIds);
         return result
             .then((ret) => {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", ret));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", ret.result));
             })
             .catch((err) => {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, ""));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, ""));
             });
     })
 
@@ -38,44 +34,41 @@ function queryRouters(app) {
         const {orderId} = req.body;
 
         // 这里首先查询链上, 链上不存在再查询数据库
-        var sqlQueryByOrderId = get_mysql(
-            "trans_form_list",
-            "selectByOrderId",
-            {
+        let ex_orderId_ret = await findTransFormListOne({
+            where: {
                 orderId: orderId,
-            }
-        ).result;
-        let ex_orderId_ret = await exec_sql(sqlQueryByOrderId);
+            },
+        })
+
+        // console.log("betchTransferThread", sql)
+        if (ex_orderId_ret.err != null) {
+            console.trace("ERR:", ex_orderId_ret.result);
+        }
+
         if (ex_orderId_ret.result != null) {
             let statusDesc = '';
             switch (ex_orderId_ret.result.t_status) {
-                case 8: {
+                case 8:
                     statusDesc = '初次回调失败'
                     break
-                }
-                case 18: {
+                case 18:
                     statusDesc = '最终回调失败'
                     break
-                }
-                case 4: {
+                case 4:
                     statusDesc = '回调成功'
                     break
-                }
-                case 6: {
+                case 6:
                     statusDesc = '等待回调'
                     break
-                }
-                case 3: {
+                case 3:
                     statusDesc = '交易上链失败'
                     break
-                }
-                default: {
+                default:
                     statusDesc = '等待处理'
                     break
-                }
             }
 
-            return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
                 from: ex_orderId_ret.result.t_from,
                 to: ex_orderId_ret.result.t_to,
                 amount: ex_orderId_ret.result.amount,
@@ -85,9 +78,10 @@ function queryRouters(app) {
                 collectAddress: ex_orderId_ret.result.collectAddress,
                 status: ex_orderId_ret.result.t_status,
                 statusDesc: statusDesc,
+                vmErr: ex_orderId_ret.result.vm_err,
             }));
         } else {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "订单不存在!", ""));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "订单不存在!", ""));
         }
     })
 
@@ -101,25 +95,18 @@ function queryRouters(app) {
             tokenId
         );
         if (balanceRet.err != null) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, (balanceRet.err, {})));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, (balanceRet.err, {})));
         } else {
-            let mainBalance = ethers.utils.formatEther(
-                Web3.utils.hexToNumberString(balanceRet.data.balance)
-            );
-            let tokenBalance = Web3.utils.hexToNumberString(
-                balanceRet.data.tokenBalance
-            );
-
-            return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
-                balance: mainBalance,
-                tokenBalance: tokenBalance,
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+                balance: balanceRet.data.balance,
+                tokenBalance: balanceRet.data.tokenBalance,
             }));
         }
     })
 
     // 回调  TODO 这个可能需要考虑是否需要回调
     app.post("/api/account/callFun", async (req, res, next) => {
-        return res.status(200).json({code: 0});
+        return res.status(RESPONSE_STATUS.SUCCESS).json({code: 0});
     })
 
     app.post("/api/private/dashboard", async (req, res, next) => {
@@ -128,46 +115,34 @@ function queryRouters(app) {
         let result = {};
 
         // 等待上传ipfs
-        let sql1 = "SELECT count(0) from nft where `status` = 0;";
-        await dashFun(sql1);
-        resultNFT["等待上传ipfs"] = await dashFun(sql1);
+        resultNFT["等待上传ipfs"] = await count_nft(0);
         // 等待上链
-        let sql2 = "SELECT count(0) from nft where `status` = 6;";
-        resultNFT["等待上链"] = await dashFun(sql2);
+        resultNFT["等待上链"] = await count_nft(6);
         // 等待hash查询
-        let sql3 = "SELECT count(0) from nft where `status` = 10;";
-        resultNFT["等待hash查询"] = await dashFun(sql3);
+        resultNFT["等待hash查询"] = await count_nft(10);
         // 上链成功
-        let sql4 = "SELECT count(0) from nft where `status` = 7;";
-        resultNFT["上链成功"] = await dashFun(sql4);
+        resultNFT["上链成功"] = await count_nft(7);
         // 上链失败
-        let sql5 = "SELECT count(0) from nft where `status` = 8;";
-        resultNFT["上链失败"] = await dashFun(sql5);
+        resultNFT["上链失败"] = await count_nft(8);
         // 回调失败
-        let sql6 = "SELECT count(0) from nft where `status` = 9;";
-        resultNFT["回调失败"] = await dashFun(sql6);
+        resultNFT["回调失败"] = await count_nft(9);
 
         // 等待上链
-        let sql7 = "SELECT count(0) from trans_form_list where `t_status` = 1;";
-        resultTREANS["等待上链"] = await dashFun(sql7);
+        resultTREANS["等待上链"] = await count_trans(1);
         // 等待hash查询
-        let sql8 = "SELECT count(0) from trans_form_list where `t_status` = 5;";
-        resultTREANS["等待hash查询"] = await dashFun(sql8);
+        resultTREANS["等待hash查询"] = await count_trans(5);
         // 上链成功
-        let sql9 = "SELECT count(0) from trans_form_list where `t_status` = 6;";
-        resultTREANS["上链成功"] = await dashFun(sql9);
+        resultTREANS["上链成功"] = await count_trans(6);
         // 上链失败
-        let sql10 = "SELECT count(0) from trans_form_list where `t_status` = 7;";
-        resultTREANS["上链失败"] = await dashFun(sql10);
+        resultTREANS["上链失败"] = await count_trans(7);
         // 回调失败
-        let sql11 = "SELECT count(0) from trans_form_list where `t_status` = 8;";
-        resultTREANS["回调失败"] = await dashFun(sql11);
+        resultTREANS["回调失败"] = await count_trans(8);
         result = {
             NFT: resultNFT,
             TRANS: resultTREANS,
         };
 
-        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, null, result));
+        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, null, result));
     })
 }
 

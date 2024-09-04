@@ -16,6 +16,7 @@ let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 let blockNumberCreate = 1090551;   // 合约的创建区块号
 let blockNumberCurr = 0;   // 当前最新区块号
 const {customHttpProvider} = require("./taskConst");
+const {find_account} = require("../services/accountService");
 let startBlockNumber = 0;
 
 function setBlockNumber() {
@@ -124,13 +125,7 @@ async function processResult(result) {
                     });
 
                 let resultFrom = resultFrom01.result
-                let resultTo01 = await exec_sql(get_mysql(
-                    "AppUserMapper",
-                    "selectByAddress",
-                    {
-                        address: to
-                    }
-                ).result)
+                let resultTo01 = await find_account(to)
                     .then((ret) => {
                         return ret;
                     })

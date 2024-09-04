@@ -1,7 +1,4 @@
-
-const {
-    exec_sql,
-} = require("../controller/ctnft");
+"use strict";
 const {
     createCollectV2,
     createCollectV2Call,
@@ -35,6 +32,8 @@ const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 const {validate} = require("./fcommon");
+const {find_account} = require("../services/accountService");
+const {insert_collect} = require("../services/collectService");
 
 function createContractRouters(app) {
 
@@ -44,8 +43,8 @@ function createContractRouters(app) {
         try {
             const {address, password, cMetadata, type} = req.body;
             //  判断参数是否满足规范
-            if (isEmpty(password).flag) {
-                return res.status(200).json(PasswordEmpty);
+            if (isEmpty(password)) {
+                return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordEmpty);
             }
 
             let ret01 = validateAddress(address);
@@ -55,20 +54,16 @@ function createContractRouters(app) {
             validate(ret02.flag, ret02.err);
 
             if (JSON.stringify(cMetadata).indexOf("{") == -1) {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "invalid paramter data", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "invalid paramter data", {}));
             }
 
             // 判断实名
             // 这里好像不需要判断实名, 因为这里一般都是项目方调用, 不会有手续费垫付的情况发生
-            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-                address: address,
-            });
-
-            let ret03 = await exec_sql(sqlResult.result);
+            let ret03 = await find_account(address);
 
             let ret = ret03.result;
             if (ret == null) {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
             }
 
             validate(ret.psd === password, "invalid password");
@@ -79,7 +74,7 @@ function createContractRouters(app) {
 
             let decWalletResult = await getPriKey(ret, password);
             if (decWalletResult.err != null) {
-                return res.status(200).json(PasswordError);
+                return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordError);
             } else {
                 wallet = decWalletResult.result;
             }
@@ -103,11 +98,11 @@ function createContractRouters(app) {
             gaslimitInit = initResult.gaslimit;
             if (err != null) {
                 logger.debug("createCollectV2Call faild");
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
             }
             if (errInit != null) {
                 logger.debug("createCollectV2Call faild");
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, errInit, {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, errInit, {}));
             }
             //    赠送合约手续费
             let neceliby = ethers.utils.formatEther((gasPrice * gaslimit).toString());
@@ -125,7 +120,7 @@ function createContractRouters(app) {
             // 计算初始化合约费用
             logger.debug("judge balance enough:%s", Number(balance) < Number(necelibyTotal));
             if (Number(etherString) < Number(necelibyTotal)) {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户余额不足!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "账户余额不足!", {}));
             }
             //    创建合约
             let collectAddress = await createCollectV2(
@@ -137,7 +132,7 @@ function createContractRouters(app) {
                 type,
                 false
             );
-            // if (collectAddress == null) {return res.status(200).json( responseFun(RESPONSE_STATUS.ERROR,  "创建合约失败", {}));
+            // if (collectAddress == null) {return res.status(RESPONSE_STATUS.SUCCESS).json( responseFun(RESPONSE_STATUS.ERROR,  "创建合约失败", {}));
             // }
             // 这里前面已经可以算出合约地址, 这里为了方便,直接计算得出, 不使用返回值.
             // collectAddress = "0x" + util.generateAddress(Buffer.from(stripHexPrefix(wallet.address), "hex"), nonce).toString("hex");
@@ -154,7 +149,7 @@ function createContractRouters(app) {
             );
             if (result1.err != null) {
                 logger.debug("txTransfer faild");
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, result1.err, {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, result1.err, {}));
             }
             const contractMap = {
                 10: "ERC721Ctnft",
@@ -178,21 +173,19 @@ function createContractRouters(app) {
                 type: type, // v1 1155
             };
 
-            var sql = get_mysql("collect", "insertSelective", collect).result;
-
-            let ret04 = await exec_sql(sql);
+            let ret04 = await insert_collect(collect);
             if (ret04.err == null) {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
                     collectAddress,
                     type,
                     hash: result1.hash,
                 }));
             } else {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, ret04.err, {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, ret04.err, {}));
             }
         } catch (err) {
             logger.debug(err)
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }
     });
 }

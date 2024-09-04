@@ -1,4 +1,4 @@
-const {DataTypes} = require('sequelize')
+"use strict";const {DataTypes} = require('sequelize')
 // 将数据库连接对象导入
 const sequelize = require('./MysqlConnection')
 

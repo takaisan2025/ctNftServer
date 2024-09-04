@@ -1,0 +1,69 @@
+"use strict"
+const {createNft, findNft, countNft} = require("../Orm/NftService");
+const {responseFun, responseFunStr} = require("../mapper/account");
+const {Op} = require('sequelize')
+
+async function insert_nft(_lottery) {
+    //logic to find accounts
+    try {
+
+        let nfts_ret = await createNft(_lottery)
+        if (nfts_ret.err != null) {
+            if (nfts_ret.result == "order_id must be unique") {
+                return {err: "OrderId 冲突!", result: null}
+            } else {
+                return {err: "操作失败,请重试!", result: null}
+            }
+        } else {
+            return {err: null, result: 1}
+        }
+    } catch (e) {
+        console.log("error", e.code)
+        return {err: e.code, result: null}
+    }
+}
+
+async function find_nfts(_tokenIds) {
+    //logic to find accounts
+    try {
+
+        let nfts_ret = await findNft({
+            tokenId: {
+                [Op.in]: _tokenIds
+            }
+        })
+        let nftArr = [];
+        if (nfts_ret.err != null) {
+            return {err: nfts_ret.result, result: null}
+        } else {
+            nftArr = nfts_ret.result;
+        }
+        return {err: null, result: nftArr}
+    } catch (e) {
+        console.log("error", e)
+        return {err: e.code, result: null}
+    }
+}
+
+async function count_nft(_status) {
+    //logic to find accounts
+    try {
+
+        let count = await countNft({
+            where: {
+                status: _status
+            }
+        })
+        return count.result
+    } catch (e) {
+        console.log("error", e)
+        return  e.code
+    }
+}
+
+module.exports = {
+    insert_nft,
+    find_nfts,
+    count_nft
+
+}

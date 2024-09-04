@@ -1,4 +1,4 @@
-const {betchCallByTime} = require("./task/transTaskReCallByTime");
+"use strict";const {betchCallByTime} = require("./task/transTaskReCallByTime");
 const {SubmitTransactionTask, TransactionHashQueryTask} = require("./task/submitTransactionTask");
 const {betchCallFund1} = require("./task/transTaskReCall1");
 const {betchCallFund} = require("./task/transTaskReCall");

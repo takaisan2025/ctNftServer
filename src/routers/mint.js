@@ -1,3 +1,4 @@
+"use strict";
 const {
     getString,
     setString,
@@ -5,7 +6,6 @@ const {
 
 const {
     exec_sql,
-    nftSelectSelectiveCreator,
 } = require("../controller/ctnft");
 const {
     contract_static_call,
@@ -26,8 +26,6 @@ const Web3 = require("web3");
 const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
 
-const fs = require("fs");
-
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
@@ -35,7 +33,11 @@ const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 const {validate} = require("./fcommon");
 const pino = require("pino");
+const {find_account, auths_single} = require("../services/accountService");
+const {find_collect} = require("../services/collectService");
+const {createNft} = require("../Orm/NftService");
 const logger = pino({level: process.env.LOG_LEVEL || "debug"});
+
 function mintRouters(app) {
 
     // 异步铸造721接口
@@ -43,8 +45,8 @@ function mintRouters(app) {
         // 创建表单解析对象
         const {address, password, collectAddress, file, data, rebackUrl} =
             req.body;
-        if (isEmpty(password).flag) {
-            return res.status(200).json(PasswordEmpty);
+        if (isEmpty(password)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordEmpty);
         }
         try {
             //  判断参数是否满足规范
@@ -64,30 +66,25 @@ function mintRouters(app) {
             validate(checkURLRet1.flag, checkURLRet1.err);
         } catch (e) {
             console.log(e)
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
         }
 
         //  判断参数是否满足规范
-        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-            address: address,
-        });
-        let ret04 = await exec_sql(sqlResult.result);
+        let ret04 = await find_account(address);
 
         let ret = ret04.result;
         if (ret == null) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
         }
 
         // 判断账户余额
-        var params1 = {address: collectAddress};
-        var sql1 = get_mysql("collect", "selectByAddress", params1).result;
-        let collectDetail01 = await exec_sql(sql1);
+        let collectDetail01 = await find_collect(collectAddress);
 
         if (collectDetail01.err != null) {
             console.trace("ERR:", err);
         }
         if (collectDetail01.result == null) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "没有找到匹配的合约信息!", {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "没有找到匹配的合约信息!", {}));
         }
 
         let collectDetail = collectDetail01.result;
@@ -95,24 +92,16 @@ function mintRouters(app) {
         // 查询账户实名状况
 
         let isBal = await getString("BALANCE_" + collectDetail.owner);
-        if (isBal == "1") {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
+        if (isBal === "1") {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
         }
 
         // 判断商家身份
         if (GlobalConfig.CAN_AUTH) {
             if (address != collectDetail.owner) {
-                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
-                let isAuth = await contract_static_call(
-                    ethers,
-                    authContractAddress,
-                    ABI_const["AuthControllerV2"].abi,
-                    "authsSingle",
-                    customHttpProvider,
-                    [address]
-                );
+                let isAuth = await auths_single(address);
                 if (isAuth.data != true) {
-                    return res.status(200).json(responseFun(500, "用户信息未认证或过期,请稍后重试!", {}));
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}));
                 }
             }
         }
@@ -129,26 +118,15 @@ function mintRouters(app) {
         logger.debug("Balance: %s", etherString);
         // 计算初始化合约费用
         if (Number(etherString) < Number(10)) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
         }
 
         try {
             // 查询合约基本信息  type   == 10
-            var params = {address: collectAddress};
-            var sql = get_mysql("collect", "selectByAddress", params).result;
-
-            let collectRet02 = await exec_sql(sql)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    logger.debug("ERR:%s", err);
-                    return err;
-                });
-            collectRet02.err;
+            let collectRet02 = await find_collect(collectAddress);
             let collectRet = collectRet02.result;
-            validate(collectRet !== null, "collectAddress is error")
-            validate(collectRet.type === 9, "collectAddress is error")
+            validate(collectRet !== null, "collectAddress is not fund")
+            validate(collectRet.type === 9, "collectAddress type is not 721")
             // address: wallet.address,
             // privateKey: wallet.privateKey,
             //    单个藏品铸造
@@ -185,21 +163,20 @@ function mintRouters(app) {
 
             // 插入数据库
             // Get SQL Statement
-            var sql = get_mysql("nft", "insertSelective", nft).result;
-            return await exec_sql(sql)
+            return await createNft(nft)
                 .then((ret) => {
                     // return ret;
                     // fileUploadIpfs();
-                    return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
                         tokenId,
                     }));
                 })
                 .catch((err) => {
                     logger.debug("ERR:%s", err);
-                    return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
                 });
         } catch (err) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }
     });
 
@@ -209,8 +186,8 @@ function mintRouters(app) {
         const {address, password, collectAddress, file, data, supply, rebackUrl} =
             req.body;
         let {} = req.body;
-        if (isEmpty(password).flag) {
-            return res.status(200).json(PasswordEmpty);
+        if (isEmpty(password)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordEmpty);
         }
         try {
             //  判断参数是否满足规范
@@ -229,30 +206,27 @@ function mintRouters(app) {
             let checkURLRet1 = checkURL(file);
             validate(checkURLRet1.flag, checkURLRet1.err)
         } catch (e) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
         }
         if (supply < 1) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "supply 必须大于0", {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "supply 必须大于0", {}));
         }
         // if (supply >= 100000) {
         //     return responseFun(RESPONSE_STATUS.ERROR,  "supply must less than 100000", {});
         // }
 
         //  判断参数是否满足规范
-        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-            address: address,
-        });
-        let ret002 = await exec_sql(sqlResult.result);
+        let ret002 = await find_account(address);
 
         //
         if (ret002.result == null) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
         }
         let wallet;
         // wallet = await ethers.Wallet.fromEncryptedJson(ret.keystore, password);
         let decWalletResult = await getPriKey(ret002.result, password);
         if (decWalletResult.err != null) {
-            return res.status(200).json(PasswordError);
+            return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordError);
         } else {
             wallet = decWalletResult.result;
         }
@@ -260,21 +234,17 @@ function mintRouters(app) {
         try {
             // 查询合约基本信息  type   == 10
 
-            var params = {address: collectAddress};
-            var sql = get_mysql("collect", "selectByAddress", params).result;
-
             // 查询账户实名状况
-            let collectRet02 = await exec_sql(sql);
+            let collectRet02 = await find_collect(collectAddress);
             if (collectRet02.err != null) {
                 logger.debug("ERR:%s", collectRet02.err);
             }
             let collectRet = collectRet02.result;
-            validate(collectRet !== null, "collectAddress is error")
-            validate(collectRet.type === 10 || collectRet.type === 12, "collectAddress is error")
-
+            validate(collectRet !== null, "collectAddress is not fund")
+            validate(collectRet.type === 10 || collectRet.type === 12, "collectAddress type is not 721")
             let isBal = await getString("BALANCE_" + collectRet.owner);
             if (isBal == "1") {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
             }
             wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
             let balance = await wallet.provider.getBalance(collectRet.owner);
@@ -282,7 +252,7 @@ function mintRouters(app) {
             logger.debug("Balance: %s", etherString);
             if (Number(etherString) < Number(10)) {
                 await setString("BALANCE_" + collectRet.owner, "1", 120);  // 2 min
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
             }
 
             // 查询账户实名状况
@@ -290,17 +260,9 @@ function mintRouters(app) {
             // 判断商家身份
             if (GlobalConfig.CAN_AUTH) {
                 if (address != collectRet.owner) {
-                    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
-                    let isAuth = await contract_static_call(
-                        ethers,
-                        authContractAddress,
-                        ABI_const["AuthControllerV2"].abi,
-                        "authsSingle",
-                        customHttpProvider,
-                        [address]
-                    );
+                    let isAuth = await auths_single(address);
                     if (isAuth.data != true) {
-                        return res.status(200).json(responseFun(500, "用户信息未认证或过期,请稍后重试!", {}));
+                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}));
                     }
                 }
             }
@@ -310,22 +272,6 @@ function mintRouters(app) {
             const tokenId = address + "c1234567890" + Date.now();
 
             var originalFilename = file.substring(file.lastIndexOf("/") + 1);
-
-            // 这里查询数据库有没有交易记录, 有的话,使用数据库的, 没有就查询链上
-            // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
-            let retNft = await nftSelectSelectiveCreator(address)
-                .then((retNft) => {
-                    return retNft;
-                })
-                .catch((err) => {
-                    return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
-                });
-
-            // await setString(
-            //   "WALLET_ACCOUNT_" + address,
-            //   JSON.stringify(decWalletResult.result),
-            //   300
-            // );
 
             //    暂时插入数据库
             let nft = {
@@ -348,20 +294,19 @@ function mintRouters(app) {
             // 插入数据库
             // Get SQL Statement
 
-            var sql = get_mysql("nft", "insertSelective", nft).result;
-            return await exec_sql(sql)
+            return await createNft(nft)
                 .then((ret) => {
                     // fileUploadIpfs();
-                    return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
                         tokenId,
                     }));
                 })
                 .catch((err) => {
                     logger.debug("ERR:%s", err);
-                    return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err.code, {}));
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err.code, {}));
                 });
         } catch (err) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }
     });
 

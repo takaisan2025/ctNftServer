@@ -1,3 +1,4 @@
+"use strict";
 const {
     getString,
     setString,
@@ -40,6 +41,10 @@ const {validate} = require("./fcommon");
 const ERC721Ctnft = require("../contract/ERC721Ctnft.json");
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
+const {find_account, auths_single} = require("../services/accountService");
+const {find_collect} = require("../services/collectService");
+const {findCollect} = require("../Orm/CollectService");
+const {findTransFormList, findTransFormListAll} = require("../Orm/TransFormListService");
 
 const contractMap = {
     9: ERC721Ctnft,
@@ -50,7 +55,14 @@ const contractMap = {
 function transferRouters(app) {
     app.get("/v1/test", async (req, res, next) => {
         let {max} = req.query;
-        return res.status(200).json({max});
+        logger.info("req:%s", max)
+        return res.status(RESPONSE_STATUS.SUCCESS).json({max});
+    });
+
+    app.post("/v1/test", async (req, res, next) => {
+        let {max} = req.body;
+        logger.info("req:%s", max)
+        return res.status(RESPONSE_STATUS.SUCCESS).json({max});
     });
 
     // 积分相关接口
@@ -60,13 +72,10 @@ function transferRouters(app) {
         try {
             try {
                 //  判断参数是否满足规范
-                let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-                    address: address,
-                });
-                let ret = await exec_sql(sqlResult.result);
+                let ret = await find_account(address);
 
                 if (ret == null) {
-                    return res.status(200).json(
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(
                         responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
                 }
 
@@ -77,16 +86,13 @@ function transferRouters(app) {
                 throw "invalid password";
             }
 
-            var params = {type: 11}; // 草田积分合约
-            var sql = get_mysql("collect", "selectByType", params).result;
-            let collectRet = await exec_sql(sql)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("ERR:", err);
-                    return err;
-                });
+            let collectResult = await findCollect({
+                where: {
+                    type: 11
+                }
+            })
+
+            let collectRet = collectResult.result
             validate(collectRet !== null, "collectAddress is error");
             let contractAddress = collectRet.address;
             let tamount;
@@ -102,14 +108,14 @@ function transferRouters(app) {
                 tamount
             );
             validate(err === null, err)
-            return res.status(200).json(
+            return res.status(RESPONSE_STATUS.SUCCESS).json(
                 responseFun(RESPONSE_STATUS.SUCCESS, null, {
                     hash: hash,
                     type: type,
                 }));
             ;
         } catch (err) {
-            return res.status(200).json(
+            return res.status(RESPONSE_STATUS.SUCCESS).json(
                 responseFun(RESPONSE_STATUS.ERROR, err, null))
         }
     });
@@ -119,8 +125,8 @@ function transferRouters(app) {
         logger.debug("In :%s", new Date().getTime());
         const {address, password, amount, to, tokenId, rebackUrl, orderId} =
             req.body;
-        if (isEmpty(password).flag) {
-            return res.status(200).json(PasswordEmpty);
+        if (isEmpty(password)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordEmpty);
         }
         let collectAddress;
         try {
@@ -137,19 +143,18 @@ function transferRouters(app) {
 
             let isDump = await getString(orderId);
             if (isDump == "1") {
-                return res.status(200).json(
-                    responseFun(RESPONSE_STATUS.ERROR, "ER_DUP_ENTRY", ""));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(
+                    responseFun(RESPONSE_STATUS.ERROR, "order_id must be unique", ""));
             }
 
             // 数据库查询订单号状态
-            var sqlQueryByOrderId = get_mysql("trans_form_list", "selectByOrderId", {
-                orderId: orderId,
-            }).result;
-            let ex_orderId_ret = await exec_sql(sqlQueryByOrderId);
+            let ex_orderId_ret = await findTransFormList({
+                orderId: orderId
+            });
             console.log("ex_orderId_ret:", ex_orderId_ret);
             if (ex_orderId_ret.result != null) {
                 console.log("数据库判断订单号冲突!");
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "ER_DUP_ENTRY", ""));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "order_id must be unique", ""));
             }
 
             //这里直接查询合约地址
@@ -171,17 +176,8 @@ function transferRouters(app) {
             let supply = nftObj["supply"];
             collectAddress = nftObj["collectAddress"];
 
-            var params = {address: nftObj["collectAddress"]}; // 草田积分合约
             logger.debug("开始Query Contract:%s", new Date().getTime());
-            var sql = get_mysql("collect", "selectByAddress", params).result;
-            let collectDetail_ret = await exec_sql(sql)
-                .then((ret) => {
-                    return ret;
-                })
-                .catch((err) => {
-                    console.log("ERR:", err);
-                    return err;
-                });
+            let collectDetail_ret = await find_collect(nftObj["collectAddress"]);
             if (collectDetail_ret.err != null) {
                 console.log("ERR:", collectDetail_ret.err);
             }
@@ -189,20 +185,18 @@ function transferRouters(app) {
             let isBal = await getString("BALANCE_" + collectDetail.owner);
             if (isBal == "1") {
                 console.log("redis!" + collectDetail.owner);
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "手续费余额不足!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "手续费余额不足!", {}));
             }
             logger.debug("Over Query Contract:%s", new Date().getTime());
             validate(collectDetail !== null, "collectAddress is error")
 
             logger.debug("Start Query Account:%s", new Date().getTime());
-            let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-                address: address,
-            });
-            let ret03 = await exec_sql(sqlResult.result);
+
+            let ret03 = await find_account(address);
             logger.debug("Over Query Account:%s", new Date().getTime());
             let ret = ret03.result;
             if (ret == null) {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
             }
 
             let checkURLRet = checkURL(rebackUrl);
@@ -213,7 +207,7 @@ function transferRouters(app) {
             let decWalletResult = await getPriKey(ret, password);
             logger.debug("Dec Over Query 账户:%s", new Date().getTime());
             if (decWalletResult.err != null) {
-                return res.status(200).json(PasswordError);
+                return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordError);
             } else {
                 wallet = decWalletResult.result;
             }
@@ -223,17 +217,9 @@ function transferRouters(app) {
             // 判断商家身份
             if (GlobalConfig.CAN_AUTH) {
                 if (address != collectDetail.owner) {
-                    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
-                    let isAuth = await contract_static_call(
-                        ethers,
-                        authContractAddress,
-                        ABI_const["AuthControllerV2"].abi,
-                        "authsSingle",
-                        customHttpProvider,
-                        [address]
-                    );
+                    let isAuth = await auths_single(address);
                     if (isAuth.data != true) {
-                        return res.status(200).json(responseFun(500, "用户信息未认证或过期,请稍后重试!", {}));
+                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}));
                     }
                 }
             }
@@ -252,7 +238,7 @@ function transferRouters(app) {
                     customHttpProvider
                 );
             } else {
-                return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "暂不受支持的合约!", null));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "暂不受支持的合约!", null));
             }
 
             switch (collectDetail["type"]) {
@@ -269,12 +255,8 @@ function transferRouters(app) {
                     );
                     logger.debug("Over Query Balance:%s", new Date().getTime());
                     validate(balanceRet.err === null, balanceRet.err)
-                    let mainBalance = ethers.utils.formatEther(
-                        Web3.utils.hexToNumberString(balanceRet.data.balance)
-                    );
-                    let tokenBalance = Web3.utils.hexToNumberString(
-                        balanceRet.data.tokenBalance
-                    );
+                    let mainBalance = balanceRet.data.balance;
+                    let tokenBalance = balanceRet.data.tokenBalance;
                     // 这里如果是合约发行方的话, 做手续费判断   1155协议
                     if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
                         if (mainBalance < 50) {
@@ -312,16 +294,16 @@ function transferRouters(app) {
 
                     if (ex_ret.err != null) {
                         console.log("ERR:", ex_ret.err);
-                        console.log("ERR_JUDGE:", "ER_DUP_ENTRY" == ex_ret.err);
-                        if ("ER_DUP_ENTRY" == ex_ret.err) {
+                        console.log("ERR_JUDGE:", "order_id must be unique" == ex_ret.err);
+                        if ("order_id must be unique" == ex_ret.err) {
                             await setString(orderId, "1", 300);
                         }
                         let isDump = await getString(orderId);
                         console.log("isDump:", isDump);
-                        return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, ""));
+                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, ""));
                     } else {
                         logger.debug("Out:%s", new Date().getTime());
-                        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
                             orderId: orderId,
                         }));
                     }
@@ -351,12 +333,12 @@ function transferRouters(app) {
 
                     // 数据库余额判断
                     //    数据库已有数据判断
-                    let transObjFrom_ret01 = await exec_sql(
-                        get_mysql("trans_form_list", "selectByFormAndTokenId", {
+                    let transObjFrom_ret01 = await findTransFormListAll({
+                        where: {
                             token_id: tokenId,
                             t_from: address,
-                        }).result
-                    );
+                        }, limit: 100
+                    })
                     if (transObjFrom_ret01.err) {
                         console.log("ERR:", transObjFrom_ret01.err);
                     }
@@ -420,9 +402,9 @@ function transferRouters(app) {
                     let ex_ret_01 = await exec_sql(sqlQueryByTokenIdAndForm1);
                     if (ex_ret_01.err != null) {
                         console.log("ERR:", ex_ret_01.err);
-                        return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret_01.err, ""));
+                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret_01.err, ""));
                     } else {
-                        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
                             orderId: orderId,
                         }));
                     }
@@ -430,7 +412,7 @@ function transferRouters(app) {
                     break;
             }
         } catch (err) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, null));
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, null));
         }
     });
 

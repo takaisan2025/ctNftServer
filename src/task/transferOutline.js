@@ -58,7 +58,6 @@ async function transferOutline(tAddress, reward_amount) {
             order_id: orderIdOri + "_TRANSFER",
             value: value,
             "origin_data": JSON.stringify(origin_data_json),
-            // origin_data: origin_data_json,
             contract_address: contractAddress,
             method:
                 ABI_const["CtTransferExecutor"].contractName +

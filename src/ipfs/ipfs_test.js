@@ -1,4 +1,4 @@
-const GlobalConfig = require("../config/GlobalConfig.json");
+"use strict";const GlobalConfig = require("../config/GlobalConfig.json");
 const fs = require("fs");
 
 let index = 1

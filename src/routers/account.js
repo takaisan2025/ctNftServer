@@ -1,20 +1,13 @@
+"use strict";
 const {
-    getString,
-    setString,
+    getString, setString,
 } = require("../redis/redis-client");
-const EIP712 = require("./EIP712");
-const sigUtil = require("eth-sig-util");
-const ethUtil = require("ethereumjs-util");
-const {
-    exec_sql,
-} = require("../controller/ctnft");
 const {
     contract_static_call,
 } = require("../contract/ChainCall");
 const requestIp = require("request-ip");
 const {
-    validateAddress,
-    isEmpty,
+    validateAddress, isEmpty,
 } = require("../rules/rules");
 const ethers = require("ethers");
 const GlobalConfig = require("../config/GlobalConfig.json");
@@ -24,272 +17,190 @@ let web3 = new Web3("http://ctblock.cn/blockChain");
 const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
 const {responseFun} = require("../mapper/account");
-const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
+const {authentications} = require("../services/userService");
+const pino = require("pino");
+const {createAccount} = require("../Orm/AccountService");
+const {find_account, auths_single, parentauths_v2, auth_user_v2, auth_user_v1} = require("../services/accountService");
+const logger = pino({level: process.env.LOG_LEVEL || "debug"});
+
+let validCardId = (value) => {
+
+    // 只能是18位
+    if (!value || value.length !== 18) {
+        return false
+    }
+
+    // 取出本体码
+    const idcard_base = value.substr(0, 17)
+    // 取出校验码
+    const verify_code = value.substr(17, 1)
+    // 加权因子
+    const factor = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+    // 校验码对应值
+    const verify_code_list = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
+
+    // 根据前17位计算校验码
+    let total = 0
+
+    for (let i = 0; i < 17; i++) {
+        total += idcard_base.substr(i, 1) * factor[i]
+    }
+    // 取模
+    const mod = total % 11
+    // 比较校验码
+    return verify_code === verify_code_list[mod];
+}
 
 function accountRouters(app) {
 
-    app.get("/v1/test", async (req, res, next) => {
-        let {max} = req.query;
-        return res.status(200).json({max});
-    });
-
-    app.post("/v1/test", async (req, res, next) => {
-        console.log(req.body);
-        let {max} = req.body;
-        console.log(max);
-        return res.status(200).json({max});
-    });
-
     // 创建实名账户
     app.post("/api/account/createUser", async (req, res, next) => {
-        let {s_address, s_password, password, expand_data, orderId} = req.body;
+        let {s_address, s_password, password, expand_data, orderId, card_id} = req.body;
 
         s_address = Web3.utils.toChecksumAddress(s_address);
         if (!validateAddress(s_address).flag) {
             return res
-                .status(200)
-                .json(responseFun(500, validateAddress(s_address).err, {}));
+                .status(RESPONSE_STATUS.SUCCESS)
+                .json(responseFun(RESPONSE_STATUS.ERROR, validateAddress(s_address).err, {}));
         }
-        if (isEmpty(password).flag) {
-            return res.status(200).json(PasswordEmpty);
+        if (isEmpty(password)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordEmpty);
         }
-        if (isEmpty(s_password).flag) {
-            return res.status(200).json(PasswordEmpty);
+        if (isEmpty(s_password)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(PasswordEmpty);
         }
-        if (isEmpty(expand_data).flag) {
+        if (isEmpty(expand_data)) {
             return res
-                .status(200)
-                .json(responseFun(500, isEmpty(expand_data).err, {}));
+                .status(RESPONSE_STATUS.SUCCESS)
+                .json(responseFun(RESPONSE_STATUS.ERROR, "参数为空", {}));
         }
 
-        if (isEmpty(orderId).flag) {
-            return res.status(200).json(responseFun(500, isEmpty(orderId).err, {}));
+        if (isEmpty(orderId)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "参数错误", {}));
         }
 
-        let orderIdEcc = `0x${ethUtil
-            .keccak256(Buffer.from(orderId))
-            .toString("hex")}`;
+        if (!isEmpty(card_id)) {
+            if (!validCardId(card_id)) {
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码输入有误,请重新输入!'", {}));
+            }
+        }
+
         // 判断用户名密码
-        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-            address: s_address,
-        });
-        let result01 = await exec_sql(sqlResult.result);
+        let result01 = await find_account(s_address);
         if (result01.result == null) {
             return res
-                .status(200)
+                .status(RESPONSE_STATUS.SUCCESS)
                 .json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
         }
 
         // let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
         let decWalletResult = await getPriKey(result01.result, s_password);
-        let wallet;
+
         if (decWalletResult.err != null) {
             return res
-                .status(200)
+                .status(RESPONSE_STATUS.SUCCESS)
                 .json(PasswordError);
         } else {
-            wallet = decWalletResult.result;
-
             const clientIp = requestIp.getClientIp(req);
 
             // 判断商家身份
-            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-            let authData = await contract_static_call(
-                ethers,
-                authContractAddress,
-                ABI_const["AuthController"].abi,
-                "parentauths",
-                customHttpProvider,
-                [s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS]
-            );
+            let authData = await parentauths_v2(s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS);
 
             if (authData.err != null) {
-                return res.status(200).json(responseFun(500, "操作失败,请重试!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
             }
 
-            if (
-                // Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
-                authData.data.isAuth == true
-            ) {
+            if (// Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
+                authData.data.isAuth) {
                 // let randomWallet = ethers.Wallet.createRandom();
                 // let keystore = await randomWallet.encrypt(password, callback);
                 let randomWallet = web3.eth.accounts.create();
                 let keystore = await randomWallet.encrypt(password);
-
-                // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
-                //等待其它程序处理上链
-                let sender = s_address;
-                let authTime = 1766841499; // 没有用的参数
-                let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
-                let isAuth = true;
-                let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
-                let expandData = expand_data;
-                let caddress = randomWallet.address;
-                // 计算签名
-                let auth = {
-                    caddress,
-                    sender,
-                    authTime,
-                    authExpiry,
-                    isAuth,
-                    authLevel,
-                    expandData,
-                };
-                // let orderId = `0x${ethUtil
-                //     .keccak256(Buffer.from(new Date().getTime() + ""))
-                //     .toString("hex")}`;
-
-                let privateKeyStr = randomWallet.privateKey;
-                let verifyingContract = authContractAddress;
-                privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
-
-                const privateKey = Buffer.from(privateKeyStr, "hex");
-
-                // uint256 orderId,
-                // address caddress,
-                // address sender,
-                // bool isAuth,
-                // string expandData
-
-                const Types = {
-                    Authentication: [
-                        {type: "uint256", name: "orderId"},
-                        {type: "address", name: "caddress"},
-                        {type: "address", name: "sender"},
-                        {type: "bool", name: "isAuth"},
-                    ],
-                };
-
-                const data = EIP712.createTypeData(
-                    {
-                        name: "Authentication",
-                        version: "1",
-                        chainId: "27",
-                        verifyingContract,
-                    },
-                    "Authentication",
-                    {
-                        orderId: orderIdEcc,
-                        caddress: auth.caddress,
-                        sender: auth.sender,
-                        isAuth: auth.isAuth,
-                    },
-                    Types
-                );
-
-                let signature = sigUtil.signTypedData_v4(privateKey, {data: data});
-                auth.signature = signature;
-
-                let origin_data_json = [auth, orderIdEcc];
-                // 存储上链数据
-                let nft_transaction_aql = get_mysql(
-                    "NftTransactionMapper",
-                    "insertSelective",
-                    {
-                        from: s_address,
-                        to: authContractAddress,
-                        status: 0,
-                        // "hash": "",
-                        // "block_number": "",
-                        type: 1,
-                        is_reback: 0,
-                        order_id: orderId,
-                        value: "0",
-                        // "origin_data": JSON.stringify(origin_data_json),
-                        origin_data: origin_data_json,
-                        contract_address: authContractAddress,
-                        method:
-                            ABI_const["AuthController"].contractName + "#" + "authentication",
-                        origin_value: "0",
-                    }
-                );
-                let nft_transaction_aql_result = await exec_sql(
-                    nft_transaction_aql.result
-                );
-                if (nft_transaction_aql_result.err != null) {
-                    if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
-                        return res.status(200).json(responseFun(500, "OrderId 冲突!", {}));
-                    } else {
-                        return res
-                            .status(200)
-                            .json(responseFun(500, "操作失败,请重试!", {}));
-                    }
+                let newVar;
+                if (!isEmpty(card_id)) {
+                    newVar = await auth_user_v2(randomWallet, card_id)
+                } else {
+                    newVar = await auth_user_v1(randomWallet, s_address, expand_data)
                 }
+                logger.info("create User :%s", JSON.stringify(newVar));
+
                 //    save to db
                 let account = {
-                    keystore: keystore,
+                    keystore: JSON.stringify(keystore),
                     address: randomWallet.address,
                     status: 1,
                     psd: password,
                     private_key: "",
-                    remark: clientIp,
-                    // private_key: randomWallet.private_key
+                    remark: clientIp, // private_key: randomWallet.private_key
                 };
 
-                let sqlResult = get_mysql("AccountMapper", "insert", account);
-                let result = await exec_sql(sqlResult.result);
-                return res.status(200).json(
-                    responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
-                        keystore: keystore,
-                        privateKey: randomWallet.privateKey,
-                        publicKey: randomWallet.publicKey,
-                        address: randomWallet.address,
-                    })
-                );
+                let result = await createAccount(account)
+                if (result.err != null) {
+                    if (result.result === "order_id must be unique") {
+                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "OrderId 冲突!", {}));
+                    } else {
+                        return res
+                            .status(RESPONSE_STATUS.SUCCESS)
+                            .json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
+                    }
+                }
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
+                    keystore: keystore,
+                    privateKey: randomWallet.privateKey,
+                    publicKey: randomWallet.publicKey,
+                    address: randomWallet.address,
+                }));
             } else {
                 return res
-                    .status(200)
-                    .json(responseFun(500, "s_user信息未认证或者未更新,请稍后重试!", {}));
+                    .status(RESPONSE_STATUS.SUCCESS)
+                    .json(responseFun(RESPONSE_STATUS.ERROR, "s_user信息未认证或者未更新,请稍后重试!", {}));
             }
         }
     });
 
     // 导入账户实名
     app.post("/api/account/importUser", async (req, res, next) => {
-        let {s_address, s_password, private_key, password, expand_data, orderId} =
-            req.body;
+        let {s_address, s_password, private_key, password, expand_data, orderId, card_id} = req.body;
 
         s_address = Web3.utils.toChecksumAddress(s_address);
         if (!validateAddress(s_address).flag) {
             return res
-                .status(200)
-                .json(responseFun(500, validateAddress(s_address).err, {}));
+                .status(RESPONSE_STATUS.SUCCESS)
+                .json(responseFun(RESPONSE_STATUS.ERROR, validateAddress(s_address).err, {}));
         }
-        if (isEmpty(password).flag) {
+        if (isEmpty(password)) {
             return res
-                .status(200)
+                .status(RESPONSE_STATUS.SUCCESS)
                 .json(PasswordEmpty);
         }
-        if (isEmpty(private_key).flag) {
-            return res.status(200).json(responseFun(500, "invalid private_key", {}));
+        if (isEmpty(private_key)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "invalid private_key", {}));
         }
-        if (isEmpty(s_password).flag) {
-            return res.status(200).json(responseFun(500, "invalid s_password", {}));
+        if (isEmpty(s_password)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "invalid s_password", {}));
         }
-        if (isEmpty(expand_data).flag) {
+        if (isEmpty(expand_data)) {
             return res
-                .status(200)
-                .json(responseFun(500, isEmpty(expand_data).err, {}));
+                .status(RESPONSE_STATUS.SUCCESS)
+                .json(responseFun(RESPONSE_STATUS.ERROR, "expand_data参数不能为空", {}));
         }
 
-        if (isEmpty(orderId).flag) {
-            return res.status(200).json(responseFun(500, isEmpty(orderId).err, {}));
+        if (isEmpty(orderId)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "参数错误", {}));
         }
 
-        let orderIdEcc = `0x${ethUtil
-            .keccak256(Buffer.from(orderId))
-            .toString("hex")}`;
+        if (!validCardId(card_id)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码输入有误,请重新输入!'", {}));
+        }
+
         // 判断用户名密码
-        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-            address: s_address,
-        });
-        let result01 = await exec_sql(sqlResult.result);
+        let result01 = await find_account(s_address);
         if (result01.result == null) {
             return res
-                .status(200)
+                .status(RESPONSE_STATUS.SUCCESS)
                 .json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
         }
 
@@ -298,212 +209,100 @@ function accountRouters(app) {
         let wallet;
         if (decWalletResult.err != null) {
             return res
-                .status(200)
+                .status(RESPONSE_STATUS.SUCCESS)
                 .json(PasswordError);
-            ;
+
         } else {
             wallet = decWalletResult.result;
 
             const clientIp = requestIp.getClientIp(req);
 
             // 判断商家身份
-            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-            let authData = await contract_static_call(
-                ethers,
-                authContractAddress,
-                ABI_const["AuthController"].abi,
-                "parentauths",
-                customHttpProvider,
-                [s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS]
-            );
+            let authContractAddress = GlobalConfig.AuthCall;
+            let authData = await parentauths_v2(s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS);
 
             if (authData.err != null) {
-                return res.status(200).json(responseFun(500, "操作失败,请重试!", {}));
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
             }
 
-            if (
-                // Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
-                authData.data.isAuth == true
-            ) {
+            if (// Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
+                authData.data.isAuth) {
                 // let randomWallet = ethers.Wallet.createRandom();
                 // let keystore = await randomWallet.encrypt(password, callback);
                 let randomWallet = new ethers.Wallet(private_key, customHttpProvider);
                 let keystore = await randomWallet.encrypt(password);
 
-                // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
-                //等待其它程序处理上链
-                let sender = s_address;
-                let authTime = 1766841499; // 没有用的参数
-                let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
-                let isAuth = true;
-                let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
-                let expandData = expand_data;
-                let caddress = randomWallet.address;
-                // 计算签名
-                let auth = {
-                    caddress,
-                    sender,
-                    authTime,
-                    authExpiry,
-                    isAuth,
-                    authLevel,
-                    expandData,
-                };
-                // let orderId = `0x${ethUtil
-                //     .keccak256(Buffer.from(new Date().getTime() + ""))
-                //     .toString("hex")}`;
 
-                let privateKeyStr = randomWallet.privateKey;
-                let verifyingContract = authContractAddress;
-                privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
+                let newVar = await auth_user_v2(randomWallet, card_id);
+                logger.info("import User authV2 :%s", JSON.stringify(newVar))
 
-                const privateKey = Buffer.from(privateKeyStr, "hex");
-
-                // uint256 orderId,
-                // address caddress,
-                // address sender,
-                // bool isAuth,
-                // string expandData
-
-                const Types = {
-                    Authentication: [
-                        {type: "uint256", name: "orderId"},
-                        {type: "address", name: "caddress"},
-                        {type: "address", name: "sender"},
-                        {type: "bool", name: "isAuth"},
-                    ],
-                };
-
-                const data = EIP712.createTypeData(
-                    {
-                        name: "Authentication",
-                        version: "1",
-                        chainId: "27",
-                        verifyingContract,
-                    },
-                    "Authentication",
-                    {
-                        orderId: orderIdEcc,
-                        caddress: auth.caddress,
-                        sender: auth.sender,
-                        isAuth: auth.isAuth,
-                    },
-                    Types
-                );
-
-                let signature = sigUtil.signTypedData_v4(privateKey, {data: data});
-                auth.signature = signature;
-
-                let origin_data_json = [auth, orderIdEcc];
-                // 存储上链数据
-                let nft_transaction_aql = get_mysql(
-                    "NftTransactionMapper",
-                    "insertSelective",
-                    {
-                        from: s_address,
-                        to: authContractAddress,
-                        status: 0,
-                        // "hash": "",
-                        // "block_number": "",
-                        type: 1,
-                        is_reback: 0,
-                        order_id: orderId,
-                        value: "0",
-                        // "origin_data": JSON.stringify(origin_data_json),
-                        origin_data: origin_data_json,
-                        contract_address: authContractAddress,
-                        method:
-                            ABI_const["AuthController"].contractName + "#" + "authentication",
-                        origin_value: "0",
-                    }
-                );
-                let nft_transaction_aql_result = await exec_sql(
-                    nft_transaction_aql.result
-                );
-                if (nft_transaction_aql_result.err != null) {
-                    if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
-                        return res.status(200).json(responseFun(500, "OrderId 冲突!", {}));
-                    } else {
-                        return res
-                            .status(200)
-                            .json(responseFun(500, "操作失败,请重试!", {}));
-                    }
-                }
                 //    save to db
                 let account = {
-                    keystore: keystore,
+                    keystore: JSON.stringify(keystore),
                     address: randomWallet.address,
                     status: 1,
                     psd: password,
                     private_key: "",
-                    remark: clientIp,
-                    // private_key: randomWallet.private_key
+                    remark: clientIp, // private_key: randomWallet.private_key
                 };
 
-                let sqlResult = get_mysql("AccountMapper", "insert", account);
-                let result = await exec_sql(sqlResult.result);
-                return res.status(200).json(
-                    responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
-                        keystore: keystore,
-                        privateKey: randomWallet.privateKey,
-                        publicKey: randomWallet.publicKey,
-                        address: randomWallet.address,
-                    })
-                );
+                await createAccount(account);
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
+                    keystore: keystore,
+                    privateKey: randomWallet.privateKey,
+                    publicKey: randomWallet.publicKey,
+                    address: randomWallet.address,
+                }));
             } else {
                 return res
-                    .status(200)
-                    .json(responseFun(500, "s_user信息未认证或者未更新,请稍后重试!", {}));
+                    .status(RESPONSE_STATUS.SUCCESS)
+                    .json(responseFun(RESPONSE_STATUS.ERROR, "s_user信息未认证或者未更新,请稍后重试!", {}));
             }
         }
     });
 
     // 实名账户
     app.post("/api/account/authUser", async (req, res, next) => {
-        let {s_address, s_password, address, password, expand_data, orderId} =
-            req.body;
+        let {s_address, s_password, address, password, expand_data, orderId, card_id} = req.body;
         s_address = Web3.utils.toChecksumAddress(s_address);
         address = Web3.utils.toChecksumAddress(address);
         if (!validateAddress(s_address).flag) {
-            return res.status(200).json(500, validateAddress(s_address).err, {});
+            return res.status(RESPONSE_STATUS.SUCCESS).json(RESPONSE_STATUS.ERROR, validateAddress(s_address).err, {});
         }
         if (!validateAddress(address).flag) {
             return res
-                .status(200)
-                .json(responseFun(500, validateAddress(address).err, {}));
+                .status(RESPONSE_STATUS.SUCCESS)
+                .json(responseFun(RESPONSE_STATUS.ERROR, validateAddress(address).err, {}));
         }
-        if (isEmpty(password).flag) {
+        if (isEmpty(password)) {
             res
-                .status(200)
+                .status(RESPONSE_STATUS.SUCCESS)
                 .json(PasswordEmpty);
         }
-        if (isEmpty(s_password).flag) {
-            return
+        if (isEmpty(s_password)) {
             res
-                .status(200)
+                .status(RESPONSE_STATUS.SUCCESS)
                 .json(PasswordEmpty);
         }
-        if (isEmpty(expand_data).flag) {
+        if (isEmpty(expand_data)) {
             return res
-                .status(200)
-                .json(responseFun(500, isEmpty(expand_data).err, {}));
+                .status(RESPONSE_STATUS.SUCCESS)
+                .json(responseFun(RESPONSE_STATUS.ERROR, "参数错误", {}));
         }
 
-        if (isEmpty(orderId).flag) {
+        if (isEmpty(orderId)) {
             return res
                 .status(200)
-                .json(responseFun(500, isEmpty(expand_data).err, {}));
+                .json(responseFun(RESPONSE_STATUS.ERROR, "参数错误", {}));
         }
 
-        let orderIdEcc = `0x${ethUtil
-            .keccak256(Buffer.from(orderId))
-            .toString("hex")}`;
+        if (!validCardId(card_id)) {
+            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码输入有误,请重新输入!'", {}));
+        }
+
 
         // 判断接入方用户名密码
-        let s_sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-            address: s_address,
-        });
-        let s_ret01 = await exec_sql(s_sqlResult.result);
+        let s_ret01 = await find_account(s_address);
         if (s_ret01.result == null) {
             return res
                 .status(200)
@@ -517,16 +316,12 @@ function accountRouters(app) {
             return res
                 .status(200)
                 .json(PasswordError);
-            ;
         } else {
             s_wallet = s_decWalletResult.result;
 
             // 判断用户密码是否正确
             // 判断接入方用户名密码
-            let c_sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-                address: address,
-            });
-            let c_ret01 = await exec_sql(c_sqlResult.result);
+            let c_ret01 = await find_account(address);
             if (c_ret01.result == null) {
                 return res
                     .status(200)
@@ -546,138 +341,27 @@ function accountRouters(app) {
                 const clientIp = requestIp.getClientIp(req);
 
                 // 判断商家身份
-                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-                let authData = await contract_static_call(
-                    ethers,
-                    authContractAddress,
-                    ABI_const["AuthController"].abi,
-                    "parentauths",
-                    customHttpProvider,
-                    [s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS]
-                );
+                let authData = await parentauths_v2(s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS);
 
                 if (authData.err != null) {
-                    return res.status(200).json(responseFun(500, "操作失败,请重试!", {}));
+                    return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
                 }
 
-                if (
-                    // Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
-                    authData.data.isAuth == true
-                ) {
-                    // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
-                    //等待其它程序处理上链
-                    let sender = s_address;
-                    let authTime = 1766841499; // 没有用的参数
-                    let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
-                    let isAuth = true;
-                    let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
-                    let expandData = expand_data;
-                    let caddress = c_wallet.address;
-                    // 计算签名
-                    let auth = {
-                        caddress,
-                        sender,
-                        authTime,
-                        authExpiry,
-                        isAuth,
-                        authLevel,
-                        expandData,
-                    };
+                if (authData.data.isAuth == true) {
 
-                    let privateKeyStr = c_wallet.privateKey;
-                    let verifyingContract = authContractAddress;
-                    privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
-
-                    const privateKey = Buffer.from(privateKeyStr, "hex");
-
-                    // uint256 orderId,
-                    // address caddress,
-                    // address sender,
-                    // bool isAuth,
-                    // string expandData
-
-                    const Types = {
-                        Authentication: [
-                            {type: "uint256", name: "orderId"},
-                            {type: "address", name: "caddress"},
-                            {type: "address", name: "sender"},
-                            {type: "bool", name: "isAuth"},
-                        ],
-                    };
-
-                    const data = EIP712.createTypeData(
-                        {
-                            name: "Authentication",
-                            version: "1",
-                            chainId: "27",
-                            verifyingContract,
-                        },
-                        "Authentication",
-                        {
-                            orderId: orderIdEcc,
-                            caddress: auth.caddress,
-                            sender: auth.sender,
-                            isAuth: auth.isAuth,
-                        },
-                        Types
-                    );
-
-                    let signature = sigUtil.signTypedData_v4(privateKey, {data: data});
-                    auth.signature = signature;
-
-                    let origin_data_json = [auth, orderIdEcc];
-                    // 存储上链数据
-
-                    let nft_transaction_aql = get_mysql(
-                        "NftTransactionMapper",
-                        "insertSelective",
-                        {
-                            from: s_address,
-                            to: authContractAddress,
-                            status: 0,
-                            // "hash": "",
-                            // "block_number": "",
-                            type: 1,
-                            is_reback: 0,
-                            order_id: orderId,
-                            value: "0",
-                            // "origin_data": JSON.stringify(origin_data_json),
-                            origin_data: origin_data_json,
-                            contract_address: authContractAddress,
-                            method:
-                                ABI_const["AuthController"].contractName +
-                                "#" +
-                                "authentication",
-                            origin_value: "0",
-                        }
-                    );
-                    let nft_transaction_aql_result = await exec_sql(
-                        nft_transaction_aql.result
-                    );
-                    if (nft_transaction_aql_result.err != null) {
-                        if (nft_transaction_aql_result.err == "ER_DUP_ENTRY") {
-                            return res
-                                .status(200)
-                                .json(responseFun(500, "OrderId 冲突!", {}));
-                        } else {
-                            return res
-                                .status(200)
-                                .json(responseFun(500, "操作失败,请重试!", {}));
-                        }
+                    let newVar = await auth_user_v2(c_wallet, card_id);
+                    if (newVar.code == 200) {
+                        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
+                            s_address: s_address, address: address, orderId: orderId,
+                        }));
+                    } else {
+                        return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, newVar.message, null));
                     }
-                    return res.status(200).json(
-                        responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
-                            s_address: s_address,
-                            address: address,
-                            orderId: orderId,
-                        })
-                    );
+
                 } else {
                     return res
                         .status(200)
-                        .json(
-                            responseFun(500, "s_user信息未认证或者未更新,请稍后重试!", {})
-                        );
+                        .json(responseFun(RESPONSE_STATUS.ERROR, "s_user信息未认证或者未更新,请稍后重试!", {}));
                 }
             }
         }
@@ -690,58 +374,36 @@ function accountRouters(app) {
         if (!validateAddress(address).flag) {
             return res
                 .status(200)
-                .json(responseFun(500, validateAddress(address).err, {}));
+                .json(responseFun(RESPONSE_STATUS.ERROR, validateAddress(address).err, {}));
         }
 
         if (!validateAddress(s_address).flag) {
             // 判断商家身份
             let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
-            let isAuth = await contract_static_call(
-                ethers,
-                authContractAddress,
-                ABI_const["AuthControllerV2"].abi,
-                "authsSingle",
-                customHttpProvider,
-                [address]
-            );
+            let isAuth = await auths_single(address);
 
             console.log(isAuth);
-            return res.status(200).json(
-                responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
-                    authData: {
-                        isAuth: isAuth.data,
-                    },
-                    address: address,
-                })
-            );
+            return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+                authData: {
+                    isAuth: isAuth.data,
+                }, address: address,
+            }));
         } else {
             // 判断商家身份
-            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-            let authData = await contract_static_call(
-                ethers,
-                authContractAddress,
-                ABI_const["AuthController"].abi,
-                "parentauths",
-                customHttpProvider,
-                [address, s_address]
-            );
+            let authData = await parentauths_v2(address, s_address);
 
             console.log(authData);
-            return res.status(200).json(
-                responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
-                    authData: {
-                        caddress: authData.data.caddress,
-                        sender: authData.data.sender,
-                        authTime: Web3.utils.hexToNumberString(authData.data.authTime),
-                        authExpiry: Web3.utils.hexToNumberString(authData.data.authExpiry),
-                        isAuth: authData.data.isAuth,
-                        authLevel: Web3.utils.hexToNumberString(authData.data.authLevel),
-                        expandData: authData.data.expandData,
-                    },
-                    s_address: s_address,
-                    address: address,
-                })
-            );
+            return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+                authData: {
+                    caddress: authData.data.caddress,
+                    sender: authData.data.sender,
+                    authTime: Web3.utils.hexToNumberString(authData.data.authTime),
+                    authExpiry: Web3.utils.hexToNumberString(authData.data.authExpiry),
+                    isAuth: authData.data.isAuth,
+                    authLevel: Web3.utils.hexToNumberString(authData.data.authLevel),
+                    expandData: authData.data.expandData,
+                }, s_address: s_address, address: address,
+            }));
         }
     });
 
@@ -760,29 +422,25 @@ function accountRouters(app) {
 
         //    save to db
         let account = {
-            keystore: keystore,
+            keystore: JSON.stringify(keystore),
             address: randomWallet.address,
             status: 1,
             psd: password,
             private_key: "",
-            remark: clientIp,
-            // private_key: randomWallet.private_key
+            remark: clientIp, // private_key: randomWallet.private_key
         };
 
-        if (isEmpty(password).flag) {
+        if (isEmpty(password)) {
             return res.status(200).json(PasswordEmpty);
         }
 
-        let sqlResult = get_mysql("AccountMapper", "insert", account);
-        let result = await exec_sql(sqlResult.result);
-        return res.status(200).json(
-            responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
-                keystore: keystore,
-                privateKey: randomWallet.privateKey,
-                publicKey: randomWallet.publicKey,
-                address: randomWallet.address,
-            })
-        );
+        await createAccount(account);
+        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
+            keystore: keystore,
+            privateKey: randomWallet.privateKey,
+            publicKey: randomWallet.publicKey,
+            address: randomWallet.address,
+        }));
     });
 
     // 查询庄户注册状态
@@ -795,36 +453,26 @@ function accountRouters(app) {
             return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }
 
-        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-            address: address,
-        });
-        let result = await exec_sql(sqlResult.result);
-        console.log(result);
+        let result = await find_account(address);
 
         let isExit = result.result != null;
-        return res.status(200).json(
-            responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
-                address: address,
-                isExit,
-                isCreated: isExit,
-            })
-        );
+        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+            address: address, isExit, isCreated: isExit,
+        }));
     });
 
     // 导出账户 (同步)
     app.post("/api/account/exportAccount", async (req, res, next) => {
         const {address, password} = req.body;
 
-        if (isEmpty(password).flag) {
+        if (isEmpty(password)) {
             return res
                 .status(200)
                 .json(PasswordEmpty);
         }
         // "Address: 0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290"
-        let sqlResult = get_mysql("AccountMapper", "selectByAddress", {
-            address: address,
-        });
-        let ret01 = await exec_sql(sqlResult.result);
+
+        let ret01 = await find_account(address);
         if (ret01.result == null) {
             return res
                 .status(200)
@@ -841,12 +489,9 @@ function accountRouters(app) {
             ;
         } else {
             wallet = decWalletResult.result;
-            return res.status(200).json(
-                responseFun(RESPONSE_STATUS.SUCCESS, "", {
-                    address: wallet.address,
-                    privateKey: wallet.privateKey,
-                })
-            );
+            return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                address: wallet.address, privateKey: wallet.privateKey,
+            }));
         }
     });
 
@@ -854,71 +499,64 @@ function accountRouters(app) {
     app.post("/api/address/address_auth", async (req, res, next) => {
         const {address} = req.body;
         if (!validateAddress(address).flag) {
-            return res.status(200).json(responseFun(500, validateAddress(address).err, {}));
+            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, validateAddress(address).err, {}));
         }
 
         let addressAuth = await getString("ADDRESS_AUTH_" + address);
-        if (!isEmpty(addressAuth).flag) {
+        if (!isEmpty(addressAuth)) {
             return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, null, JSON.parse(addressAuth)));
         }
-        // 查询地址实名情况
-        let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-        let parentauthsa = await contract_static_call(
-            ethers,
-            authContractAddress,
-            ABI_const["AuthController"].abi,
-            "parentauthsa",
-            customHttpProvider,
-            [address, 0]
-        );
-
-        // 将结果添加到redis  有效期五分钟
         let result;
-        if (parentauthsa.data == null) {
-            result = {
-                isAuth: false,
-                isNotExpired: false,
-                authExpiryTime: 0,
-            }
-        } else {
-
-            let parentauthsa = await contract_static_call(
-                ethers,
-                authContractAddress,
-                ABI_const["AuthController"].abi,
-                "parentauthsa",
-                customHttpProvider,
-                [address, 0]
-            );
-
-            let authExpiry = await contract_static_call(
-                ethers,
-                authContractAddress,
-                ABI_const["AuthController"].abi,
-                "auths",
-                customHttpProvider,
-                [address]
-            );
-            let authExpiryTime = authExpiry.data.toNumber()
-            // 获取当前时间的毫秒级时间戳
-            const milliseconds = Date.now();
-
-// 将毫秒级时间戳转换为秒级时间戳，并使用Math.floor取整
-            const timestamp = Math.floor(milliseconds / 1000);
-            let isAuth
-            if (authExpiryTime === 0 || timestamp > authExpiryTime) {
-                isAuth = false;
-            } else {
-                isAuth = true;
-            }
+        const milliseconds = Date.now();
+        const timestamp = Math.floor(milliseconds / 1000);
+        let auth = await authentications(address)
+        if (auth && auth.authentications && auth.authentications.length > 0) {
+            logger.info("AuthController V2 Query:%s", JSON.stringify(auth.authentications[0].transactionHash))
+            let au = auth.authentications[0]
+            let isAuth = au.longAuthExpiry > timestamp
             result = {
                 isAuth: true,
                 isNotExpired: isAuth,
-                authExpiryTime: authExpiryTime,
-                parthAddr: parentauthsa.data
+                authExpiryTime: au.longAuthExpiry,
+                parthAddr: au.saddress,
+                transactionHash: au.transactionHash,
+                authTime: au.authTime,
+                authExpiry: au.authExpiry,
+                expandData: au.expandData,
             }
+        } else {
+            logger.info("AuthController V1 Query:%s", address)
+            // 查询地址实名情况
+            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
+            let parentauthsa = await contract_static_call(ethers, authContractAddress, ABI_const["AuthController"].abi, "parentauthsa", customHttpProvider, [address, 0]);
+
+            // 将结果添加到redis  有效期五分钟
+
+            if (parentauthsa.data == null) {
+                result = {
+                    isAuth: false, isNotExpired: false, authExpiryTime: 0,
+                }
+            } else {
+
+                let authExpiry = await contract_static_call(ethers, authContractAddress, ABI_const["AuthController"].abi, "auths", customHttpProvider, [address]);
+                let authExpiryTime = authExpiry.data.toNumber()
+                // 获取当前时间的毫秒级时间戳
+
+// 将毫秒级时间戳转换为秒级时间戳，并使用Math.floor取整
+
+                let isAuth
+                if (authExpiryTime === 0 || timestamp > authExpiryTime) {
+                    isAuth = false;
+                } else {
+                    isAuth = true;
+                }
+                result = {
+                    isAuth: true, isNotExpired: isAuth, authExpiryTime: authExpiryTime, parthAddr: parentauthsa.data
+                }
+            }
+            console.log("parentauthsa:", result)
         }
-        console.log("parentauthsa:", result)
+
         await setString("ADDRESS_AUTH_" + address, JSON.stringify(result), 300)
         return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, null, result));
     })

@@ -2,10 +2,6 @@ const services = require("./services");
 const {EventEmitter} = require("events");
 
 class API extends EventEmitter {
-    MAKER_CONNECTIONS = {};
-    VALID_CHAINS = process.env.VALID_CHAINS
-        ? JSON.parse(process.env.VALID_CHAINS)
-        : [1, 583, 1002, 1001, 42161, 421613];
     started = false;
     wss;
     http;
@@ -20,10 +16,6 @@ class API extends EventEmitter {
 
     serviceHandler = (msg, ws) => {
         if (msg.op === "ping") {
-            return false;
-        }
-        if (!Object.prototype.hasOwnProperty.call(services, msg.op)) {
-            console.error(`Operation failed: ${msg.op}`);
             return false;
         }
         try {

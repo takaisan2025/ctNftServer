@@ -1,12 +1,6 @@
-const {
-    exec_sql,
-    exec_sql_all
-} = require("../controller/ctnft");
 const FormData = require("form-data");
 const fetch = require("node-fetch");
 const {formatTime} = require("./taskConst");
-const {responseFun} = require("../mapper/account");
-const {get_mysql} = require("../db/genSql");
 const {
     getString,
     setString,
@@ -15,7 +9,7 @@ const {
     lrange,
     lrem,
 } = require("../redis/redis-client");
-const {updateTransFormList} = require("../Orm/TransFormListService");
+const {updateTransFormList, findTransFormListAll} = require("../Orm/TransFormListService");
 
 async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
     const betchCallFundFlag = name + "_START";
@@ -26,23 +20,19 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
         await setString(betchCallFundFlag, "1", 60)
         console.time(name)
         // 设置列表
-        let sql
-        sql = get_mysql(
-            "trans_form_list",
-            queryName,
-            queryParams
-        ).result;
 
-        sql = sql.replace("! =", "!=")
+        let transList_ret = await findTransFormListAll(_param = {
+            where: queryParams,
+            offset: 0,
+            limit: 100,
+        })
+
         // console.log("betchTransferThread", sql)
-        let transList_ret = await exec_sql_all(sql)
         let transList = []
         if (transList_ret.err != null) {
-            console.trace("ERR:", transList_ret.err);
-            return
+            console.trace("ERR:", transList_ret.result);
         }
-        transList = transList_ret.result
-
+        transList = transList_ret.result;
         let urls = [];
 
         for (let retKey in transList) {
@@ -114,58 +104,25 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                                 //处理响应结果
                                 console.log("response", response);
                                 if (response != null && (response.status == 1 || response.status == 200)) {
-
                                     let query_params = {
                                         t_status: 4, // 上链成功
-                                        id: responseRet.ori_data.id
                                     };
-                                    console.log("nftUpdateSelective:", query_params);
-
-                                    let sqlUp = get_mysql(
-                                        "trans_form_list",
-                                        "updateByPrimaryKeySelective",
-                                        query_params
-                                    ).result;
-                                    await exec_sql(sqlUp)
-                                        .then((ret) => {
-                                            return ret;
-                                        })
-                                        .catch((err) => {
-                                            console.trace(responseFun(500, err, ""), responseRet.ori_data.id);
-                                            return responseFun(500, err, "");
-                                        });
+                                    await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
                                 } else if (response != null && response.msg == "作品不存在") {
 
                                     let query_params = {
                                         t_status: endStatus, // 上链成功
-                                        id: responseRet.ori_data.id
                                     };
-                                    console.log("nftUpdateSelective:", query_params);
-
-                                    let sqlUp = get_mysql(
-                                        "trans_form_list",
-                                        "updateByPrimaryKeySelective",
-                                        query_params
-                                    ).result;
-                                    await exec_sql(sqlUp);
+                                    await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
                                 } else {
                                     console.trace("回调错误:", response, ",orderId", url.orderId);
-                                    // return {data: null, err: err, ori_data: url};
-
                                     console.log("回调接口失败,", responseRet.ori_data.orderId);
                                     //
                                     let query_params = {
                                         t_status: endStatus, // 上链成功
-                                        id: responseRet.ori_data.id
+                                        vm_err: JSON.stringify(response),
                                     };
-                                    console.log("nftUpdateSelective:", query_params);
-
-                                    let sqlUp = get_mysql(
-                                        "trans_form_list",
-                                        "updateByPrimaryKeySelective",
-                                        query_params
-                                    ).result;
-                                    await exec_sql(sqlUp);
+                                    await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
                                 }
                             })
                             .catch(async (err) => {
@@ -178,17 +135,9 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                                 //
                                 let query_params = {
                                     t_status: endStatus, // 回调失败
-                                    id: responseRet.ori_data.id
+                                    vm_error: JSON.stringify(err),
                                 };
-                                console.log("nftUpdateSelective:", query_params);
-
-                                let sqlUp = get_mysql(
-                                    "trans_form_list",
-                                    "updateByPrimaryKeySelective",
-                                    query_params
-                                ).result;
-                                await exec_sql(sqlUp);
-
+                                await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
                             })
                     }
                 }

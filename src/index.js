@@ -1,4 +1,4 @@
-const throng = require('throng')
+"use strict";const throng = require('throng')
 const dotenv = require('dotenv')
 dotenv.config()
 

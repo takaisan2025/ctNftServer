@@ -25,12 +25,10 @@ const {contract_static_call} = require("../contract/ChainCall");
 const {responseFun} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
-let excloudAddr = ""
 
 const betchTransferFlag = "betchTransfer_START";
 
 const EIP712 = require("../routers/EIP712");
-const sigUtil = require("eth-sig-util");
 const {id_fun} = require("./taskConst");
 const {customHttpProvider} = require("./taskConst");
 const {RESPONSE_STATUS} = require("../chain/responseError");
@@ -38,7 +36,8 @@ const {findTransFormListAll, updateTransFormList} = require("../Orm/TransFormLis
 const {Op} = require('sequelize')
 const {findAccount} = require("../Orm/AccountService");
 const {findCollect} = require("../Orm/CollectService");
-const {updateNftTransaction, createNftTransaction} = require("../Orm/NftTransactionService");
+const {createNftTransaction} = require("../Orm/NftTransactionService");
+const {auth_user_v2, auths_single, auths_idHash} = require("../services/accountService");
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
 const provider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
@@ -90,7 +89,7 @@ async function betchTransfer() {
 
         // console.log("betchTransferThread", sql)
         let transList = []
-        if (transList_ret.code != 0) {
+        if (transList_ret.err != null) {
             console.trace("ERR:", transList_ret.result);
         }
         transList = transList_ret.result;
@@ -110,16 +109,16 @@ async function betchTransfer() {
                 update_time
             } = transList[retKey];
             try {
-                let accountDetail_ret01 = await findAccount(_where = {address: t_from})
-                let accountDetail = accountDetail_ret01.result[0]
+                let accountDetail_ret01 = await findAccount({address: t_from})
+                let accountDetail = accountDetail_ret01.result
 
                 let collectDetail_ret02 = await findCollect(_where = {address: collectAddress})
 
-                if (collectDetail_ret02.code != 0) {
+                if (collectDetail_ret02.err != null) {
                     console.trace("ERR:", collectDetail_ret02.result);
                 }
 
-                let collectDetail = collectDetail_ret02.result[0]
+                let collectDetail = collectDetail_ret02.result
 
                 console.log(collectDetail)
 
@@ -127,8 +126,8 @@ async function betchTransfer() {
                 if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
                     contractAddressDetailAsync = accountDetail;
                 } else {
-                    let contractAddressDetailAsync_ret = await findAccount(_where = {address: collectDetail.owner});
-                    contractAddressDetailAsync = contractAddressDetailAsync_ret.result[0]
+                    let contractAddressDetailAsync_ret = await findAccount({address: collectDetail.owner});
+                    contractAddressDetailAsync = contractAddressDetailAsync_ret.result
                 }
                 let contractAddressDetail = contractAddressDetailAsync;
 
@@ -205,7 +204,7 @@ async function betchTransfer() {
                     console.log("Balance: ", etherString);
                     if (Number(etherString) < Number(String(0.66))) {
                         let privateKey = contractAddressDetail.private_key;
-                        if (isEmpty(privateKey).flag) {
+                        if (isEmpty(privateKey)) {
                             continue;
                         } else {
                             let {
@@ -269,7 +268,7 @@ async function betchTransfer() {
 
                     if (Number(etherString) < Number(String(0.44))) {
                         let privateKey = contractAddressDetail.private_key;
-                        if (isEmpty(privateKey).flag) {
+                        if (isEmpty(privateKey)) {
                             continue;
                         } else {
                             let {
@@ -419,8 +418,8 @@ async function betchTransfer() {
 
                         let result002 = await updateTransFormList(_params = trans_from_obj, _where = {id: id})
 
-                        if (result002.code != 0) {
-                            console.trace(responseFun(500, result002.result, ""), id);
+                        if (result002.err != null) {
+                            console.trace(responseFun(RESPONSE_STATUS.ERROR, result002.result, ""), id);
                         }
                         console.log("update TransFrom data:", result002.result);
                         continue;
@@ -475,143 +474,21 @@ async function betchTransfer() {
     }
 }
 
-async function authUser(walletUser) {
-
-    let address = walletUser.address;
-    let orderId = new Date().getTime() + "sys_a_auto";
-    // 计算签名
-    let orderIdEcc = `0x${ethUtil
-        .keccak256(Buffer.from(orderId + ""))
-        .toString("hex")}`;
-
-    // 判断接入方用户名密码
-    let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
-    let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
-
-    let c_wallet = walletUser;
-    // 判断商家身份
-    let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-    // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
-    //等待其它程序处理上链
-    let sender = s_wallet.address;
-    let authTime = 1766841499; // 没有用的参数
-    let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 180; // 六个月
-    let isAuth = true;
-    let authLevel = 2; // 机构下面用户认证使用2, 机构实名使用1
-    let expandData = '{hash: \\"\\", version: \\"v1.0.0\\"}';
-    console.log(expandData)
-    let caddress = c_wallet.address;
-    // 计算签名
-    let auth = {
-        caddress,
-        sender,
-        authTime,
-        authExpiry,
-        isAuth,
-        authLevel,
-        expandData,
-    };
-
-    let privateKeyStr = c_wallet.privateKey;
-    let verifyingContract = contractAddress;
-    privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
-
-    const privateKey = Buffer.from(privateKeyStr, "hex");
-
-    // uint256 orderId,
-    // address caddress,
-    // address sender,
-    // bool isAuth,
-    // string expandData
-
-    const Types = {
-        Authentication: [
-            {type: "uint256", name: "orderId"},
-            {type: "address", name: "caddress"},
-            {type: "address", name: "sender"},
-            {type: "bool", name: "isAuth"},
-        ],
-    };
-
-    const data = EIP712.createTypeData(
-        {
-            name: "Authentication",
-            version: "1",
-            chainId: "27",
-            verifyingContract,
-        },
-        "Authentication",
-        {
-            orderId: orderIdEcc,
-            caddress: auth.caddress,
-            sender: auth.sender,
-            isAuth: auth.isAuth,
-        },
-        Types
-    );
-
-    let signature = sigUtil.signTypedData_v4(privateKey, {data: data});
-    auth.signature = signature;
-
-    let origin_data_json = [auth, orderIdEcc];
-    // 存储上链数据
-    // 插入数据库
-    let nft_transaction = {
-        from: s_wallet.address,
-        to: contractAddress,
-        status: 0,
-        // "hash": "",
-        // "block_number": "",
-        type: 1,
-        is_reback: 0,
-        order_id: orderId,
-        value: "0",
-        origin_data: JSON.stringify(origin_data_json),
-        // origin_data: origin_data_json,
-        contract_address: contractAddress,
-        method:
-            ABI_const["AuthController"].contractName +
-            "#" +
-            "authentication",
-        origin_value: "0",
-    };
-
-
-    let nft_transaction_aql_result = await createNftTransaction(_obj = nft_transaction)
-
-    if (nft_transaction_aql_result.code != 0) {
-        if (nft_transaction_aql_result.result == "ER_DUP_ENTRY") {
-            return responseFunStr(500, "OrderId 冲突!", {});
-        } else {
-            return responseFunStr(500, "操作失败,请重试!", {});
-        }
-    }
-    console.log(responseFunStr(RESPONSE_STATUS.SUCCESS, "请求成功", {
-        s_address: s_wallet.address,
-        address: address,
-        orderId: orderId,
-    }))
-
-}
-
 async function transfer(privateKey, value, toAddress, walletUser) {
 
     // 这里首先判断toAddress的实名情况, 否则转手续费会失败
     // if (GlobalConfig.CAN_AUTH) {
     let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
-    let isAuth = await contract_static_call(
-        ethers,
-        authContractAddress,
-        ABI_const["AuthControllerV2"].abi,
-        "authsSingle",
-        customHttpProvider,
-        [walletUser.address]
-    );
+    let isAuth = await auths_single(walletUser.address);
     if (isAuth.data != true) {
         // 这里进行预先实名
-        await authUser(walletUser)
-        console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
-        return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
+        let card_id = await auths_idHash(walletUser.address)
+        if (card_id.data === '0x00000000000000000000000000000000') {
+            console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
+            return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
+        } else {
+            await auth_user_v2(walletUser, card_id)
+        }
     }
     // }
 

@@ -24,6 +24,8 @@ const {
     lrem,
 } = require("../redis/redis-client");
 const {customHttpProvider} = require("./taskConst");
+const {auths_single} = require("../services/accountService");
+const {RESPONSE_STATUS} = require("../chain/responseError");
 const tFeeBetchTransferFlag = "tFeeBetchTransfer_START"
 
 async function tFeeBetchTransfer() {
@@ -56,21 +58,12 @@ async function tFeeBetchTransfer() {
             } = transList[retKey];
 
             // 使用Provider 连接合约，将只有对合约的可读权限
-            let transactionCount1Mint;
 
             // 这里首先判断toAddress的实名情况, 否则转手续费会失败
             if (GlobalConfig.CAN_AUTH) {
-                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
-                let isAuth = await contract_static_call(
-                    ethers,
-                    authContractAddress,
-                    ABI_const["AuthControllerV2"].abi,
-                    "authsSingle",
-                    customHttpProvider,
-                    [address]
-                );
+                let isAuth = await auths_single(t_to);
                 if (isAuth.data != true) {
-                    console.log(responseFunStr(500, "用户信息未认证或过期,请稍后重试!", {}))
+                    console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
                     return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
                 }
             }
@@ -109,7 +102,7 @@ async function tFeeBetchTransfer() {
             ).result;
             let result02 = await exec_sql(sqlUp);
             if (result02.err != null) {
-                console.error(responseFun(500, result02.err, ""), id);
+                console.error(responseFun(RESPONSE_STATUS.ERROR, result02.err, ""), id);
             }
             console.log("update TransFrom data:", result02.result);
 
@@ -185,7 +178,7 @@ async function tFeeBetchHashQuery() {
             ).result;
             let result03 = await exec_sql(sqlUp);
             if (result03.err != null) {
-                console.error(responseFun(500, result03.err, ""), id);
+                console.error(responseFun(RESPONSE_STATUS.ERROR, result03.err, ""), id);
             }
         }
         await removeString(tFeeBetchHashQueryFlag)

@@ -44,7 +44,7 @@ async function start() {
 
     // auth
     setInterval(SubmitTransactionTask, 5000)
-    setInterval(TransactionHashQueryTask, 5000)
+    // setInterval(TransactionHashQueryTask, 5000)
 }
 
 start()

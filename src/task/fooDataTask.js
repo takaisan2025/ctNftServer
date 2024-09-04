@@ -231,6 +231,7 @@ async function transferNft1155(address, password, contract, tokenid, toAddr) {
     }).then(ret => {
         return {code: RESPONSE_STATUS.SUCCESS, result: ret}
     }).catch(err => {
+        console.trace(err)
         return {code: RESPONSE_STATUS.ERROR, result: err}
     })
 }

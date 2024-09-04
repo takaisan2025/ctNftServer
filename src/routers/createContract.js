@@ -184,6 +184,7 @@ function createContractRouters(app) {
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, ret04.err, {}));
             }
         } catch (err) {
+            console.trace(err)
             logger.debug(err)
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }

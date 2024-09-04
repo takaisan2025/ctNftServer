@@ -26,6 +26,7 @@ const sequelize = new Sequelize(MYSQL_CONFIG.database, MYSQL_CONFIG.user, MYSQL_
         await sequelize.authenticate();
         console.log('Connection has been established successfully.');
     } catch (error) {
+        console.trace(error)
         console.error('Unable to connect to the database:', error);
     }
 })();   // 多一个括号表示调用方法

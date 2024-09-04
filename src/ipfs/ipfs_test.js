@@ -24,7 +24,8 @@ async function main() {
         // return imgResponse;
         return {err: null, data: imgResponse};
     }).catch((err) => {
-        console.log(err)
+
+            console.trace(error)
         return {err: err, data: null};
     });
     console.log(cid)

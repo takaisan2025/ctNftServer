@@ -8,6 +8,7 @@ async function findNftTransaction(_param) {
         const nftTransactions = await NftTransaction.findAll(_param);
         return {err: null, result: nftTransactions};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: error};
     }
 }

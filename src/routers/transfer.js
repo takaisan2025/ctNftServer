@@ -83,6 +83,7 @@ function transferRouters(app) {
                 validate(decWalletResult.err === null, "invalid password")
                 let wallet = decWalletResult.result;
             } catch (err) {
+                console.trace(err)
                 throw "invalid password";
             }
 
@@ -115,6 +116,7 @@ function transferRouters(app) {
                 }));
             ;
         } catch (err) {
+            console.trace(err)
             return res.status(RESPONSE_STATUS.SUCCESS).json(
                 responseFun(RESPONSE_STATUS.ERROR, err, null))
         }
@@ -412,6 +414,7 @@ function transferRouters(app) {
                     break;
             }
         } catch (err) {
+            console.trace(err)
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, null));
         }
     });

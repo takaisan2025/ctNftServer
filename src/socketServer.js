@@ -49,7 +49,8 @@ const createSocketServer = () => {
                         }
                     }
                 } catch (err) {
-                    console.log(err)
+
+                    console.trace(err)
                 }
 
                 return null

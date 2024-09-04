@@ -26,6 +26,8 @@ async function graphiqlHashQuery(hash) {
             return {err: null, data: response};
         })
         .catch((err) => {
+
+            console.trace(err)
             console.log("查询hash失败:", err);
             return {err: err, data: null};
         });

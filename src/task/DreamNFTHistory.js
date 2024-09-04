@@ -104,6 +104,7 @@ async function processResult(result) {
                         return ret;
                     })
                     .catch((err) => {
+                        console.trace(err)
                         console.error(err);
                     });
                 let resultTo = await exec_sql(get_mysql(
@@ -118,6 +119,7 @@ async function processResult(result) {
                         return ret;
                     })
                     .catch((err) => {
+                        console.trace(err)
                         console.error(err);
                     });
 
@@ -135,6 +137,7 @@ async function processResult(result) {
                         return ret;
                     })
                     .catch((err) => {
+                        console.trace(err)
                         console.error(err);
                     });
                 console.log("resultExistFrom == null:", resultExistFrom == null)
@@ -161,6 +164,7 @@ async function processResult(result) {
                             return ret;
                         })
                         .catch((err) => {
+                            console.trace(err)
                             console.log("ERR:", err);
                             return err;
                         });
@@ -179,7 +183,7 @@ async function processResult(result) {
                         return ret;
                     })
                     .catch((err) => {
-                        console.error(err, id);
+                        console.trace(err)
                     });
                 console.log("resultExistTo:", resultExistTo == null)
 

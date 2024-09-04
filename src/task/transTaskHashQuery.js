@@ -76,7 +76,6 @@ async function betchHashQuery() {
                     await updateTransFormList(_params = trans_from_obj, _where = {id: id})
                 }
             } catch (e) {
-                console.error(e)
                 console.trace(e)
                 continue;
             }

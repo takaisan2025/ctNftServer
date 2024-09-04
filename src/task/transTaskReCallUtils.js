@@ -126,6 +126,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                                 }
                             })
                             .catch(async (err) => {
+                                console.trace(err)
                                 console.trace("回调错误:", err, ",orderId", url.orderId);
                                 // return {data: null, err: err, ori_data: url};
 
@@ -145,7 +146,6 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                 // console.log(responseRet)
             });
         } catch (e) {
-            console.error(e)
             console.trace(e)
         }
 

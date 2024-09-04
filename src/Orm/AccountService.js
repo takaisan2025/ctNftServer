@@ -9,6 +9,7 @@ async function findAccount(_where) {
         });
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: error};
     }
 }
@@ -21,6 +22,7 @@ async function findAccountAll(_where) {
         });
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: error};
     }
 }
@@ -32,6 +34,7 @@ async function updateAccount(_params, _where) {
         })
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: error};
     }
 }
@@ -41,6 +44,7 @@ async function createAccount(_account) {
         const res = await Account.create(_account)
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: pro_err(error)};
     }
 }

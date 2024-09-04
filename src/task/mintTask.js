@@ -1,5 +1,5 @@
-import {validate} from "../routers/fcommon";
-import {auth_user_v2, auths_idHash, auths_single} from "../services/accountService";
+const {validate} = require("../routers/fcommon");
+const {auth_user_v2, auths_idHash, auths_single} = require("../services/accountService");
 
 const {isEmpty} = require("../rules/rules");
 const GlobalConfig = require("../config/GlobalConfig.json");
@@ -140,6 +140,7 @@ async function mintFileUploadIpfs() {
                     premetadata.replace(/\n/g, "\\n").replace(/\r/g, "\\r")
                 );
             } catch (e) {
+                console.trace(e)
                 reqdataRet = JSON.parse(
                     premetadata.replace(/\\%/g, '%')
                 );
@@ -163,6 +164,7 @@ async function mintFileUploadIpfs() {
                     return response;
                 })
                 .catch((err) => {
+                    console.trace(e)
                     console.trace(responseFunStr(RESPONSE_STATUS.ERROR, err, {}), id);
                 });
             console.log("metaData:", response);
@@ -184,6 +186,7 @@ async function mintFileUploadIpfs() {
                 }
                 console.info(responseFunStr(RESPONSE_STATUS.SUCCESS, ""), id);
             } catch (e) {
+                console.trace(e)
                 console.trace(responseFunStr(RESPONSE_STATUS.ERROR, e, ""), id);
             }
         }
@@ -328,6 +331,7 @@ async function mintBetchMint() {
                             return {err: null, gasLimit: ret};
                         })
                         .catch((err) => {
+                            console.trace(err)
                             console.trace("err:", err.reason);
 
                             return {err: err.reason, gasLimit: null};
@@ -896,7 +900,7 @@ async function mintBetchCallFund() {
                         responseChanel1.data == null || responseChanel1.data.code !== RESPONSE_STATUS.SUCCESS
                             ? 9
                             : 1;
-                    await updateNft({ status: newStatus }, { tokenId });
+                    await updateNft({status: newStatus}, {tokenId});
                     if (newStatus === 9) {
                         continue;
                     }

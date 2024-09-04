@@ -14,6 +14,7 @@ const GRAPH_NODE_URL = 'https://graph-node.ctblock.cn/subgraphs/name/ctOraclePay
     }
     return response.data.data
   }).catch(error => {
+      console.trace(error)
     console.error('Error fetching data:', error)
     throw error
   })

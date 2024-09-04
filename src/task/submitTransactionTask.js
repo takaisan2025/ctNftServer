@@ -157,6 +157,7 @@ async function SubmitTransactionTask() {
                         ).then((ret) => {
                             return {err: null, gasLimit: ret}
                         }).catch((err) => {
+                            console.trace(err)
                             return {err: err.reason, gasLimit: null}
                         });
                         if (gasLimitRet.err != null) {

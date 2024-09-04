@@ -28,6 +28,7 @@ async function find_account(_address) {
 
         return {err: null, result: account}
     } catch (e) {
+        console.trace(e)
         console.log("error", e)
         return {err: e.code, result: null}
     }

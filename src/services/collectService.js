@@ -14,6 +14,7 @@ async function insert_collect(_lottery) {
             return {err: null, result: 1}
         }
     } catch (e) {
+        console.trace(e)
         console.log("error", e.code)
         return {err: e.code, result: null}
     }
@@ -33,6 +34,7 @@ async function find_collect(_address) {
         }
         return {err: null, result: account}
     } catch (e) {
+        console.trace(e)
         console.log("error", e.code)
         return {err: e.code, result: null}
     }

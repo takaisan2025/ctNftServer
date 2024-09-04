@@ -9,6 +9,7 @@ async function findTransFormList(_where) {
         });
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: error};
     }
 }
@@ -18,6 +19,7 @@ async function findTransFormListAll(_param) {
         const account = await TransFormList.findAll(_param);
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: error};
     }
 }
@@ -27,6 +29,7 @@ async function findTransFormListOne(_param) {
         const account = await TransFormList.findOne(_param);
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: error};
     }
 }
@@ -38,6 +41,7 @@ async function updateTransFormList(_params, _where) {
         })
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: error};
     }
 }
@@ -47,6 +51,7 @@ async function createTransFormList(_lottery) {
         const res = await TransFormList.create(_lottery)
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: pro_err(error)};
     }
 }
@@ -55,6 +60,7 @@ async function countTrans(_where) {
         const res = await TransFormList.count(_where)
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: pro_err(error)};
     }
 }

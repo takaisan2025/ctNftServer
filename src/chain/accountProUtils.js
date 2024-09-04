@@ -51,6 +51,7 @@ async function getPriKey(account, password) {
         }
 
     } catch (e) {
+        console.trace(e)
         return {err: e.toString(), result: null}
     }
 

@@ -19,6 +19,7 @@ const contract_static_call = async (ethers, collectAddress, collectAbi, funName,
             data: result
         };
     } catch (err) {
+        console.trace(err)
         return {err: err, data: null}
 
     }

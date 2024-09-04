@@ -65,7 +65,7 @@ function mintRouters(app) {
             let checkURLRet1 = checkURL(file);
             validate(checkURLRet1.flag, checkURLRet1.err);
         } catch (e) {
-            console.log(e)
+            console.trace(e)
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
         }
 
@@ -172,10 +172,12 @@ function mintRouters(app) {
                     }));
                 })
                 .catch((err) => {
+                    console.trace(err)
                     logger.debug("ERR:%s", err);
                     return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
                 });
         } catch (err) {
+            console.trace(err)
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }
     });
@@ -206,6 +208,7 @@ function mintRouters(app) {
             let checkURLRet1 = checkURL(file);
             validate(checkURLRet1.flag, checkURLRet1.err)
         } catch (e) {
+            console.trace(e)
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, e, {}));
         }
         if (supply < 1) {
@@ -302,10 +305,12 @@ function mintRouters(app) {
                     }));
                 })
                 .catch((err) => {
+                    console.trace(err)
                     logger.debug("ERR:%s", err);
                     return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err.code, {}));
                 });
         } catch (err) {
+            console.trace(err)
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, {}));
         }
     });

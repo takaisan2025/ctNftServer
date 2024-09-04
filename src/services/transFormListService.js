@@ -13,7 +13,8 @@ async function count_trans(_status) {
         })
         return count.result
     } catch (e) {
-        console.log("error", e)
+
+        console.trace(e)
         return  e.code
     }
 }

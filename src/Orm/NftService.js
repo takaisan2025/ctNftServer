@@ -8,6 +8,7 @@ async function findNft(_where) {
         });
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: error};
     }
 }
@@ -17,6 +18,7 @@ async function findNftAll(_param) {
         const account = await Nft.findAll(_param);
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: error};
     }
 }
@@ -28,6 +30,7 @@ async function updateNft(_params, _where) {
         })
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: error};
     }
 }
@@ -37,6 +40,7 @@ async function createNft(_lottery) {
         const res = await Nft.create(_lottery)
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: pro_err(error)};
     }
 }
@@ -46,6 +50,7 @@ async function countNft(_where) {
         const res = await Nft.count(_where)
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null, err: pro_err(error)};
     }
 }

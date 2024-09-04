@@ -26,6 +26,8 @@ async function balanceQuery(address, collectAddress, tokenId) {
             data: Web3.utils.hexToNumberString(accountBalance)
         };
     } catch (err) {
+
+        console.trace(err)
         return {err: err, data: null}
 
     }
@@ -67,6 +69,8 @@ async function queryBalanceAndTokenBalance(from,
                 data: result
             };
         } catch (err) {
+
+            console.trace(err)
             return {err: err, data: null}
 
         }

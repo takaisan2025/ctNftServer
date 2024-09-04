@@ -8,6 +8,7 @@ async function findCollect(_where) {
         });
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: error};
     }
 }
@@ -17,6 +18,7 @@ async function findCollectAll(_param) {
         const account = await Collect.findAll(_param);
         return {err: null, result: account};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: error};
     }
 }
@@ -28,6 +30,7 @@ async function updateCollect(_params, _where) {
         })
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: error};
     }
 }
@@ -37,6 +40,7 @@ async function createCollect(_lottery) {
         const res = await Collect.create(_lottery)
         return {err: null, result: res};
     } catch (error) {
+        console.trace(error)
         return {result: null,err: pro_err(error)};
     }
 }

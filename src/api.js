@@ -25,6 +25,7 @@ class API extends EventEmitter {
                 Array.isArray(msg.args) ? msg.args : [],
             ]);
         } catch (e) {
+            console.trace(e)
             console.error(`Operation failed: ${msg.op} because ${e.message}`);
             return false;
         }

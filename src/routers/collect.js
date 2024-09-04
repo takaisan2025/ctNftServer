@@ -134,6 +134,7 @@ async function collectInit(
                     return ret;
                 })
                 .catch((err) => {
+                    console.trace(error)
                     logger.debug("err:%s", err);
                     return err;
                 });
@@ -144,12 +145,14 @@ async function collectInit(
                     return ret;
                 })
                 .catch((err) => {
+                    console.trace(error)
                     logger.debug("err:%s", err);
                 });
             // logger.debug(recept);
             validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, 'Transaction Reverted');
             return {err: null, hash: tx.hash};
         } catch (err) {
+            console.trace(err)
             return {err: err, hash: null};
         }
     } else {
@@ -188,6 +191,7 @@ async function collectInitCall(
             return {err: null, gaslimit: ret};
         })
         .catch((err) => {
+            console.trace(err)
             logger.debug("err:%s", err);
             return {err: err, gaslimit: null};
         });
@@ -210,6 +214,7 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
                 return ret;
             })
             .catch((err) => {
+                console.trace(err)
                 logger.debug("err:%s", err);
                 return err;
             });
@@ -219,12 +224,14 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
                 return ret;
             })
             .catch((err) => {
+                console.trace(err)
                 logger.debug("err:%s", err);
             });
         // logger.debug(recept);
         validate(recept.status === TRANSACTION_RECEIPT_STATUS.SUCCESS, "Transaction Reverted")
         return {err: null, hash: tx.hash};
     } catch (err) {
+        console.trace(err)
         return {err: err, hash: null};
     }
 }

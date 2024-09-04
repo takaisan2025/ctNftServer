@@ -18,7 +18,7 @@ async function insert_nft(_lottery) {
             return {err: null, result: 1}
         }
     } catch (e) {
-        console.log("error", e.code)
+        console.trace(e)
         return {err: e.code, result: null}
     }
 }
@@ -40,7 +40,7 @@ async function find_nfts(_tokenIds) {
         }
         return {err: null, result: nftArr}
     } catch (e) {
-        console.log("error", e)
+        console.trace(e)
         return {err: e.code, result: null}
     }
 }
@@ -56,7 +56,8 @@ async function count_nft(_status) {
         })
         return count.result
     } catch (e) {
-        console.log("error", e)
+
+        console.trace(e)
         return  e.code
     }
 }

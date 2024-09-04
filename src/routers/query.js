@@ -25,6 +25,7 @@ function queryRouters(app) {
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", ret.result));
             })
             .catch((err) => {
+                console.trace(err)
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, err, ""));
             });
     })

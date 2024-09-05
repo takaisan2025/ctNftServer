@@ -154,7 +154,7 @@ async function mintFileUploadIpfs() {
             const reqdata = {};
             reqdata.fileName = tempPath.substring(tempPath.lastIndexOf("/") + 1);
             // reqdata.image =
-            //     "https://dream.chaonft.cn/ipfs/api/v0/cat/" + imgIpfsAddress;
+            //     "https://dctblock.cn/ipfs/api/v0/cat/" + imgIpfsAddress;
             reqdata.image = tempPath;
             reqdata.subject = reqdataRet.title;
             reqdata.author = reqdataRet.author;

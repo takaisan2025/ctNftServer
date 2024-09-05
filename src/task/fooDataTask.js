@@ -173,8 +173,8 @@ async function createContract1155(address, password, name, symbol) {
             "cMetadata": {
                 "name": name,
                 "symbol": symbol,
-                "tokenUrlPrefix": "https://dream.chaonft.cn/",
-                "contractUrl": "https://dream.chaonft.cn/ipfs/cat/QmZJqDPxkwGLEwocovFMpmrAKkN7nmr95LqfhcumbM9urw"
+                "tokenUrlPrefix": "https://ctblock.cn/",
+                "contractUrl": "https://ctblock.cn/ipfs/cat/QmZJqDPxkwGLEwocovFMpmrAKkN7nmr95LqfhcumbM9urw"
             }
         })
     }).then(resp => {
@@ -195,7 +195,7 @@ async function createNft1155(address, password, contract, author, authorDesc, de
             "collectAddress": contract,
             "file": file,
             "supply": 100000,
-            "rebackUrl": "https://dream.chaonft.cn/index.php?a=NftChainReturn",
+            "rebackUrl": "https://ctblock.cn/index.php?a=NftChainReturn",
             "data": {
                 "author": author,
                 "authorDesc": authorDesc,

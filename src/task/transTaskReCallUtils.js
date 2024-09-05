@@ -84,7 +84,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                         let trans_from_obj = {
                             t_status: 21, // 永不回调
                         }
-                        await updateTransFormList(_params = trans_from_obj, _where = {id: responseRet.ori_data.id})
+                        await updateTransFormList(_params = trans_from_obj, {id: responseRet.ori_data.id})
                     } else {
                         console.log("The string does not contain 'chaonft.cn/'.");
                         fetch(url.url, url.requestOptions)
@@ -107,13 +107,13 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                                     let query_params = {
                                         t_status: 4, // 上链成功
                                     };
-                                    await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
+                                    await updateTransFormList(_params = query_params, {id: responseRet.ori_data.id})
                                 } else if (response != null && response.msg == "作品不存在") {
 
                                     let query_params = {
                                         t_status: endStatus, // 上链成功
                                     };
-                                    await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
+                                    await updateTransFormList(_params = query_params, {id: responseRet.ori_data.id})
                                 } else {
                                     console.trace("回调错误:", response, ",orderId", url.orderId);
                                     console.log("回调接口失败,", responseRet.ori_data.orderId);
@@ -122,7 +122,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                                         t_status: endStatus, // 上链成功
                                         vm_err: JSON.stringify(response),
                                     };
-                                    await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
+                                    await updateTransFormList(_params = query_params, {id: responseRet.ori_data.id})
                                 }
                             })
                             .catch(async (err) => {
@@ -138,7 +138,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                                     t_status: endStatus, // 回调失败
                                     vm_error: JSON.stringify(err),
                                 };
-                                await updateTransFormList(_params = query_params, _where = {id: responseRet.ori_data.id})
+                                await updateTransFormList(_params = query_params, {id: responseRet.ori_data.id})
                             })
                     }
                 }

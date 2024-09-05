@@ -24,7 +24,7 @@ async function find_collect(_address) {
     //logic to find accounts
     try {
 
-        let nfts_ret = await findCollect(_where = {address: _address})
+        let nfts_ret = await findCollect({address: _address})
 
         let account = null;
         if (nfts_ret.err === 0) {

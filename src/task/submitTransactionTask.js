@@ -1,3 +1,4 @@
+"use strict"
 const ABI_const = require("../contract/ABI_const.js");
 const ethers = require("ethers");
 const pino = require("pino");
@@ -71,7 +72,7 @@ async function SubmitTransactionTask() {
                 andfrom.push(stringAddress)
             }
 
-            const nftTransactions = await findNftTransaction(_where = {
+            const nftTransactions = await findNftTransaction({
                 where: {
                     status: 0,
                     from: {
@@ -170,7 +171,7 @@ async function SubmitTransactionTask() {
                                 vm_err: gasLimitRet.err
                             };
                             console.log("nftUpdateSelective:", trans_from_obj);
-                            await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}})
+                            await updateNftTransaction(_params = trans_from_obj, {where: {id: id}})
                             continue;
 
                         } else {
@@ -216,7 +217,7 @@ async function SubmitTransactionTask() {
                                 };
                                 console.log("nftUpdateSelective:", trans_from_obj);
 
-                                let result02 = await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}},)
+                                let result02 = await updateNftTransaction(_params = trans_from_obj, {where: {id: id}},)
 
                                 if (result02.err != null) {
                                     console.trace(responseFun(RESPONSE_STATUS.ERROR, result02.err, ""), id);
@@ -239,7 +240,7 @@ async function SubmitTransactionTask() {
                                             vm_err: gasLimitRet.err
                                         };
                                         console.log("nftUpdateSelective:", trans_from_obj);
-                                        await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}},)
+                                        await updateNftTransaction(_params = trans_from_obj, {where: {id: id}},)
                                         continue;
                                     case "ErrFunds must less than 0.105 ETH":
                                         // 计算手续费导致的错误, 稍后重试
@@ -251,7 +252,7 @@ async function SubmitTransactionTask() {
                                             id: id
                                         };
 
-                                        await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}},)
+                                        await updateNftTransaction(_params = trans_from_obj, {where: {id: id}},)
 
                                         if (funData[0].authLevel && funData[0].authLevel == 8) {
                                             await transferOutline(funData[0].caddress, '30')
@@ -301,7 +302,7 @@ async function TransactionHashQueryTask() {
 
             // 示例使用：
             const date = new Date('2024-08-10');
-            const nftTransactions = await findNftTransaction(_where = {
+            const nftTransactions = await findNftTransaction({
                 where: {
                     status: 1,
                     create_time: {
@@ -357,7 +358,7 @@ async function TransactionHashQueryTask() {
 
                             console.log("nftUpdateSelective:", trans_from_obj);
                             if (t_statusStorage == 3) {
-                                await updateNftTransaction(_params = trans_from_obj, _where = {where: {id: id}})
+                                await updateNftTransaction(_params = trans_from_obj, {where: {id: id}})
                             }
                             continue;
                         }

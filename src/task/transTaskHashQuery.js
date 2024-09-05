@@ -73,7 +73,7 @@ async function betchHashQuery() {
                     console.log("nftUpdateSelective:", trans_from_obj);
 
                     console.log("nftUpdateSelective:", trans_from_obj);
-                    await updateTransFormList(_params = trans_from_obj, _where = {id: id})
+                    await updateTransFormList(_params = trans_from_obj, {id: id})
                 }
             } catch (e) {
                 console.trace(e)

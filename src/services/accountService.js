@@ -34,9 +34,8 @@ async function find_account(_address) {
     }
 }
 
-async function auth_user_v1(randomWallet, s_address,expand_data) {
+async function auth_user_v1(randomWallet, s_address, expand_data) {
 
-    let address = randomWallet.address;
     let orderId = new Date().getTime() + "sys_a_auto";
     // 计算签名
     let orderIdEcc = `0x${ethUtil
@@ -48,13 +47,12 @@ async function auth_user_v1(randomWallet, s_address,expand_data) {
     let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
     let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
 
-    let c_wallet = randomWallet;
     // 判断商家身份
     let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
     // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
     //等待其它程序处理上链
     // 计算签名
-    let privateKeyStr = c_wallet.privateKey;
+    let privateKeyStr = randomWallet.privateKey;
     let verifyingContract = contractAddress;
     privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
@@ -163,7 +161,6 @@ async function auth_user_v1(randomWallet, s_address,expand_data) {
 
 async function auth_user_v2(walletUser, card_id) {
 
-    let address = walletUser.address;
     let orderId = new Date().getTime() + "sys_a_auto";
     // 计算签名
     let orderIdEcc = `0x${ethUtil
@@ -174,15 +171,14 @@ async function auth_user_v2(walletUser, card_id) {
     let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
     let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
 
-    let c_wallet = walletUser;
     // 判断商家身份
     let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
     // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
     //等待其它程序处理上链
     let authExpiry = Math.round(new Date().getTime() / 1000) + 1 * 60 * 60 * 24 * 3600; // 10 year
-    let caddress = c_wallet.address;
+    let caddress = walletUser.address;
     // 计算签名
-    let privateKeyStr = c_wallet.privateKey;
+    let privateKeyStr = walletUser.privateKey;
     let verifyingContract = contractAddress;
     privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
@@ -201,12 +197,13 @@ async function auth_user_v2(walletUser, card_id) {
     // bool isAuth,
     // string expandData
     let auth = {
-        idHash, authExpiry,
+        authExpiry, idHash
     };
     const Types = {
-        Authentication: [{type: "bytes16", name: "idHash"}, {
-            type: "uint256", name: "orderId"
-        }, {type: "address", name: "caddress"},],
+        Authentication: [
+            {type: "bytes16", name: "idHash"},
+            {type: "uint256", name: "orderId"},
+            {type: "address", name: "caddress"},],
     };
 
     const data = EIP712.createTypeData(
@@ -252,7 +249,7 @@ async function auth_user_v2(walletUser, card_id) {
     let nft_transaction_aql_result = await createNftTransaction(nft_transaction)
 
     if (nft_transaction_aql_result.err != null) {
-        if (nft_transaction_aql_result.result == "order_id must be unique") {
+        if (nft_transaction_aql_result.result === "order_id must be unique") {
             return responseFun(RESPONSE_STATUS.ERROR, "OrderId 冲突!", {});
         } else {
             return responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {});

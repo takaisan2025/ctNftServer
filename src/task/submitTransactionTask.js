@@ -7,20 +7,16 @@ const {
     getString,
     setString,
     removeString,
-    rpush,
-    lrange,
-    lrem, getKeys,
+    getKeys,
 } = require("../redis/redis-client");
-const ethUtil = require("ethereumjs-util");
 const {Op} = require('sequelize')
 const {customHttpProvider} = require("./taskConst");
 const {responseFun} = require("../mapper/account");
-const {PasswordError, RESPONSE_STATUS} = require("../chain/responseError");
+const {RESPONSE_STATUS} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
 const {findAccount} = require("../Orm/AccountService");
 const {findNftTransaction, updateNftTransaction} = require("../Orm/NftTransactionService");
 const GlobalConfig = require("../config/GlobalConfig.json");
-const {log} = require("forever");
 const {transferOutline} = require("./transferOutline");
 const SubmitTransactionTaskFlag = "SubmitTransactionTask_START"
 const TransactionHashQueryTaskFlag = "TransactionHashQueryTask_START"

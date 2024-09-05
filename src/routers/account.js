@@ -348,9 +348,7 @@ function accountRouters(app) {
                 }
 
                 if (authData.data.isAuth == true) {
-                    let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
-                    let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
-                    let newVar = await auth_user_v2(c_wallet, card_id, walletSys.address);
+                    let newVar = await auth_user_v2(c_wallet, card_id, s_address);
                     if (newVar.code == 200) {
                         return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
                             s_address: s_address, address: address, orderId: orderId,

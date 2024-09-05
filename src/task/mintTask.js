@@ -248,7 +248,7 @@ async function mintBetchMint() {
                 let type = collectDetail.type;
                 let isBal = await getString("BALANCE_" + collectDetail.owner)
                 if (isBal == "1") {
-                    await setString("BALANCE_" + collectRet.owner, "1", 120);  // 2 min
+                    await setString("BALANCE_" + collectRet.owner, "1", 60);  // 2 min
                     console.log("合约草田分余额不足:", collectDetail.owner)
                     break;
                 }
@@ -363,7 +363,7 @@ async function mintBetchMint() {
                         if (Number(etherString) < Number(String(10))) {
                             // 合约持有者余额不足十个,将进行充值 1155铸造者
                             console.log("合约持有者余额不足, 请进行充值!", address);
-                            await setString("BALANCE_" + address, "1", 300);
+                            await setString("BALANCE_" + address, "1", 60);
                             // await delNonce(address);
                             continue;
                         } else {
@@ -568,7 +568,7 @@ async function mintBetchMint() {
                                 contractAddressDetail.address.toLowerCase() == address.toLowerCase() && Number(etherString) < Number(String(10))
                             ) {
 
-                                await setString("BALANCE_" + contractAddressDetail.address, "1", 300)
+                                await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                                 // 跳出, 重新查询数据
                                 console.log("草田分余额不足:", contractAddressDetail.address)
                                 continue;
@@ -577,7 +577,7 @@ async function mintBetchMint() {
                                 // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                                 let etherStringC = ethers.utils.formatEther(balanceC);
                                 if (Number(etherStringC) < Number(String(10))) {
-                                    await setString("BALANCE_" + contractAddressDetail.address, "1", 300)
+                                    await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                                     // 跳出, 重新查询数据
                                     console.log("草田分余额不足:", contractAddressDetail.address)
                                     continue;

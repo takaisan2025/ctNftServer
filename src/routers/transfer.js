@@ -262,7 +262,7 @@ function transferRouters(app) {
                     // 这里如果是合约发行方的话, 做手续费判断   1155协议
                     if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
                         if (mainBalance < 50) {
-                            await setString("BALANCE_" + address, "1", 300);
+                            await setString("BALANCE_" + address, "1", 60);
                             logger.debug("手续费余额不足:address:%s", address);
                             throw "手续费余额不足";
                         }

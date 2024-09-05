@@ -183,7 +183,7 @@ async function betchTransfer() {
                     contractAddressDetail.address.toLowerCase() == t_from.toLowerCase() && Number(etherString) < Number(String(10))
                 ) {
 
-                    await setString("BALANCE_" + contractAddressDetail.address, "1", 300)
+                    await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                     // 跳出, 重新查询数据
                     console.log("草田分余额不足:", contractAddressDetail.address)
                     continue;
@@ -192,7 +192,7 @@ async function betchTransfer() {
                     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
                     let etherStringC = ethers.utils.formatEther(balanceC);
                     if (Number(etherStringC) < Number(String(10))) {
-                        await setString("BALANCE_" + contractAddressDetail.address, "1", 300)
+                        await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                         // 跳出, 重新查询数据
                         console.log("草田分余额不足:", contractAddressDetail.address)
                         continue;

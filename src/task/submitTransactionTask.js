@@ -197,7 +197,7 @@ async function SubmitTransactionTask() {
                                     console.trace("err:", err.reason);
 
                                     if (err.reason === 'cannot estimate gas; transaction may fail or may require manual gas limit') {
-                                        await setString("BALANCE_" + from, "1", 300);
+                                        await setString("BALANCE_" + from, "1", 60);
                                         logger.debug("手续费余额不足:address:%s", from);
                                     }
 

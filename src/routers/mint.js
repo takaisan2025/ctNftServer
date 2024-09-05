@@ -254,7 +254,7 @@ function mintRouters(app) {
             let etherString = ethers.utils.formatEther(balance);
             logger.debug("Balance: %s", etherString);
             if (Number(etherString) < Number(10)) {
-                await setString("BALANCE_" + collectRet.owner, "1", 120);  // 2 min
+                await setString("BALANCE_" + collectRet.owner, "1", 60);  // 2 min
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
             }
 

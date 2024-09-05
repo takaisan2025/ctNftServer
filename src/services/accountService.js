@@ -153,7 +153,7 @@ async function auth_user_v1(randomWallet, s_address, expand_data) {
     }
     console.log(responseFunStr(RESPONSE_STATUS.SUCCESS, "请求成功", {
         s_address: s_wallet.address,
-        address: address,
+        address: caddress,
         orderId: orderId,
     }))
 

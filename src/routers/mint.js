@@ -272,7 +272,6 @@ function mintRouters(app) {
             let nft = {
                 address,
                 isFinish: 0,
-                // premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
                 premetadata: JSON.stringify(data),
                 status: 0, // 未上架
                 supply,

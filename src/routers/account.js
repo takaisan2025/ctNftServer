@@ -218,7 +218,6 @@ function accountRouters(app) {
             const clientIp = requestIp.getClientIp(req);
 
             // 判断商家身份
-            let authContractAddress = GlobalConfig.AuthCall;
             let authData = await parentauths_v2(s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS);
 
             if (authData.err != null) {
@@ -232,9 +231,6 @@ function accountRouters(app) {
                 let randomWallet = new ethers.Wallet(private_key, customHttpProvider);
                 let keystore = await randomWallet.encrypt(password);
 
-
-                let newVar = await auth_user_v2(randomWallet, card_id, s_address);
-                logger.info("import User authV2 :%s", JSON.stringify(newVar))
 
                 //    save to db
                 let account = {
@@ -255,6 +251,10 @@ function accountRouters(app) {
                         address: randomWallet.address,
                     }));
                 } else {
+
+                    let newVar = await auth_user_v2(randomWallet, card_id, s_address);
+                    logger.info("import User authV2 :%s", JSON.stringify(newVar))
+
                     return res
                         .status(RESPONSE_STATUS.SUCCESS)
                         .json(responseFun(RESPONSE_STATUS.ERROR, newVar1.err, {}));

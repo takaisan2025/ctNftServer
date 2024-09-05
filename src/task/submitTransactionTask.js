@@ -204,7 +204,7 @@ async function SubmitTransactionTask() {
 
                                     return {err: err.reason, data: null};
                                 });
-                            tx = txCallRet.data;
+                            let tx = txCallRet.data;
                             // console.log("txRet:", txRet);
                             // console.log("txTransForm:", tx);
                             if (txCallRet.err == null) {

@@ -44,16 +44,12 @@ async function auth_user_v1(randomWallet, s_address, expand_data) {
     let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
 
     // 判断接入方用户名密码
-    let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
-    let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
-
     // 判断商家身份
-    let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
     // TODO 这里新建一张表来存储上链信息 , 这里需要使用到签名
     //等待其它程序处理上链
     // 计算签名
     let privateKeyStr = randomWallet.privateKey;
-    let verifyingContract = contractAddress;
+    let verifyingContract = authContractAddress;
     privateKeyStr = Web3.utils.stripHexPrefix(privateKeyStr);
 
     const privateKey = Buffer.from(privateKeyStr, "hex");
@@ -145,14 +141,14 @@ async function auth_user_v1(randomWallet, s_address, expand_data) {
     let nft_transaction_aql_result = await createNftTransaction(nft_transaction)
 
     if (nft_transaction_aql_result.err != null) {
-        if (nft_transaction_aql_result.result == "order_id must be unique") {
+        if (nft_transaction_aql_result.result === "order_id must be unique") {
             return responseFunStr(RESPONSE_STATUS.ERROR, "OrderId 冲突!", {});
         } else {
             return responseFunStr(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {});
         }
     }
     console.log(responseFunStr(RESPONSE_STATUS.SUCCESS, "请求成功", {
-        s_address: s_wallet.address,
+        s_address: s_address,
         address: caddress,
         orderId: orderId,
     }))

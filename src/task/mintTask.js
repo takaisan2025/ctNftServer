@@ -1,3 +1,4 @@
+"use strict";
 const {validate} = require("../routers/fcommon");
 const {auth_user_v2, auths_idHash, auths_single} = require("../services/accountService");
 
@@ -248,7 +249,7 @@ async function mintBetchMint() {
                 let type = collectDetail.type;
                 let isBal = await getString("BALANCE_" + collectDetail.owner)
                 if (isBal == "1") {
-                    await setString("BALANCE_" + collectRet.owner, "1", 60);  // 2 min
+                    await setString("BALANCE_" + collectDetail.owner, "1", 60);  // 2 min
                     console.log("合约草田分余额不足:", collectDetail.owner)
                     break;
                 }

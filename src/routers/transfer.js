@@ -153,7 +153,7 @@ function transferRouters(app) {
             let ex_orderId_ret = await findTransFormList({
                 orderId: orderId
             });
-            console.log("ex_orderId_ret:", ex_orderId_ret);
+            // console.log("ex_orderId_ret:", ex_orderId_ret);
             if (ex_orderId_ret.result != null) {
                 console.log("数据库判断订单号冲突!");
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "order_id must be unique", ""));

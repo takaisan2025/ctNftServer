@@ -38,6 +38,7 @@ const {findAccount} = require("../Orm/AccountService");
 const {findCollect} = require("../Orm/CollectService");
 const {createNftTransaction} = require("../Orm/NftTransactionService");
 const {auth_user_v2, auths_single, auths_idHash} = require("../services/accountService");
+const {queryBalance} = require("../chain/balanceQuery");
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
 const provider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
@@ -162,9 +163,7 @@ async function betchTransfer() {
                 let transferTo = t_to;
 
                 // 链上余额判断
-                let balance = await wallet.provider.getBalance(t_from);
-                // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                let etherString = ethers.utils.formatEther(balance);
+                let etherString = await queryBalance(t_from);
 
                 // TODO 首先需要判断授权 ApproveAll
                 let contractToken = new ethers.Contract(
@@ -188,9 +187,7 @@ async function betchTransfer() {
                     console.log("草田分余额不足:", contractAddressDetail.address)
                     continue;
                 } else {
-                    let balanceC = await wallet.provider.getBalance(contractAddressDetail.address.toLowerCase());
-                    // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                    let etherStringC = ethers.utils.formatEther(balanceC);
+                    let etherStringC = await queryBalance(contractAddressDetail.address.toLowerCase());
                     if (Number(etherStringC) < Number(String(10))) {
                         await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                         // 跳出, 重新查询数据

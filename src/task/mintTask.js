@@ -1,4 +1,6 @@
 "use strict";
+import {queryBalance} from "../chain/balanceQuery";
+
 const {validate} = require("../routers/fcommon");
 const {auth_user_v2, auths_idHash, auths_single} = require("../services/accountService");
 
@@ -360,9 +362,7 @@ async function mintBetchMint() {
                             gasConfig.mint1155.gas.toString()
                         );
                         console.log("gasPrice*:", neceliby);
-                        let balance = await wallet.provider.getBalance(address);
-                        // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                        let etherString = ethers.utils.formatEther(balance);
+                        let etherString = await queryBalance(address);
                         console.log("Balance: ", etherString);
                         if (Number(etherString) < Number(String(10))) {
                             // 合约持有者余额不足十个,将进行充值 1155铸造者
@@ -527,9 +527,7 @@ async function mintBetchMint() {
                         console.log("gasPrice*:", gasConfig.mint721.gas);
 
 
-                        let balance = await wallet.provider.getBalance(address);
-                        // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                        let etherString = ethers.utils.formatEther(balance);
+                        let etherString = await queryBalance(address);
                         console.log("Balance: ", etherString);
 
                         if (Number(etherString) < Number(String(1.5))) {
@@ -577,9 +575,7 @@ async function mintBetchMint() {
                                 console.log("草田分余额不足:", contractAddressDetail.address)
                                 continue;
                             } else {
-                                let balanceC = await wallet.provider.getBalance(contractAddressDetail.address.toLowerCase());
-                                // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-                                let etherStringC = ethers.utils.formatEther(balanceC);
+                                let etherStringC = await queryBalance(contractAddressDetail.address.toLowerCase());
                                 if (Number(etherStringC) < Number(String(10))) {
                                     await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                                     // 跳出, 重新查询数据
@@ -587,7 +583,6 @@ async function mintBetchMint() {
                                     continue;
                                 }
                             }
-
 
                             let privateKeyA = contractAddressDetail.private_key;
                             if (isEmpty(privateKeyA)) {

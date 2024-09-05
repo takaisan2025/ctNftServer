@@ -78,6 +78,24 @@ async function queryBalanceAndTokenBalance(from,
 
 }
 
+async function queryBalance(from) {
+
+    let newVar = await getString("queryBalance_" + from);
+    if (newVar) {
+        console.log("缓存获取余额")
+        return newVar;
+    } else {
+        let balanceC = await customHttpProvider.getBalance(from);
+        console.log("链上查询余额")
+        // 余额是 BigNumber (in wei); 格式化为 ether 字符串
+        let etherStringC = ethers.utils.formatEther(balanceC);
+        await setString("queryBalance_" + from, etherStringC, 5);
+        return etherStringC;
+
+    }
+
+}
+
 let token = "0xfE29D35FA07f6e084a1C2FD0936fF231C0e8931E";
 let from = "0xfE0E612A60e8A4477138faFfDE468488df42Ef1e";
 let tokenId =
@@ -85,5 +103,6 @@ let tokenId =
 
 module.exports = {
     balanceQuery,
-    queryBalanceAndTokenBalance
+    queryBalanceAndTokenBalance,
+    queryBalance
 };

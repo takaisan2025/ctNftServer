@@ -33,6 +33,7 @@ const pino = require("pino");
 const {find_account, auths_single} = require("../services/accountService");
 const {find_collect} = require("../services/collectService");
 const {createNft} = require("../Orm/NftService");
+const {queryBalance} = require("../chain/balanceQuery");
 const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 
 function mintRouters(app) {
@@ -109,9 +110,8 @@ function mintRouters(app) {
         validate(decWalletResult.err === null, PasswordError);
         wallet = decWalletResult.result;
         wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
-        let balance = await wallet.provider.getBalance(collectDetail.owner);
+        let etherString = await queryBalance(collectDetail.owner);
         // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-        let etherString = ethers.utils.formatEther(balance);
         logger.debug("Balance: %s", etherString);
         // 计算初始化合约费用
         if (Number(etherString) < Number(10)) {
@@ -242,8 +242,7 @@ function mintRouters(app) {
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "合约账户余额不足!", {}));
             }
             wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
-            let balance = await wallet.provider.getBalance(collectRet.owner);
-            let etherString = ethers.utils.formatEther(balance);
+            let etherString = await queryBalance(collectRet.owner);
             logger.debug("Balance: %s", etherString);
             if (Number(etherString) < Number(10)) {
                 await setString("BALANCE_" + collectRet.owner, "1", 60);  // 2 min

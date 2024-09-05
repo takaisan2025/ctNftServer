@@ -34,6 +34,7 @@ const {RESPONSE_STATUS} = require("../chain/responseError");
 const {validate} = require("./fcommon");
 const {find_account} = require("../services/accountService");
 const {insert_collect} = require("../services/collectService");
+const {queryBalance} = require("../chain/balanceQuery");
 
 function createContractRouters(app) {
 
@@ -113,12 +114,11 @@ function createContractRouters(app) {
             logger.debug("necelibyInit*:%s", necelibyInit);
             logger.debug("gaslimitInit:%s", gaslimitInit);
             let necelibyTotal = Number(neceliby) + Number(necelibyInit);
-            let balance = await wallet.provider.getBalance(address);
+            let etherString = await queryBalance(address);
             // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-            let etherString = ethers.utils.formatEther(balance);
             logger.debug("Balance: %s", etherString);
             // 计算初始化合约费用
-            logger.debug("judge balance enough:%s", Number(balance) < Number(necelibyTotal));
+            logger.debug("judge balance enough:%s", Number(etherString) < Number(necelibyTotal));
             if (Number(etherString) < Number(necelibyTotal)) {
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "账户余额不足!", {}));
             }

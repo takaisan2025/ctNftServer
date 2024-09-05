@@ -121,7 +121,7 @@ function accountRouters(app) {
                 let keystore = await randomWallet.encrypt(password);
                 let newVar;
                 if (!isEmpty(card_id)) {
-                    newVar = await auth_user_v2(randomWallet, card_id)
+                    newVar = await auth_user_v2(randomWallet, card_id, s_address)
                 } else {
                     newVar = await auth_user_v1(randomWallet, s_address, expand_data)
                 }
@@ -233,7 +233,7 @@ function accountRouters(app) {
                 let keystore = await randomWallet.encrypt(password);
 
 
-                let newVar = await auth_user_v2(randomWallet, card_id);
+                let newVar = await auth_user_v2(randomWallet, card_id, s_address);
                 logger.info("import User authV2 :%s", JSON.stringify(newVar))
 
                 //    save to db
@@ -348,8 +348,9 @@ function accountRouters(app) {
                 }
 
                 if (authData.data.isAuth == true) {
-
-                    let newVar = await auth_user_v2(c_wallet, card_id);
+                    let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
+                    let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
+                    let newVar = await auth_user_v2(c_wallet, card_id, walletSys.address);
                     if (newVar.code == 200) {
                         return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
                             s_address: s_address, address: address, orderId: orderId,

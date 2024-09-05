@@ -746,7 +746,9 @@ async function transfer(privateKey, value, toAddress, walletUser) {
             console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
             return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
         } else {
-            await auth_user_v2(walletUser, card_id)
+            let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
+            let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
+            await auth_user_v2(walletUser, card_id,walletSys.address)
         }
     }
 

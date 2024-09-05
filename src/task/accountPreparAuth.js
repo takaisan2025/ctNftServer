@@ -7,6 +7,8 @@ const {getPriKey} = require("../chain/accountProUtils");
 const {PasswordError} = require("../chain/responseError");
 const {findAccount} = require("../Orm/AccountService");
 const {auth_user_v2} = require("../services/accountService");
+const {customHttpProvider} = require("./taskConst");
+const ethers = require("ethers");
 
 /**
  * 查找数据库的未上传ipfs的铸造的请求, 然后来铸造.
@@ -33,7 +35,9 @@ async function betchPreaprAuth(authAddress) {
             c_wallet = c_decWalletResult.result;
 
             let cardId = "123456789012345678"
-            let result02 = await auth_user_v2(c_wallet, cardId)
+            let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
+            let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
+            let result02 = await auth_user_v2(c_wallet, cardId, walletSys.address)
             console.log(result02)
         }
 

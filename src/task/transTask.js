@@ -479,7 +479,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
 
     // 这里首先判断toAddress的实名情况, 否则转手续费会失败
     // if (GlobalConfig.CAN_AUTH) {
-    let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
+    let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
     let isAuth = await auths_single(walletUser.address);
     if (isAuth.data != true) {
         // 这里进行预先实名
@@ -488,12 +488,12 @@ async function transfer(privateKey, value, toAddress, walletUser) {
             console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
             return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
         } else {
-            await auth_user_v2(walletUser, card_id)
+            await auth_user_v2(walletUser, card_id, walletSys.address)
         }
     }
     // }
 
-    let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
+
     let nonce = await getNonce(walletSys.address)
     let tx = {
         to: toAddress,

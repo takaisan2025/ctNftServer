@@ -246,13 +246,19 @@ function accountRouters(app) {
                     remark: clientIp, // private_key: randomWallet.private_key
                 };
 
-                await createAccount(account);
-                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
-                    keystore: keystore,
-                    privateKey: randomWallet.privateKey,
-                    publicKey: randomWallet.publicKey,
-                    address: randomWallet.address,
-                }));
+                let newVar1 = await createAccount(account);
+                if (newVar1.err == null) {
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
+                        keystore: keystore,
+                        privateKey: randomWallet.privateKey,
+                        publicKey: randomWallet.publicKey,
+                        address: randomWallet.address,
+                    }));
+                } else {
+                    return res
+                        .status(RESPONSE_STATUS.SUCCESS)
+                        .json(responseFun(RESPONSE_STATUS.ERROR, newVar1.err, {}));
+                }
             } else {
                 return res
                     .status(RESPONSE_STATUS.SUCCESS)

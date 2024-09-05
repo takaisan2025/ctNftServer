@@ -171,7 +171,7 @@ async function SubmitTransactionTask() {
                                 vm_err: gasLimitRet.err
                             };
                             console.log("nftUpdateSelective:", trans_from_obj);
-                            await updateNftTransaction(_params = trans_from_obj, {where: {id: id}})
+                            await updateNftTransaction(trans_from_obj, {where: {id: id}})
                             continue;
 
                         } else {
@@ -217,7 +217,7 @@ async function SubmitTransactionTask() {
                                 };
                                 console.log("nftUpdateSelective:", trans_from_obj);
 
-                                let result02 = await updateNftTransaction(_params = trans_from_obj, {where: {id: id}},)
+                                let result02 = await updateNftTransaction(trans_from_obj, {where: {id: id}},)
 
                                 if (result02.err != null) {
                                     console.trace(responseFun(RESPONSE_STATUS.ERROR, result02.err, ""), id);
@@ -240,7 +240,7 @@ async function SubmitTransactionTask() {
                                             vm_err: gasLimitRet.err
                                         };
                                         console.log("nftUpdateSelective:", trans_from_obj);
-                                        await updateNftTransaction(_params = trans_from_obj, {where: {id: id}},)
+                                        await updateNftTransaction(trans_from_obj, {where: {id: id}},)
                                         continue;
                                     case "ErrFunds must less than 0.105 ETH":
                                         // 计算手续费导致的错误, 稍后重试
@@ -252,7 +252,7 @@ async function SubmitTransactionTask() {
                                             id: id
                                         };
 
-                                        await updateNftTransaction(_params = trans_from_obj, {where: {id: id}},)
+                                        await updateNftTransaction(trans_from_obj, {where: {id: id}},)
 
                                         if (funData[0].authLevel && funData[0].authLevel == 8) {
                                             await transferOutline(funData[0].caddress, '30')
@@ -358,7 +358,7 @@ async function TransactionHashQueryTask() {
 
                             console.log("nftUpdateSelective:", trans_from_obj);
                             if (t_statusStorage == 3) {
-                                await updateNftTransaction(_params = trans_from_obj, {where: {id: id}})
+                                await updateNftTransaction(trans_from_obj, {where: {id: id}})
                             }
                             continue;
                         }

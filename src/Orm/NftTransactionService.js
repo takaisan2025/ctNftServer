@@ -34,7 +34,7 @@ async function createNftTransaction(_obj) {
 // findAllNftTransactions()
 // findNftTransaction(_where ={where:{status: 1}}).then(r => console.log(r.result[0]))
 // findNftTransaction({where: {id: 6290103}}).then(r => console.log(JSON.parse(r.result[0].origin_value).name))
-// updateNftTransaction(_params = {status: 1010}, {where: {id: 6290101}}).then(r => console.log(r))
+// updateNftTransaction({status: 1010}, {where: {id: 6290101}}).then(r => console.log(r))
 module.exports = {
     findNftTransaction, updateNftTransaction, createNftTransaction
 };

@@ -53,7 +53,7 @@ async function createAccount(_account) {
 // findAccount(_where ={status: 1}).then(r => console.log(r))
 // findAccount(_where ={id: 452}).then(r => console.log(r))
 // findAccount({address: '0x21366DB44c5C6Aebe8fE6005B3F599E561100740'}).then(r => console.log(r.result[0]))
-// updateAccounts(_params = {status: 1010}, {id: 6290101},).then(r => console.log(r))
+// updateAccounts({status: 1010}, {id: 6290101},).then(r => console.log(r))
 module.exports = {
     findAccount, updateAccount, createAccount,findAccountAll
 };

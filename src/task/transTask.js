@@ -345,7 +345,7 @@ async function betchTransfer() {
                         };
 
                         console.log("nftUpdateSelective:", trans_from_obj);
-                        await updateTransFormList(_params = trans_from_obj, {id: id})
+                        await updateTransFormList(trans_from_obj, {id: id})
                     } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
                         // 计算手续费导致的错误, 稍后重试
                     } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
@@ -353,7 +353,7 @@ async function betchTransfer() {
                         let trans_from_obj = {
                             t_status: 6  // 上链成功
                         };
-                        let newVar1 = await updateTransFormList(_params = trans_from_obj, {id: id});
+                        let newVar1 = await updateTransFormList(trans_from_obj, {id: id});
                         console.log(newVar1)
                     } else if ("replacement fee too low" == gasLimitRet.err) {
                     } else {
@@ -417,7 +417,7 @@ async function betchTransfer() {
                         };
                         console.log("nftUpdateSelective:", trans_from_obj);
 
-                        let result002 = await updateTransFormList(_params = trans_from_obj, {id: id})
+                        let result002 = await updateTransFormList(trans_from_obj, {id: id})
 
                         if (result002.err != null) {
                             console.trace(responseFun(RESPONSE_STATUS.ERROR, result002.result, ""), id);
@@ -431,7 +431,7 @@ async function betchTransfer() {
                                 vm_err: gasLimitRet.err
                             };
                             console.log("nftUpdateSelective:", trans_from_obj);
-                            await updateTransFormList(_params = trans_from_obj, {id: id})
+                            await updateTransFormList(trans_from_obj, {id: id})
                             continue;
                         }
                         if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
@@ -448,7 +448,7 @@ async function betchTransfer() {
                                 t_status: 6  // 上链成功
                             };
 
-                            await updateTransFormList(_params = trans_from_obj, {id: id})
+                            await updateTransFormList(trans_from_obj, {id: id})
                             continue;
                         }
                         if ("replacement fee too low" == txRet.err) {

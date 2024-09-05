@@ -2,15 +2,11 @@ const {
     isEmpty
 } = require("../rules/rules");
 const GlobalConfig = require("../config/GlobalConfig.json");
-const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
 const {
     getString,
     setString,
-    removeString,
-    rpush,
-    lrange,
-    lrem, getKeys,
+    removeString, getKeys,
 } = require("../redis/redis-client");
 
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
@@ -19,16 +15,13 @@ let CtTransferExecutorAddress = GlobalConfig.CtTransferExecutorAddress;
 const ethers = require("ethers");
 
 const ethUtil = require("ethereumjs-util");
-const ABI_const = require("../contract/ABI_const");
 const {responseFunStr} = require("../mapper/account");
-const {contract_static_call} = require("../contract/ChainCall");
 const {responseFun} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
 
 const betchTransferFlag = "betchTransfer_START";
 
-const EIP712 = require("../routers/EIP712");
 const {id_fun} = require("./taskConst");
 const {customHttpProvider} = require("./taskConst");
 const {RESPONSE_STATUS} = require("../chain/responseError");
@@ -36,12 +29,10 @@ const {findTransFormListAll, updateTransFormList} = require("../Orm/TransFormLis
 const {Op} = require('sequelize')
 const {findAccount} = require("../Orm/AccountService");
 const {findCollect} = require("../Orm/CollectService");
-const {createNftTransaction} = require("../Orm/NftTransactionService");
 const {auth_user_v2, auths_single, auths_idHash} = require("../services/accountService");
 const {queryBalance} = require("../chain/balanceQuery");
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
-const provider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 
 // 获取账户的 nonce
 async function getNonce(address) {
@@ -51,7 +42,7 @@ async function getNonce(address) {
         await setString(address + '_NONCE', nonce, 4)  // 5s
 
     } else {
-        nonce = await provider.getTransactionCount(address, "latest");
+        nonce = await customHttpProvider.getTransactionCount(address, "latest");
         console.log(address + "Nonce:", nonce);
         await setString(address + '_NONCE', nonce, 4)  // 5s
     }

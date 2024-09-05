@@ -24,7 +24,6 @@ const Web3 = require("web3");
 let web3 = new Web3(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
-const provider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 
 // 获取账户的 nonce
 async function getNonce(address) {
@@ -34,7 +33,7 @@ async function getNonce(address) {
         await setString(address + '_NONCE', nonce, 4)  // 5s
 
     } else {
-        nonce = await provider.getTransactionCount(address, "latest");
+        nonce = await customHttpProvider.getTransactionCount(address, "latest");
         console.log(address + "Nonce:", nonce);
         await setString(address + '_NONCE', nonce, 4)  // 5s
     }

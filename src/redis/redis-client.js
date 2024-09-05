@@ -69,6 +69,18 @@ const removeString = (key) => {
 }
 
 // rpush 将给定值推入列表的右端 返回值 当前列表长度
+const lpop = (key) => {
+    key = redisPrefix + key;
+    return new Promise((resolve, reject) => {
+        redisClient.lpop(key, function (err, result) {
+            if (err) {
+                reject(err)
+            }
+            resolve(result)
+        })
+    })
+}
+// rpush 将给定值推入列表的右端 返回值 当前列表长度
 const rpush = (key, token) => {
     key = redisPrefix + key;
     return new Promise((resolve, reject) => {
@@ -121,6 +133,7 @@ module.exports = {
     getString,
     setString,
     removeString,
+    lpop,
     rpush,
     lrange,
     lrem,

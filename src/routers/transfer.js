@@ -1,7 +1,7 @@
 "use strict";
 const {
     getString,
-    setString,
+    setString, rpush,
 } = require("../redis/redis-client");
 const {
     exec_sql,
@@ -44,7 +44,7 @@ const ERC1155CtnftOwner = require("../contract/ERC1155CtnftOwner.json");
 const {find_account, auths_single} = require("../services/accountService");
 const {find_collect} = require("../services/collectService");
 const {findCollect} = require("../Orm/CollectService");
-const {findTransFormList, findTransFormListAll} = require("../Orm/TransFormListService");
+const {findTransFormList, findTransFormListAll, createTransFormList} = require("../Orm/TransFormListService");
 
 const contractMap = {
     9: ERC721Ctnft,
@@ -242,7 +242,7 @@ function transferRouters(app) {
             } else {
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "暂不受支持的合约!", null));
             }
-
+            var sqlQueryByTokenIdAndForm;
             switch (collectDetail["type"]) {
                 case 10:
                 case 12:
@@ -277,9 +277,7 @@ function transferRouters(app) {
                     }
                     // save db
                     //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
-                    var sqlQueryByTokenIdAndForm = get_mysql(
-                        "trans_form_list",
-                        "insertSelective",
+                    sqlQueryByTokenIdAndForm =
                         {
                             t_from: address,
                             t_to: to,
@@ -290,25 +288,8 @@ function transferRouters(app) {
                             orderId: orderId,
                             type: collectDetail["type"],
                             t_status: 1,
-                        }
-                    ).result;
-                    let ex_ret = await exec_sql(sqlQueryByTokenIdAndForm);
+                        };
 
-                    if (ex_ret.err != null) {
-                        console.log("ERR:", ex_ret.err);
-                        console.log("ERR_JUDGE:", "order_id must be unique" == ex_ret.err);
-                        if ("order_id must be unique" == ex_ret.err) {
-                            await setString(orderId, "1", 300);
-                        }
-                        let isDump = await getString(orderId);
-                        console.log("isDump:", isDump);
-                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, ""));
-                    } else {
-                        logger.debug("Out:%s", new Date().getTime());
-                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
-                            orderId: orderId,
-                        }));
-                    }
 
                     break;
                 case 9:
@@ -385,33 +366,37 @@ function transferRouters(app) {
                     // save db
 
                     //入库, 等待调度程序上链,这里为了程序安全也会回调,返回成功的交易hash和状态.
-                    var sqlQueryByTokenIdAndForm1 =
-                        getMysqlSqlByTabNameAndSqlNameAndParam(
-                            "trans_form_list",
-                            "insertSelective",
-                            {
-                                t_from: address,
-                                t_to: to,
-                                collectAddress: collectAddress,
-                                amount: amount,
-                                reback_url: rebackUrl,
-                                token_id: tokenId,
-                                orderId: orderId,
-                                type: collectDetail["type"],
-                                t_status: 1,
-                            }
-                        ).result;
-                    let ex_ret_01 = await exec_sql(sqlQueryByTokenIdAndForm1);
-                    if (ex_ret_01.err != null) {
-                        console.log("ERR:", ex_ret_01.err);
-                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret_01.err, ""));
-                    } else {
-                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                    sqlQueryByTokenIdAndForm =
+                        {
+                            t_from: address,
+                            t_to: to,
+                            collectAddress: collectAddress,
+                            amount: amount,
+                            reback_url: rebackUrl,
+                            token_id: tokenId,
                             orderId: orderId,
-                        }));
-                    }
-
+                            type: collectDetail["type"],
+                            t_status: 1,
+                        };
                     break;
+            }
+            await rpush("TRANSFER_F",JSON.stringify(sqlQueryByTokenIdAndForm))
+            let ex_ret = await createTransFormList(sqlQueryByTokenIdAndForm);
+
+            if (ex_ret.err != null) {
+                console.log("ERR:", ex_ret.err);
+                console.log("ERR_JUDGE:", "order_id must be unique" == ex_ret.err);
+                if ("order_id must be unique" == ex_ret.err) {
+                    await setString(orderId, "1", 300);
+                }
+                let isDump = await getString(orderId);
+                console.log("isDump:", isDump);
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, ex_ret.err, ""));
+            } else {
+                logger.debug("Out:%s", new Date().getTime());
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "", {
+                    orderId: orderId,
+                }));
             }
         } catch (err) {
             console.trace(err)

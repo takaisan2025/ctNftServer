@@ -1,5 +1,5 @@
 "use strict";
-import {queryBalance} from "../chain/balanceQuery";
+const {queryBalance}  = require( "../chain/balanceQuery");
 
 const {validate} = require("../routers/fcommon");
 const {auth_user_v2, auths_idHash, auths_single} = require("../services/accountService");

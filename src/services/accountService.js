@@ -36,7 +36,7 @@ async function find_account(_address) {
 
 async function auth_user_v1(randomWallet, s_address, expand_data) {
 
-    let orderId = new Date().getTime() + "sys_a_auto";
+    let orderId = new Date().getTime() + "sys_a_V1";
     // 计算签名
     let orderIdEcc = `0x${ethUtil
         .keccak256(Buffer.from(orderId + ""))
@@ -159,17 +159,13 @@ async function auth_user_v1(randomWallet, s_address, expand_data) {
 
 }
 
-async function auth_user_v2(walletUser, card_id) {
+async function auth_user_v2(walletUser, card_id, s_address) {
 
-    let orderId = new Date().getTime() + "sys_a_auto";
+    let orderId = new Date().getTime() + "sys_a_V2";
     // 计算签名
     let orderIdEcc = `0x${ethUtil
         .keccak256(Buffer.from(orderId + ""))
         .toString("hex")}`;
-
-    // 判断接入方用户名密码
-    let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
-    let s_wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
 
     // 判断商家身份
     let contractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS_V2;
@@ -229,7 +225,7 @@ async function auth_user_v2(walletUser, card_id) {
     // 存储上链数据
     // 插入数据库
     let nft_transaction = {
-        from: s_wallet.address,
+        from: s_address,
         to: contractAddress,
         status: 0,
         // "hash": "",
@@ -256,7 +252,7 @@ async function auth_user_v2(walletUser, card_id) {
         }
     }
     return responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
-        s_address: s_wallet.address,
+        s_address: s_address,
         address: caddress,
         orderId: orderId,
     })

@@ -380,7 +380,7 @@ function transferRouters(app) {
                         };
                     break;
             }
-            await rpush("TRANSFER_F",JSON.stringify(sqlQueryByTokenIdAndForm))
+            // await rpush("TRANSFER_F",JSON.stringify(sqlQueryByTokenIdAndForm))
             let ex_ret = await createTransFormList(sqlQueryByTokenIdAndForm);
 
             if (ex_ret.err != null) {

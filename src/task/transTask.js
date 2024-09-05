@@ -101,7 +101,7 @@ async function betchTransfer() {
                 update_time
             } = transList[retKey];
             // TODO 待完成
-            await lpop("TRANSFER_F")
+            // await lpop("TRANSFER_F")
             try {
                 let accountDetail_ret01 = await findAccount({address: t_from})
                 let accountDetail = accountDetail_ret01.result

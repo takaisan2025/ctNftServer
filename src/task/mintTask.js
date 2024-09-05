@@ -31,6 +31,8 @@ const {findAccount} = require("../Orm/AccountService");
 let minted721TokenStr = "execution reverted: ERC721: token already minted";
 let minted1155TokenStr = "execution reverted: more than supply";
 const {Op} = require('sequelize')
+const pino = require("pino");
+const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
@@ -131,17 +133,18 @@ async function mintFileUploadIpfs() {
             }
             // console.log(nftArr[retKey]);
             let {id, premetadata, tokenId, tempPath} = nftArr[retKey];
-            const searchRegExp = new RegExp('\\\\"', "g"); // // 抛出 SyntaxError 异常
-            premetadata = premetadata.replace(searchRegExp, '"');
 
             let reqdataRet;
 
             try {
                 reqdataRet = JSON.parse(
-                    premetadata.replace(/\n/g, "\\n").replace(/\r/g, "\\r")
+                    premetadata
                 );
             } catch (e) {
                 console.trace(e)
+                const searchRegExp = new RegExp('\\\\"', "g"); // // 抛出 SyntaxError 异常
+                premetadata = premetadata.replace(searchRegExp, '"');
+
                 reqdataRet = JSON.parse(
                     premetadata.replace(/\\%/g, '%')
                 );
@@ -168,7 +171,7 @@ async function mintFileUploadIpfs() {
                     console.trace(e)
                     console.trace(responseFunStr(RESPONSE_STATUS.ERROR, err, {}), id);
                 });
-            console.log("metaData:", response);
+           logger.info("metaData:%s", JSON.stringify(response));
             try {
                 let tokenURI = response.cid.toString();
                 // 设置一个新值，返回交易

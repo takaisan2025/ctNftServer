@@ -19,15 +19,12 @@ const {
 } = require("../rules/rules");
 
 const ethers = require("ethers");
-const fetch = require("node-fetch");
 const GlobalConfig = require("../config/GlobalConfig.json");
-const ABI_const = require("../contract/ABI_const.js");
 const Web3 = require("web3");
 const {customHttpProvider} = require("../task/taskConst");
 const {getPriKey} = require("../chain/accountProUtils");
 
 const {responseFun} = require("../mapper/account");
-const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");
@@ -131,12 +128,7 @@ function mintRouters(app) {
             // privateKey: wallet.privateKey,
             //    单个藏品铸造
             const tokenId = address + "c1234567890" + Date.now();
-            // 读文件
-            let dataBuffer = await fetch(file)
-                .then((res) => res.arrayBuffer())
-                .then((dataBuffer) => {
-                    return dataBuffer;
-                });
+
             // 创建目录
             // 写入文件
             var originalFilename = file.substring(file.lastIndexOf("/") + 1);
@@ -149,7 +141,7 @@ function mintRouters(app) {
                 address,
                 collectAddress,
                 isFinish: 0,
-                premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
+                premetadata: JSON.stringify(data),
                 status: 0, // 未上架
                 tokenId: tokenId,
                 owner: address,
@@ -280,7 +272,8 @@ function mintRouters(app) {
             let nft = {
                 address,
                 isFinish: 0,
-                premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
+                // premetadata: JSON.stringify(data).replace(/&quot;/g, '\\"'),
+                premetadata: JSON.stringify(data),
                 status: 0, // 未上架
                 supply,
                 collectAddress,

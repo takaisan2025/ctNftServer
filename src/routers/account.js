@@ -244,6 +244,10 @@ function accountRouters(app) {
 
                 let newVar1 = await createAccount(account);
                 if (newVar1.err == null) {
+
+                    let newVar = await auth_user_v2(randomWallet, card_id, s_address);
+                    logger.info("import User authV2 :%s", JSON.stringify(newVar))
+
                     return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
                         keystore: keystore,
                         privateKey: randomWallet.privateKey,
@@ -251,9 +255,6 @@ function accountRouters(app) {
                         address: randomWallet.address,
                     }));
                 } else {
-
-                    let newVar = await auth_user_v2(randomWallet, card_id, s_address);
-                    logger.info("import User authV2 :%s", JSON.stringify(newVar))
 
                     return res
                         .status(RESPONSE_STATUS.SUCCESS)

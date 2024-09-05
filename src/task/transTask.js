@@ -120,7 +120,7 @@ async function betchTransfer() {
 
                 let collectDetail = collectDetail_ret02.result
 
-                console.log(collectDetail)
+                // console.log(collectDetail)
 
                 let contractAddressDetailAsync;
                 if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {

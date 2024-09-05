@@ -6,7 +6,7 @@ const Web3 = require("web3");
 const {
     getString,
     setString,
-    removeString, getKeys,
+    removeString, getKeys, lpop,
 } = require("../redis/redis-client");
 
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
@@ -100,6 +100,8 @@ async function betchTransfer() {
                 create_time,
                 update_time
             } = transList[retKey];
+            // TODO 待完成
+            await lpop("TRANSFER_F")
             try {
                 let accountDetail_ret01 = await findAccount({address: t_from})
                 let accountDetail = accountDetail_ret01.result
@@ -462,6 +464,7 @@ async function betchTransfer() {
 
     }
 }
+
 
 async function transfer(privateKey, value, toAddress, walletUser) {
 

@@ -6,7 +6,7 @@ const {
     rpush,
     pttl,
     lrange,
-    lrem, getKeys, lpop,
+    lrem, getKeys, lpop, sadd, srange,
 } = require('./redis-client');
 const redisClient = require('./redis')
 
@@ -25,9 +25,16 @@ async function main() {
     //
     // }))
     // console.log(getString("BALANCE_0xCC8c455C4A19e6DF29dbBe9659cf84EC1A13589F",).then(r=>console.log(r)))
+    // console.log(await rpush("BAAAA","0xCC8c455C4A19e6DF29dbBe9659cf84EC1A13589F").then(r=>console.log(r)))
+   // while (true) {
+       console.log(await lrange("BAAAA",0,50).then(r=>console.log(r)))
+   // }
+    console.log(await lpop("BAAAA",1))
     // console.log(await rpush("BAAA","0xCC8c455C4A19e6DF29dbBe9659cf84EC1A13589F").then(r=>console.log(r)))
-    console.log(await lrange("BAAA",).then(r=>console.log(r)))
-    console.log(await lpop("BAAA",1))
+    // console.log(await sadd("BAAA","0xCC8c455C4A19e6DF29dbBe9659cf84EC1A13589F").then(r=>console.log(r)))
+    // console.log(await sadd("BAAA","0xCC8c455C4A19e6DF29dbBe9659cf84EC1A13589F1").then(r=>console.log(r)))
+    // console.log(await srange("BAAA",).then(r=>console.log(r)))
+    // console.log(await spop("BAAA",1))
 }
 
 main()

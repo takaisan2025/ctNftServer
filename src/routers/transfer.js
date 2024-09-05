@@ -1,7 +1,7 @@
 "use strict";
 const {
     getString,
-    setString, rpush,
+    setString, rpush, sadd,
 } = require("../redis/redis-client");
 const {
     exec_sql,
@@ -380,7 +380,7 @@ function transferRouters(app) {
                         };
                     break;
             }
-            await rpush("TRANSFER_F",JSON.stringify(sqlQueryByTokenIdAndForm))
+            await sadd("TRANSFER_F",JSON.stringify(sqlQueryByTokenIdAndForm))
             let ex_ret = await createTransFormList(sqlQueryByTokenIdAndForm);
 
             if (ex_ret.err != null) {

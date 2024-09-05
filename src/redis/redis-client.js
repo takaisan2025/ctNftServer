@@ -81,10 +81,34 @@ const lpop = (key) => {
     })
 }
 // rpush 将给定值推入列表的右端 返回值 当前列表长度
+const spop = (key) => {
+    key = redisPrefix + key;
+    return new Promise((resolve, reject) => {
+        redisClient.spop(key, function (err, result) {
+            if (err) {
+                reject(err)
+            }
+            resolve(result)
+        })
+    })
+}
+// rpush 将给定值推入列表的右端 返回值 当前列表长度
 const rpush = (key, token) => {
     key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.rpush(key, [token], function (err, result) {
+            if (err) {
+                reject(err)
+            }
+            resolve(result)
+        })
+    })
+}
+// rpush 将给定值推入列表的右端 返回值 当前列表长度
+const sadd = (key, token) => {
+    key = redisPrefix + key;
+    return new Promise((resolve, reject) => {
+        redisClient.sadd(key, token, function (err, result) {
             if (err) {
                 reject(err)
             }
@@ -103,12 +127,35 @@ const lrange = (key, startIndex = 0, stopIndex = -1) => {
             resolve(result)
         })
     })
+}// 查询list的值
+const srange = (key, startIndex = 0, stopIndex = -1) => {
+    key = redisPrefix + key;
+    return new Promise((resolve, reject) => {
+        redisClient.smembers(key, function (err, result) {
+            if (err) {
+                reject(err)
+            }
+            resolve(result)
+        })
+    })
 }
 // 清除list中n个值为value的项
 const lrem = (key, n = 1, value) => {
     key = redisPrefix + key;
     return new Promise((resolve, reject) => {
         redisClient.lrem(key, n, value, function (err, result) {
+            if (err) {
+                reject(err)
+            }
+            resolve(result)
+        })
+    })
+}
+// 清除list中n个值为value的项
+const srem = (key, n = 1, value) => {
+    key = redisPrefix + key;
+    return new Promise((resolve, reject) => {
+        redisClient.srem(key, n, value, function (err, result) {
             if (err) {
                 reject(err)
             }
@@ -137,7 +184,11 @@ module.exports = {
     rpush,
     lrange,
     lrem,
+    sadd,
+    spop,
+    srem,
     pttl,
+    srange,
     getKeys
 }
 

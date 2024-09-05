@@ -212,7 +212,7 @@ async function auth_user_v2(walletUser, card_id, s_address) {
         "Authentication",
         {
             idHash: idHash,
-            orderId: orderId,
+            orderId: orderIdEcc,
             caddress: caddress,
         },
         Types

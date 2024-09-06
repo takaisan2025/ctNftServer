@@ -520,38 +520,33 @@ function accountRouters(app) {
         let addressAuth = await getString("ADDRESS_AUTH_" + address);
         if (!isEmpty(addressAuth)) {
             return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, null, JSON.parse(addressAuth)));
-        }
-        let result;
-        const milliseconds = Date.now();
-        const timestamp = Math.floor(milliseconds / 1000);
-        let auth = await authentications(address)
-        if (auth && auth.authentications && auth.authentications.length > 0) {
-            logger.info("AuthController V2 Query:%s", JSON.stringify(auth.authentications[0].transactionHash))
-            let au = auth.authentications[0]
-            let isAuth = au.longAuthExpiry > timestamp
-            result = {
-                isAuth: true,
-                isNotExpired: isAuth,
-                authExpiryTime: au.longAuthExpiry,
-                parthAddr: au.saddress,
-                transactionHash: au.transactionHash,
-                authTime: au.authTime,
-                authExpiry: au.authExpiry,
-                expandData: au.expandData,
-            }
         } else {
-            logger.info("AuthController V1 Query:%s", address)
-            // 查询地址实名情况
-            let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
-            let parentauthsa = await contract_static_call(ethers, authContractAddress, ABI_const["AuthController"].abi, "parentauthsa", customHttpProvider, [address, 0]);
+            let result;
+            const milliseconds = Date.now();
+            const timestamp = Math.floor(milliseconds / 1000);
+            let auth = await authentications(address)
+            if (auth && auth.authentications && auth.authentications.length > 0) {
+                logger.info("AuthController V2 Query:%s", JSON.stringify(auth.authentications[0].transactionHash))
+                let au = auth.authentications[0]
+                let isAuth = au.longAuthExpiry > timestamp
+                result = {
+                    isAuth: true,
+                    isNotExpired: isAuth,
+                    authExpiryTime: au.longAuthExpiry,
+                    parthAddr: au.saddress,
+                    transactionHash: au.transactionHash,
+                    authTime: au.authTime,
+                    authExpiry: au.authExpiry,
+                    expandData: au.expandData,
+                }
+            } else {
+                logger.info("AuthController V1 Query:%s", address)
+                // 查询地址实名情况
+                let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
 
-            // 将结果添加到redis  有效期五分钟
-
-            if (parentauthsa.data == null) {
                 result = {
                     isAuth: false, isNotExpired: false, authExpiryTime: 0,
                 }
-            } else {
 
                 let authExpiry = await contract_static_call(ethers, authContractAddress, ABI_const["AuthController"].abi, "auths", customHttpProvider, [address]);
                 let authExpiryTime = authExpiry.data.toNumber()
@@ -560,20 +555,43 @@ function accountRouters(app) {
 // 将毫秒级时间戳转换为秒级时间戳，并使用Math.floor取整
 
                 let isAuth
-                if (authExpiryTime === 0 || timestamp > authExpiryTime) {
+                if (authExpiryTime === 0) {
                     isAuth = false;
+                    result = {
+                        isAuth: true, isNotExpired: isAuth, authExpiryTime: authExpiryTime
+                    }
                 } else {
-                    isAuth = true;
-                }
-                result = {
-                    isAuth: true, isNotExpired: isAuth, authExpiryTime: authExpiryTime, parthAddr: parentauthsa.data
+                    let parentauthsa = await contract_static_call(ethers, authContractAddress, ABI_const["AuthController"].abi, "parentauthsa", customHttpProvider, [address, 0]);
+                    if (parentauthsa.data == null) {
+                        result = {
+                            isAuth: false, isNotExpired: false, authExpiryTime: 0,
+                        }
+                    } else {
+                        if (timestamp > authExpiryTime) {
+                            isAuth = false;
+                            result = {
+                                isAuth: true,
+                                isNotExpired: isAuth,
+                                authExpiryTime: authExpiryTime,
+                                parthAddr: parentauthsa.data
+                            }
+                        } else {
+                            isAuth = true;
+                            result = {
+                                isAuth: true,
+                                isNotExpired: isAuth,
+                                authExpiryTime: authExpiryTime,
+                                parthAddr: parentauthsa.data
+                            }
+                        }
+                    }
                 }
             }
-            console.log("parentauthsa:", result)
-        }
 
-        await setString("ADDRESS_AUTH_" + address, JSON.stringify(result), 300)
-        return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, null, result));
+            // 将结果添加到redis  有效期五分钟
+            await setString("ADDRESS_AUTH_" + address, JSON.stringify(result), 300)
+            return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, null, result));
+        }
     })
 }
 

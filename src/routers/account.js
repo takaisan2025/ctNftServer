@@ -599,9 +599,7 @@ function accountRouters(app) {
                 // 查询地址实名情况
                 let authContractAddress = GlobalConfig.AUTH_CONTROLLER_ADDRESS;
 
-                result = {
-                    isAuth: false, isNotExpired: false, authExpiryTime: 0,
-                }
+                let result
 
                 let authExpiry = await contract_static_call(ethers, authContractAddress, ABI_const["AuthController"].abi, "auths", customHttpProvider, [address]);
                 let authExpiryTime = authExpiry.data.toNumber()

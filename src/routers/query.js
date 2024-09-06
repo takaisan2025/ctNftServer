@@ -135,7 +135,8 @@ function queryRouters(app) {
         // 上链成功
         resultTREANS["上链成功"] = await count_trans(6);
         // 上链失败
-        resultTREANS["上链失败"] = await count_trans(7);
+        resultTREANS["上链失败"] = await count_trans(3);
+        resultTREANS["HASH失败"] = await count_trans(7);
         // 回调失败
         resultTREANS["回调失败"] = await count_trans(8);
         result = {

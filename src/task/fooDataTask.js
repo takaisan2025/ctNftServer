@@ -276,6 +276,9 @@ function main() {
 //     发送交易
     transferNft1155(acc.address, acc.password, accTo.contract, accTo.tokenId, accTo.address).then(r => {
         console.log("调用结果:", acc.address, accTo.tokenId, r.code, r.result)
+        if (r.result.code == 500 && r.result.message == "手续费余额不足!") {
+
+        }
         // setTimeout(main, getRandomNumber())
     })
     setTimeout(main, getRandomNumber())

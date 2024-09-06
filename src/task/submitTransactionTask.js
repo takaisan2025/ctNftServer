@@ -296,7 +296,7 @@ async function TransactionHashQueryTask() {
         try {
 
             // 示例使用：
-            const date = new Date('2024-08-10');
+            const date = new Date('2024-09-01');
             const nftTransactions = await findNftTransaction({
                 where: {
                     status: 1,

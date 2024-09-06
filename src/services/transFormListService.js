@@ -1,6 +1,10 @@
 "use strict"
 
 const {countTrans} = require("../Orm/TransFormListService");
+const date = new Date();
+
+// 将日期向前调整 30 天
+date.setDate(date.getDate() - 30);
 
 async function count_trans(_status) {
     //logic to find accounts
@@ -8,7 +12,10 @@ async function count_trans(_status) {
 
         let count = await countTrans({
             where: {
-                t_status: _status
+                t_status: _status,
+                create_time: {
+                    [Op.gte]: date
+                }
             }
         })
         return count.result

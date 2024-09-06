@@ -2,6 +2,7 @@
 const {createNft, findNft, countNft} = require("../Orm/NftService");
 const {responseFun, responseFunStr} = require("../mapper/account");
 const {Op} = require('sequelize')
+const {findNftTransaction} = require("../Orm/NftTransactionService");
 
 async function insert_nft(_lottery) {
     //logic to find accounts
@@ -44,6 +45,10 @@ async function find_nfts(_tokenIds) {
         return {err: e.code, result: null}
     }
 }
+const date = new Date();
+
+// 将日期向前调整 30 天
+date.setDate(date.getDate() - 30);
 
 async function count_nft(_status) {
     //logic to find accounts
@@ -51,7 +56,10 @@ async function count_nft(_status) {
 
         let count = await countNft({
             where: {
-                status: _status
+                status: _status,
+                create_time: {
+                    [Op.gte]: date
+                }
             }
         })
         return count.result

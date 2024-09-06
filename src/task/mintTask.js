@@ -781,7 +781,7 @@ async function mintBetchCallFund() {
                         });
                     //处理响应结果
                     let response = responseRet.data;
-                    console.log(tokenId + ":", responseRet);
+                    console.log(tokenId + "mint:", responseRet);
                     if (response && response.status && response.status === 1) {
                         await updateNft({status: 1}, {tokenId: tokenId}); // 设置为回调成功状态
                     } else {

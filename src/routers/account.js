@@ -55,32 +55,24 @@ let validCardId = (value) => {
     return verify_code === verify_code_list[mod];
 }
 
+// 定义正则表达式，匹配以0x开头并且包含32个十六进制字符
+const bytes16Regex = /^0x[0-9a-fA-F]{32}$/;
+
 let validIdHash = (value) => {
 
     // 只能是18位
-    if (!value || value.length !== 18) {
+    if (!value || value.length !== 34) {
+        console.log(`${value} 不是有效的 bytes16`);
         return false
     }
 
-    // 取出本体码
-    const idcard_base = value.substr(0, 17)
-    // 取出校验码
-    const verify_code = value.substr(17, 1)
-    // 加权因子
-    const factor = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
-    // 校验码对应值
-    const verify_code_list = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
-
-    // 根据前17位计算校验码
-    let total = 0
-
-    for (let i = 0; i < 17; i++) {
-        total += idcard_base.substr(i, 1) * factor[i]
+    if (bytes16Regex.test(value)) {
+        console.log(`${value} 是有效的 bytes16`);
+        return true;
+    } else {
+        console.log(`${value} 不是有效的 bytes16`);
+        return false;
     }
-    // 取模
-    const mod = total % 11
-    // 比较校验码
-    return verify_code === verify_code_list[mod];
 }
 
 function accountRouters(app) {
@@ -119,11 +111,12 @@ function accountRouters(app) {
             } else {
                 idHash = card_id;
             }
+            if (!validIdHash(idHash)) {
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
+            }
+
         }
 
-        if (!validIdHash(idHash)) {
-            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
-        }
 
         let etherStringC = await queryBalance(s_address);
         if (Number(etherStringC) < Number(String(10))) {
@@ -245,11 +238,13 @@ function accountRouters(app) {
             } else {
                 idHash = card_id;
             }
+
+            if (!validIdHash(idHash)) {
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
+            }
         }
 
-        if (!validIdHash(idHash)) {
-            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
-        }
+
 
         // 判断用户名密码
         let result01 = await find_account(s_address);
@@ -366,10 +361,11 @@ function accountRouters(app) {
             } else {
                 idHash = card_id;
             }
-        }
 
-        if (!validIdHash(idHash)) {
-            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
+            if (!validIdHash(idHash)) {
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
+            }
+
         }
 
         // 判断接入方用户名密码

@@ -474,12 +474,12 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     let isAuth = await auths_single(walletUser.address);
     if (isAuth.data != true) {
         // 这里进行预先实名
-        let card_id = await auths_idHash(walletUser.address)
-        if (card_id.data === '0x00000000000000000000000000000000') {
+        let idHash = await auths_idHash(walletUser.address)
+        if (idHash.data === '0x00000000000000000000000000000000') {
             console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
             return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
         } else {
-            await auth_user_v2(walletUser, card_id, walletSys.address)
+            await auth_user_v2(walletUser, idHash, walletSys.address)
         }
     }
     // }

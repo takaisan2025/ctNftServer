@@ -35,9 +35,13 @@ async function betchPreaprAuth(authAddress) {
             c_wallet = c_decWalletResult.result;
 
             let cardId = "123456789012345678"
+
+            let idHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(card_id));
+            idHash = idHash.slice(0, 34);
+
             let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
             let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
-            let result02 = await auth_user_v2(c_wallet, cardId, walletSys.address)
+            let result02 = await auth_user_v2(c_wallet, idHash, walletSys.address)
             console.log(result02)
         }
 

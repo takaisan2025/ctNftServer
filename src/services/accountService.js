@@ -155,7 +155,7 @@ async function auth_user_v1(randomWallet, s_address, expand_data) {
 
 }
 
-async function auth_user_v2(walletUser, card_id, s_address) {
+async function auth_user_v2(walletUser, idHash, s_address) {
 
     let orderId = new Date().getTime() + "sys_a_V2";
     // 计算签名
@@ -181,8 +181,7 @@ async function auth_user_v2(walletUser, card_id, s_address) {
     // address sender,
     // bool isAuth,
     // string expandData
-    let idHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(card_id));
-    idHash = idHash.slice(0, 34);
+
     // uint256 orderId,
     // address caddress,
     // address sender,

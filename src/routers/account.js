@@ -55,6 +55,34 @@ let validCardId = (value) => {
     return verify_code === verify_code_list[mod];
 }
 
+let validIdHash = (value) => {
+
+    // 只能是18位
+    if (!value || value.length !== 18) {
+        return false
+    }
+
+    // 取出本体码
+    const idcard_base = value.substr(0, 17)
+    // 取出校验码
+    const verify_code = value.substr(17, 1)
+    // 加权因子
+    const factor = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]
+    // 校验码对应值
+    const verify_code_list = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2']
+
+    // 根据前17位计算校验码
+    let total = 0
+
+    for (let i = 0; i < 17; i++) {
+        total += idcard_base.substr(i, 1) * factor[i]
+    }
+    // 取模
+    const mod = total % 11
+    // 比较校验码
+    return verify_code === verify_code_list[mod];
+}
+
 function accountRouters(app) {
 
     // 创建实名账户
@@ -83,10 +111,18 @@ function accountRouters(app) {
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "参数错误", {}));
         }
 
+        let idHash = null;
         if (!isEmpty(card_id)) {
-            if (!validCardId(card_id)) {
-                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码输入有误,请重新输入!'", {}));
+            if (validCardId(card_id)) {
+                idHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(card_id));
+                idHash = idHash.slice(0, 34);
+            } else {
+                idHash = card_id;
             }
+        }
+
+        if (!validIdHash(idHash)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
         }
 
         let etherStringC = await queryBalance(s_address);
@@ -128,8 +164,8 @@ function accountRouters(app) {
                     let randomWallet = web3.eth.accounts.create();
                     let keystore = await randomWallet.encrypt(password);
                     let newVar;
-                    if (!isEmpty(card_id)) {
-                        newVar = await auth_user_v2(randomWallet, card_id, s_address)
+                    if (!isEmpty(idHash)) {
+                        newVar = await auth_user_v2(randomWallet, idHash, s_address)
                     } else {
                         newVar = await auth_user_v1(randomWallet, s_address, expand_data)
                     }
@@ -201,8 +237,18 @@ function accountRouters(app) {
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "参数错误", {}));
         }
 
-        if (!validCardId(card_id)) {
-            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码输入有误,请重新输入!'", {}));
+        let idHash = null;
+        if (!isEmpty(card_id)) {
+            if (validCardId(card_id)) {
+                idHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(card_id));
+                idHash = idHash.slice(0, 34);
+            } else {
+                idHash = card_id;
+            }
+        }
+
+        if (!validIdHash(idHash)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
         }
 
         // 判断用户名密码
@@ -254,7 +300,7 @@ function accountRouters(app) {
                 let newVar1 = await createAccount(account);
                 if (newVar1.err == null) {
 
-                    let newVar = await auth_user_v2(randomWallet, card_id, s_address);
+                    let newVar = await auth_user_v2(randomWallet, idHash, s_address);
                     logger.info("import User authV2 :%s", JSON.stringify(newVar))
 
                     return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
@@ -312,10 +358,19 @@ function accountRouters(app) {
                 .json(responseFun(RESPONSE_STATUS.ERROR, "参数错误", {}));
         }
 
-        if (!validCardId(card_id)) {
-            return res.status(200).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码输入有误,请重新输入!'", {}));
+        let idHash = null;
+        if (!isEmpty(card_id)) {
+            if (validCardId(card_id)) {
+                idHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(card_id));
+                idHash = idHash.slice(0, 34);
+            } else {
+                idHash = card_id;
+            }
         }
 
+        if (!validIdHash(idHash)) {
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "'证件号码哈希计算错误,请重试!'", {}));
+        }
 
         // 判断接入方用户名密码
         let s_ret01 = await find_account(s_address);
@@ -364,7 +419,7 @@ function accountRouters(app) {
                 }
 
                 if (authData.data.isAuth == true) {
-                    let newVar = await auth_user_v2(c_wallet, card_id, s_address);
+                    let newVar = await auth_user_v2(c_wallet, idHash, s_address);
                     if (newVar.code == 200) {
                         return res.status(200).json(responseFun(RESPONSE_STATUS.SUCCESS, "请求成功", {
                             s_address: s_address, address: address, orderId: orderId,

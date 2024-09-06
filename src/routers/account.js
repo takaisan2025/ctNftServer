@@ -24,6 +24,7 @@ const {authentications} = require("../services/userService");
 const pino = require("pino");
 const {createAccount} = require("../Orm/AccountService");
 const {find_account, auths_single, parentauths_v2, auth_user_v2, auth_user_v1} = require("../services/accountService");
+const {queryBalance} = require("../chain/balanceQuery");
 const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 
 let validCardId = (value) => {
@@ -88,75 +89,83 @@ function accountRouters(app) {
             }
         }
 
-        // 判断用户名密码
-        let result01 = await find_account(s_address);
-        if (result01.result == null) {
-            return res
-                .status(RESPONSE_STATUS.SUCCESS)
-                .json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
-        }
-
-        // let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
-        let decWalletResult = await getPriKey(result01.result, s_password);
-
-        if (decWalletResult.err != null) {
-            return res
-                .status(RESPONSE_STATUS.SUCCESS)
-                .json(PasswordError);
+        let etherStringC = await queryBalance(s_address);
+        if (Number(etherStringC) < Number(String(10))) {
+            await setString("BALANCE_" + s_address, "1", 60)
+            // 跳出, 重新查询数据
+            console.log("草田分余额不足:", s_address)
+            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "草田分余额不足:" + s_address, {}));
         } else {
-            const clientIp = requestIp.getClientIp(req);
-
-            // 判断商家身份
-            let authData = await parentauths_v2(s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS);
-
-            if (authData.err != null) {
-                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
-            }
-
-            if (// Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
-                authData.data.isAuth) {
-                // let randomWallet = ethers.Wallet.createRandom();
-                // let keystore = await randomWallet.encrypt(password, callback);
-                let randomWallet = web3.eth.accounts.create();
-                let keystore = await randomWallet.encrypt(password);
-                let newVar;
-                if (!isEmpty(card_id)) {
-                    newVar = await auth_user_v2(randomWallet, card_id, s_address)
-                } else {
-                    newVar = await auth_user_v1(randomWallet, s_address, expand_data)
-                }
-                logger.info("create User :%s", JSON.stringify(newVar));
-
-                //    save to db
-                let account = {
-                    keystore: JSON.stringify(keystore),
-                    address: randomWallet.address,
-                    status: 1,
-                    psd: password,
-                    private_key: "",
-                    remark: clientIp, // private_key: randomWallet.private_key
-                };
-
-                let result = await createAccount(account)
-                if (result.err != null) {
-                    if (result.result === "order_id must be unique") {
-                        return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "OrderId 冲突!", {}));
-                    } else {
-                        return res
-                            .status(RESPONSE_STATUS.SUCCESS)
-                            .json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
-                    }
-                }
-                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
-                    keystore: keystore,
-                    privateKey: randomWallet.privateKey,
-                    publicKey: randomWallet.publicKey,
-                    address: randomWallet.address,
-                }));
-            } else {
+            // 判断用户名密码
+            let result01 = await find_account(s_address);
+            if (result01.result == null) {
                 return res
                     .status(RESPONSE_STATUS.SUCCESS)
-                    .json(responseFun(RESPONSE_STATUS.ERROR, "s_user信息未认证或者未更新,请稍后重试!", {}));
+                    .json(responseFun(RESPONSE_STATUS.ERROR, "账户不存在!", {}));
+            }
+
+            // let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(ret.keystore).toLowerCase()), password);
+            let decWalletResult = await getPriKey(result01.result, s_password);
+
+            if (decWalletResult.err != null) {
+                return res
+                    .status(RESPONSE_STATUS.SUCCESS)
+                    .json(PasswordError);
+            } else {
+                const clientIp = requestIp.getClientIp(req);
+
+                // 判断商家身份
+                let authData = await parentauths_v2(s_address, GlobalConfig.AUTH_CONTROLLER_SYSTEM_ADDRESS);
+
+                if (authData.err != null) {
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
+                }
+
+                if (// Web3.utils.hexToNumberString(authData.data.authLevel) == 1 &&
+                    authData.data.isAuth) {
+                    // let randomWallet = ethers.Wallet.createRandom();
+                    // let keystore = await randomWallet.encrypt(password, callback);
+                    let randomWallet = web3.eth.accounts.create();
+                    let keystore = await randomWallet.encrypt(password);
+                    let newVar;
+                    if (!isEmpty(card_id)) {
+                        newVar = await auth_user_v2(randomWallet, card_id, s_address)
+                    } else {
+                        newVar = await auth_user_v1(randomWallet, s_address, expand_data)
+                    }
+                    logger.info("create User :%s", JSON.stringify(newVar));
+
+                    //    save to db
+                    let account = {
+                        keystore: JSON.stringify(keystore),
+                        address: randomWallet.address,
+                        status: 1,
+                        psd: password,
+                        private_key: "",
+                        remark: clientIp, // private_key: randomWallet.private_key
+                    };
+
+                    let result = await createAccount(account)
+                    if (result.err != null) {
+                        if (result.result === "order_id must be unique") {
+                            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "OrderId 冲突!", {}));
+                        } else {
+                            return res
+                                .status(RESPONSE_STATUS.SUCCESS)
+                                .json(responseFun(RESPONSE_STATUS.ERROR, "操作失败,请重试!", {}));
+                        }
+                    }
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "创建成功", {
+                        keystore: keystore,
+                        privateKey: randomWallet.privateKey,
+                        publicKey: randomWallet.publicKey,
+                        address: randomWallet.address,
+                    }));
+                } else {
+                    return res
+                        .status(RESPONSE_STATUS.SUCCESS)
+                        .json(responseFun(RESPONSE_STATUS.ERROR, "s_user信息未认证或者未更新,请稍后重试!", {}));
+                }
             }
         }
     });

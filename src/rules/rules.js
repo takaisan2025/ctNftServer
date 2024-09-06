@@ -48,7 +48,7 @@ function validateAddress(address) {
 function validateAddressBalanceEnough(address) {
     let isAddress = Web3.utils.isAddress(address)
     if (!isAddress) {
-        return {err: "草田分余额不足地址格式错误", flag: false}
+        return {err: "地址格式错误", flag: false}
     } else {
         return {err: null, flag: true};
     }

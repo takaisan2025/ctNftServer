@@ -233,7 +233,7 @@ async function mintBetchMint() {
         }
 
         for (let retKey in nftArr) {
-            console.log(nftArr[retKey]);
+            // console.log(nftArr[retKey]);
             try {
                 const {
                     address,

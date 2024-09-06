@@ -1,5 +1,5 @@
 "use strict"
-
+const {Op} = require('sequelize')
 const {countTrans} = require("../Orm/TransFormListService");
 const date = new Date();
 

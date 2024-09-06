@@ -1,4 +1,5 @@
-"use strict";const Nft = require('./NftModel');
+"use strict";
+const Nft = require('./NftModel');
 const {pro_err} = require("./pErr");
 
 async function findNft(_where) {

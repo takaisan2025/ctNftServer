@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const {RESPONSE_STATUS} = require("../chain/responseError");
 // 接口前缀
 const API_PREFIX = "https://api.ctblock.cn/"
 // 十组

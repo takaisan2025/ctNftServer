@@ -36,7 +36,7 @@ async function betchPreaprAuth(authAddress) {
 
             let cardId = "123456789012345678"
 
-            let idHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(card_id));
+            let idHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(cardId));
             idHash = idHash.slice(0, 34);
 
             let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址

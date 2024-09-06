@@ -1,3 +1,4 @@
+"use strict";
 const fetch = require("node-fetch");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 // 接口前缀
@@ -158,8 +159,7 @@ let auths = [
 
 function random() {
     // 使用 `Math.floor()` 函数和 `Math.random()` 函数生成一个介于 0 到 9 之间的随机整数
-    var randomInteger = Math.floor(Math.random() * 10);
-    return randomInteger // 6
+    return Math.floor(Math.random() * 10) // 6
 }
 
 async function createContract1155(address, password, name, symbol) {

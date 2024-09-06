@@ -613,7 +613,7 @@ function accountRouters(app) {
                 if (authExpiryTime === 0) {
                     isAuth = false;
                     result = {
-                        isAuth: true, isNotExpired: isAuth, authExpiryTime: authExpiryTime
+                        isAuth: false, isNotExpired: isAuth, authExpiryTime: authExpiryTime
                     }
                 } else {
                     let parentauthsa = await contract_static_call(ethers, authContractAddress, ABI_const["AuthController"].abi, "parentauthsa", customHttpProvider, [address, 0]);

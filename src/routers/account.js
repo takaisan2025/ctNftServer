@@ -245,7 +245,6 @@ function accountRouters(app) {
         }
 
 
-
         // 判断用户名密码
         let result01 = await find_account(s_address);
         if (result01.result == null) {
@@ -575,7 +574,12 @@ function accountRouters(app) {
             let result;
             const milliseconds = Date.now();
             const timestamp = Math.floor(milliseconds / 1000);
-            let auth = await authentications(address)
+            let auth
+            try {
+                auth = await authentications(address)
+            } catch (e) {
+                auth = null;
+            }
             if (auth && auth.authentications && auth.authentications.length > 0) {
                 logger.info("AuthController V2 Query:%s", JSON.stringify(auth.authentications[0].transactionHash))
                 let au = auth.authentications[0]

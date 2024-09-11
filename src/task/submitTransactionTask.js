@@ -145,6 +145,7 @@ async function SubmitTransactionTask() {
                                 // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                                 // The nonce to use in the transaction
                                 // nonce: nonce,
+                                gasPrice: Web3.utils.numberToHex(4800e9),
                                 // The amount to send with the transaction (i.e. msg.value)
                                 value: ethers.utils.parseEther(value),
                                 // The chain ID (or network ID) to use
@@ -181,6 +182,7 @@ async function SubmitTransactionTask() {
                                     // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                                     // The nonce to use in the transaction
                                     nonce: nonce,
+                                    gasPrice: Web3.utils.numberToHex(4800e9),
                                     // The amount to send with the transaction (i.e. msg.value)
                                     value: ethers.utils.parseEther(value),
                                     // The chain ID (or network ID) to use

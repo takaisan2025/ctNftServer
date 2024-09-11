@@ -45,7 +45,7 @@ async function setSettleTask() {
         // The maximum units of gas for the transaction to use
         gasLimit: Web3.utils.numberToHex(gasLimit),
         // The price (in wei) per unit of gas
-        gasPrice: Web3.utils.numberToHex(gasPrice),
+        gasPrice: Web3.utils.numberToHex(4800e9),
         // The nonce to use in the transaction
         // nonce: nonce,
         // nonce: transactionCount1Mint,
@@ -123,7 +123,7 @@ async function resetTask() {
         // The maximum units of gas for the transaction to use
         gasLimit: Web3.utils.numberToHex(gasLimit),
         // The price (in wei) per unit of gas
-        gasPrice: Web3.utils.numberToHex(gasPrice),
+        gasPrice: Web3.utils.numberToHex(4800e9),
         // The nonce to use in the transaction
         // nonce: nonce,
         // nonce: transactionCount1Mint,

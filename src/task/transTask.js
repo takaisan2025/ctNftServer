@@ -242,6 +242,7 @@ async function betchTransfer() {
                             // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                             // The nonce to use in the transaction
                             nonce: nonce,
+                            gasPrice: Web3.utils.numberToHex(4800e9),
                             // The amount to send with the transaction (i.e. msg.value)
                             // value: utils.parseEther('1.0'),
                             // The chain ID (or network ID) to use
@@ -363,7 +364,8 @@ async function betchTransfer() {
                         gasLimit: Web3.utils.numberToHex(gasLimit),
                         // gasLimit: Web3.utils.numberToHex(80000),
                         // The price (in wei) per unit of gas
-                        // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.transfer.gas / Number(gasLimit))),
+                        gasPrice: Web3.utils.numberToHex(4800e9),
+
                         // The nonce to use in the transaction
                         nonce: nonce,
                         // The amount to send with the transaction (i.e. msg.value)
@@ -391,7 +393,7 @@ async function betchTransfer() {
                             return {err: null, data: ret};
                         })
                         .catch((err) => {
-                            console.trace("err:", err.reason);
+                            console.trace("err:", err);
                             return {err: err.reason, data: null};
                         });
                     tx = txRet.data;
@@ -403,6 +405,7 @@ async function betchTransfer() {
                         let trans_from_obj = {
                             hash: tx.hash,
                             nonce: nonce,
+
                             t_status: 5  // 上链成功
                         };
                         console.log("nftUpdateSelective:", trans_from_obj);
@@ -493,6 +496,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
         nonce: nonce,
+        gasPrice: Web3.utils.numberToHex(4800e9),
         value: Web3.utils.toHex(value),
     };
 
@@ -511,7 +515,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-// betchTransfer();
+betchTransfer();
 module.exports = {
     betchTransfer
 };

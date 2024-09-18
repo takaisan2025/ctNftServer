@@ -4,6 +4,7 @@ const {
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
 let privateKeySys = GlobalConfig.MINT_ACCOUNT.private_key; // mint pri
+const Web3 = require("web3");
 
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,

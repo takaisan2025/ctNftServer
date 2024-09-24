@@ -73,6 +73,9 @@ async function betchTransfer() {
                 t_status: 1,
                 t_from: {
                     [Op.not]: andfrom
+                },
+                collectAddress: {
+                    [Op.not]: andfrom
                 }
             },
             offset: 0,
@@ -176,6 +179,7 @@ async function betchTransfer() {
                 ) {
 
                     await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
+                    await setString("BALANCE_" + collectAddress, "1", 60)
                     // 跳出, 重新查询数据
                     console.log("草田分余额不足:", contractAddressDetail.address)
                     continue;
@@ -183,6 +187,7 @@ async function betchTransfer() {
                     let etherStringC = await queryBalance(contractAddressDetail.address.toLowerCase());
                     if (Number(etherStringC) < Number(String(10))) {
                         await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
+                        await setString("BALANCE_" + collectAddress, "1", 60)
                         // 跳出, 重新查询数据
                         console.log("草田分余额不足:", contractAddressDetail.address)
                         continue;

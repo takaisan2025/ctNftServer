@@ -485,7 +485,12 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         let idHash = await auths_idHash(walletUser.address)
         if (idHash.data === '0x00000000000000000000000000000000') {
             console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
-            await auth_user_v1(walletUser, walletSys.address, "{}")
+
+
+            let _account_to = await findAccount({address: toAddress});
+            let _to_wallet = await getPriKey(_account_to.result, _account_to.result.psd);
+               
+            await auth_user_v1(_to_wallet, walletSys.address, "{}")
             // return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
         } else {
             await auth_user_v2(walletUser, idHash, walletSys.address)

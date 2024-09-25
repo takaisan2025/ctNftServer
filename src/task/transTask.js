@@ -489,7 +489,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
 
             let _account_to = await findAccount({address: toAddress});
             let _to_wallet = await getPriKey(_account_to.result, _account_to.result.psd);
-            let _towallet = new ethers.Wallet(_to_wallet.privateKey, customHttpProvider);
+            let _towallet = new ethers.Wallet(_to_wallet.result.privateKey, customHttpProvider);
 
             await auth_user_v1(_towallet, walletSys.address, "{}")
             // return {err: "用户信息未认证或过期,请稍后重试!", hash: null};

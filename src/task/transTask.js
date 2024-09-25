@@ -29,7 +29,7 @@ const {findTransFormListAll, updateTransFormList} = require("../Orm/TransFormLis
 const {Op} = require('sequelize')
 const {findAccount} = require("../Orm/AccountService");
 const {findCollect} = require("../Orm/CollectService");
-const {auth_user_v2, auths_single, auths_idHash} = require("../services/accountService");
+const {auth_user_v1, auth_user_v2, auths_single, auths_idHash} = require("../services/accountService");
 const {queryBalance} = require("../chain/balanceQuery");
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
@@ -485,7 +485,8 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         let idHash = await auths_idHash(walletUser.address)
         if (idHash.data === '0x00000000000000000000000000000000') {
             console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
-            return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
+            await auth_user_v1(walletUser, walletSys.address, "{}")
+            // return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
         } else {
             await auth_user_v2(walletUser, idHash, walletSys.address)
         }

@@ -527,7 +527,6 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-// betchTransfer();
 module.exports = {
     betchTransfer
 };

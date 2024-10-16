@@ -89,7 +89,7 @@ async function queryBalance(from) {
         console.log("链上查询余额")
         // 余额是 BigNumber (in wei); 格式化为 ether 字符串
         let etherStringC = ethers.utils.formatEther(balanceC);
-        await setString("queryBalance_" + from, etherStringC, 5);
+        await setString("queryBalance_" + from, etherStringC, 2);
         return etherStringC;
 
     }

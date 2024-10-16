@@ -60,7 +60,7 @@ async function guijiTask() {
         console.log('===================wait start guiji Task')
         return
     } else {
-        await setString(betchTransferFlag, "1", 60)
+        await setString(betchTransferFlag, "1", 90)
 
         console.time("guijiTask")
 

@@ -45,7 +45,7 @@ async function start() {
 
     // auth
     setInterval(SubmitTransactionTask, 5000)
-    // setInterval(guijiTask, 20000)
+    setInterval(guijiTask, 20000)
     // setInterval(TransactionHashQueryTask, 5000)
 }
 

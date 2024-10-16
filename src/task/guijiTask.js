@@ -10,7 +10,7 @@ const {
 } = require("../redis/redis-client");
 const fs = require('fs');
 const path = require('path');
-
+const {Sequelize, Model, DataTypes} = require('sequelize');
 // 文件路径
 const filePath = path.join(__dirname, 'guiji.json');
 
@@ -25,7 +25,7 @@ const {responseFun} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
 
-const betchTransferFlag = "betchTransfer_START";
+const betchTransferFlag = "guiji_Start";
 
 const {id_fun} = require("./taskConst");
 const {customHttpProvider} = require("./taskConst");
@@ -57,7 +57,7 @@ async function getNonce(address) {
 
 async function guijiTask() {
     if (await getString(betchTransferFlag) == "1") {
-        console.log('===================wait start mintBetchCallFund')
+        console.log('===================wait start guiji Task')
         return
     } else {
         await setString(betchTransferFlag, "1", 60)
@@ -79,10 +79,17 @@ async function guijiTask() {
         let jsonData = JSON.parse(data);
 
         let transList_ret = await findTransFormListAll(_param = {
+            attributes: [
+                [Sequelize.fn('DISTINCT', Sequelize.col('t_from')), 't_from'],
+                "id"
+            ],
             where: {
                 t_status: 4,
                 id: {
                     [Op.gte]: jsonData.num
+                },
+                t_from: {
+                    [Op.ne]: "0x637d71e819058a36b423dd1Ab67Fe66CeA9a4B6E"
                 },
                 collectAddress: "0x8061FA9Ab8E82A6d0BEFfFca23eB3e1D85672d73"
             },
@@ -100,7 +107,6 @@ async function guijiTask() {
             const {
                 id,
                 t_from,
-                t_to,
                 amount,
                 reback_url,
                 token_id,
@@ -111,29 +117,31 @@ async function guijiTask() {
                 create_time,
                 update_time
             } = transList[retKey];
-            // TODO 待完成
-            // await lpop("TRANSFER_F")
             try {
-                let accountDetail_ret01 = await findAccount({address: t_to})
+
+                // TODO 待完成
+                // await lpop("TRANSFER_F")
+
+                let accountDetail_ret01 = await findAccount({address: t_from})
                 let accountDetail = accountDetail_ret01.result
 
                 let accountItem = accountDetail;
                 // try {
                 let wallet;
 
-                let decWalletResult = await getPriKey(accountItem, accountItem.psd);
-                if (decWalletResult.err != null) {
-                    return PasswordError;
-                } else {
-                    wallet = decWalletResult.result;
-                }
-                wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
-
                 // 链上余额判断
-                let etherString = await queryBalance(t_to);
-                console.log("To Address:", t_to)
+                let etherString = await queryBalance(t_from);
+                console.log("To Address:", t_from)
                 console.log("Balance:", etherString)
                 if (Number(etherString) > Number(String(0.101))) {
+                    let decWalletResult = await getPriKey(accountItem, accountItem.psd);
+                    if (decWalletResult.err != null) {
+                        return PasswordError;
+                    } else {
+                        wallet = decWalletResult.result;
+                    }
+                    wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+
                     let {
                         err,
                         hash
@@ -145,20 +153,20 @@ async function guijiTask() {
                     console.log("tx Hash:", hash);
                 }
                 // 修改 JSON 对象的值
-                console.log("修改 JSON 对象的值", id);
-                jsonData.num = id; // 例如修改 `name` 字段
-
-                // 将修改后的对象转换为 JSON 字符串
-                const updatedJsonData = JSON.stringify(jsonData, null, 2); // 格式化输出
-
-                // 写入修改后的 JSON 文件 (同步)
-                fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
-
             } catch (e) {
                 console.error(e)
                 console.trace(e)
             }
+            console.log("修改 JSON 对象的值", id);
+            jsonData.num = id; // 例如修改 `name` 字段
+
+            // 将修改后的对象转换为 JSON 字符串
+            const updatedJsonData = JSON.stringify(jsonData, null, 2); // 格式化输出
+
+            // 写入修改后的 JSON 文件 (同步)
+            fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
         }
+
         await guijiTask()
     }
 }
@@ -174,7 +182,6 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         let idHash = await auths_idHash(walletUser.address)
         if (idHash.data === '0x00000000000000000000000000000000') {
             console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
-
 
             let _account_to = await findAccount({address: toAddress});
             let _to_wallet = await getPriKey(_account_to.result, _account_to.result.psd);
@@ -216,6 +223,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
+// setInterval(guijiTask, 20000)
 module.exports = {
     guijiTask
 };

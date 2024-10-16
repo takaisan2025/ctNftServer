@@ -52,7 +52,7 @@ async function getNonce(address) {
 
 async function betchTransfer() {
     if (await getString(betchTransferFlag) == "1") {
-        console.log('===================wait start mintBetchCallFund')
+        console.log('===================wait start betchTransfer')
         return
     } else {
         await setString(betchTransferFlag, "1", 60)
@@ -528,7 +528,6 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-setInterval(betchTransfer, 5000)
 // betchTransfer();
 module.exports = {
     betchTransfer

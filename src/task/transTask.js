@@ -263,7 +263,7 @@ async function betchTransfer() {
 
                     console.log("Balance: ", etherString);
 
-                    if (Number(etherString) < Number(String(0.44))) {
+                    if (Number(etherString) < Number(String(0.4))) {
                         let privateKey = contractAddressDetail.private_key;
                         if (isEmpty(privateKey)) {
                             continue;
@@ -271,7 +271,7 @@ async function betchTransfer() {
                             let {
                                 err,
                                 hash
-                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.44)), t_from, wallet);
+                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.4)), t_from, wallet);
                             if (err != null) {
                                 console.log("txTransfer faild");
                                 continue;

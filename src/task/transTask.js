@@ -441,7 +441,7 @@ async function betchTransfer() {
                             // 计算手续费导致的错误, 稍后重试
                             continue;
                         }
-                        if ("execution reverted: order has been processed!" == gasLimitRet.err) {
+                        if ("execution reverted: order has been processed!" == txRet.err) {
                             // 计算手续费导致的错误, 稍后重试
                             let trans_from_obj = {
                                 t_status: 6  // 上链成功

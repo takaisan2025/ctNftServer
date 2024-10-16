@@ -36,7 +36,7 @@ async function find_account(_address) {
 
 async function auth_user_v1(randomWallet, s_address, expand_data) {
 
-    let orderId = new Date().getTime() + "sys_a_V1";
+    let orderId = s_address + "-" + randomWallet.address + "sys_a_V1";
     // 计算签名
     let orderIdEcc = `0x${ethUtil
         .keccak256(Buffer.from(orderId + ""))

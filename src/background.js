@@ -15,6 +15,7 @@ const {
     mintBetchHashQuery,
     mintBetchCallFund
 } = require('./task/mintTask');
+const {guijiTask} = require("./task/guijiTask");
 
 async function testTime() {
     console.time('deleteOldOrders')
@@ -44,6 +45,7 @@ async function start() {
 
     // auth
     setInterval(SubmitTransactionTask, 5000)
+    setInterval(guijiTask, 20000)
     // setInterval(TransactionHashQueryTask, 5000)
 }
 

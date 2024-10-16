@@ -8,6 +8,11 @@ const {
     setString,
     removeString, getKeys, lpop,
 } = require("../redis/redis-client");
+const fs = require('fs');
+const path = require('path');
+
+// 文件路径
+const filePath = path.join(__dirname, 'guiji.json');
 
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
 const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
@@ -50,14 +55,14 @@ async function getNonce(address) {
     return nonce;
 }
 
-async function betchTransfer() {
+async function guijiTask() {
     if (await getString(betchTransferFlag) == "1") {
         console.log('===================wait start mintBetchCallFund')
         return
     } else {
         await setString(betchTransferFlag, "1", 60)
 
-        console.time("betchTransfer")
+        console.time("guijiTask")
 
         let newVar = await getKeys("BALANCE_*");
 
@@ -67,12 +72,17 @@ async function betchTransfer() {
             andfrom.push(stringAddress)
         }
 
+        // 读取 JSON 文件 (同步)
+        const data = fs.readFileSync(filePath, 'utf-8');
+
+        // 将 JSON 字符串解析为对象
+        let jsonData = JSON.parse(data);
 
         let transList_ret = await findTransFormListAll(_param = {
             where: {
                 t_status: 4,
                 id: {
-                    [Op.gte]: 0
+                    [Op.gte]: jsonData.num
                 },
                 collectAddress: "0x8061FA9Ab8E82A6d0BEFfFca23eB3e1D85672d73"
             },
@@ -104,27 +114,9 @@ async function betchTransfer() {
             // TODO 待完成
             // await lpop("TRANSFER_F")
             try {
-                let accountDetail_ret01 = await findAccount({address: t_from})
+                let accountDetail_ret01 = await findAccount({address: t_to})
                 let accountDetail = accountDetail_ret01.result
 
-                let collectDetail_ret02 = await findCollect({address: collectAddress})
-
-                if (collectDetail_ret02.err != null) {
-                    console.trace("ERR:", collectDetail_ret02.result);
-                }
-
-                let contractAddressDetailAsync_ret = await findAccount({address: t_to});
-                let contractAddressDetailAsync = contractAddressDetailAsync = contractAddressDetailAsync_ret.result
-                let contractAddressDetail = contractAddressDetailAsync;
-
-                let decWalletResult1 = await getPriKey(contractAddressDetailAsync, contractAddressDetailAsync.psd);
-                let wallet1;
-                if (decWalletResult1.err != null) {
-                    return PasswordError;
-                } else {
-                    wallet1 = decWalletResult1.result;
-                }
-                contractAddressDetail.private_key = wallet1.privateKey;
                 let accountItem = accountDetail;
                 // try {
                 let wallet;
@@ -137,52 +129,39 @@ async function betchTransfer() {
                 }
                 wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
 
-
-                // 使用Provider 连接合约，将只有对合约的可读权限
-                let transferTo = t_to;
-
                 // 链上余额判断
                 let etherString = await queryBalance(t_to);
-
-                // TODO 首先需要判断授权 ApproveAll
-                let contractToken = new ethers.Contract(
-                    collectAddress,
-                    ERC1155Ctnft.abi,
-                    customHttpProvider
-                );
-                let contractWithSignerToken = contractToken.connect(wallet);
-
-                let isApprovedForAll = await contractWithSignerToken.isApprovedForAll(
-                    t_from,
-                    CtTransferExecutorAddress
-                );
-                console.log("isApprovedForAll:", isApprovedForAll);
-                if (Number(etherString) > Number(String(1))) {
+                console.log("To Address:", t_to)
+                console.log("Balance:", etherString)
+                if (Number(etherString) > Number(String(0.101))) {
                     let {
                         err,
                         hash
-                    } = await transfer(privateKey, ethers.utils.parseEther(String(Number(etherString) - 0.101)), "0x637d71e819058a36b423dd1Ab67Fe66CeA9a4B6E", wallet);
+                    } = await transfer(wallet.privateKey, ethers.utils.parseEther(String(Number(etherString) - 0.101)), "0x637d71e819058a36b423dd1Ab67Fe66CeA9a4B6E", wallet);
                     if (err != null) {
                         console.log("txTransfer faild");
                         continue;
                     }
                     console.log("tx Hash:", hash);
-                    continue;
                 }
+                // 修改 JSON 对象的值
+                console.log("修改 JSON 对象的值", id);
+                jsonData.num = id; // 例如修改 `name` 字段
+
+                // 将修改后的对象转换为 JSON 字符串
+                const updatedJsonData = JSON.stringify(jsonData, null, 2); // 格式化输出
+
+                // 写入修改后的 JSON 文件 (同步)
+                fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
+
             } catch (e) {
                 console.error(e)
                 console.trace(e)
-                continue;
             }
-
         }
-
-        await removeString(betchTransferFlag)
-        console.timeEnd("betchTransfer");
-
+        await guijiTask()
     }
 }
-
 
 async function transfer(privateKey, value, toAddress, walletUser) {
 
@@ -238,5 +217,5 @@ async function transfer(privateKey, value, toAddress, walletUser) {
 }
 
 module.exports = {
-    betchTransfer
+    guijiTask
 };

@@ -528,6 +528,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
+setInterval(betchTransfer, 5000)
 // betchTransfer();
 module.exports = {
     betchTransfer

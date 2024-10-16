@@ -33,7 +33,7 @@ async function start() {
     setInterval(mintBetchHashQuery, 5000)
     setInterval(mintBetchCallFund, 2000)
     // // transfer
-    setInterval(betchTransfer, 5000)
+    // setInterval(betchTransfer, 5000)
     setInterval(betchHashQuery, 5000)
     setInterval(betchCallFund, 2000)
     setInterval(betchCallFund1, 30000)

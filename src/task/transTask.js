@@ -254,7 +254,7 @@ async function betchTransfer() {
                             // chainId: 27
                         }
                     );
-                    // continue;
+                    continue;
                     // let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
                     //
                     // console.log("txApprove:", recept1);
@@ -309,65 +309,64 @@ async function betchTransfer() {
                     .keccak256(Buffer.from(orderId))
                     .toString("hex")}`;
                 let data = orderIdEcc;
-                // let gasLimitRet = await contractWithSigner.estimateGas
-                //     .transfer(
-                //         assetClass,
-                //         collectAddress,
-                //         t_from,
-                //         transferTo,
-                //         token_id,
-                //         orderIdEcc,
-                //         amount,
-                //         transferDirection,
-                //         transferType,
-                //         data
-                //     )
-                //     .then((ret) => {
-                //         return {err: null, gasLimit: ret}
-                //     })
-                //     .catch((err) => {
-                //         console.log("Err:", err)
-                //         return {err: err.reason, gasLimit: null}
-                //     });
-                // if (gasLimitRet.err != null) {
-                if (false) {
-                    // console.trace(gasLimitRet.err);
-                    // if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err ||
-                    //     "execution reverted: ERC1155: burn amount exceeds balance" == gasLimitRet.err ||
-                    //     "execution reverted: ERC1155: transfer to non ERC1155Receiver implementer" == gasLimitRet.err
-                    // ) {
-                    //     let trans_from_obj = {
-                    //         t_status: 3,  // 上链失败
-                    //         vm_err: gasLimitRet.err
-                    //     };
-                    //
-                    //     console.log("nftUpdateSelective:", trans_from_obj);
-                    //     await updateTransFormList(trans_from_obj, {id: id})
-                    // } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
-                    //     // 计算手续费导致的错误, 稍后重试
-                    // } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
-                    //     // 计算手续费导致的错误, 稍后重试
-                    //     let trans_from_obj = {
-                    //         t_status: 6  // 上链成功
-                    //     };
-                    //     let newVar1 = await updateTransFormList(trans_from_obj, {id: id});
-                    //     console.log(newVar1)
-                    // } else if ("replacement fee too low" == gasLimitRet.err) {
-                    // } else {
-                    // }
-                    // continue;
+                let gasLimitRet = await contractWithSigner.estimateGas
+                    .transfer(
+                        assetClass,
+                        collectAddress,
+                        t_from,
+                        transferTo,
+                        token_id,
+                        orderIdEcc,
+                        amount,
+                        transferDirection,
+                        transferType,
+                        data
+                    )
+                    .then((ret) => {
+                        return {err: null, gasLimit: ret}
+                    })
+                    .catch((err) => {
+                        console.log("Err:", err)
+                        return {err: err.reason, gasLimit: null}
+                    });
+                if (gasLimitRet.err != null) {
+                    console.trace(gasLimitRet.err);
+                    if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err ||
+                        "execution reverted: ERC1155: burn amount exceeds balance" == gasLimitRet.err ||
+                        "execution reverted: ERC1155: transfer to non ERC1155Receiver implementer" == gasLimitRet.err
+                    ) {
+                        let trans_from_obj = {
+                            t_status: 3,  // 上链失败
+                            vm_err: gasLimitRet.err
+                        };
+
+                        console.log("nftUpdateSelective:", trans_from_obj);
+                        await updateTransFormList(trans_from_obj, {id: id})
+                    } else if ("ErrFunds must less than 0.105 ETH" == gasLimitRet.err) {
+                        // 计算手续费导致的错误, 稍后重试
+                    } else if ("execution reverted: order has been processed!" == gasLimitRet.err) {
+                        // 计算手续费导致的错误, 稍后重试
+                        let trans_from_obj = {
+                            t_status: 6  // 上链成功
+                        };
+                        let newVar1 = await updateTransFormList(trans_from_obj, {id: id});
+                        console.log(newVar1)
+                    } else if ("replacement fee too low" == gasLimitRet.err) {
+                    } else {
+                    }
+                    continue;
                 } else {
 
                     let tx;
                     let txRet;
 
-                    // let gasLimit = gasLimitRet.gasLimit;
-                    // console.log("gasLimit:", gasLimit.toString());
+                    let gasLimit = gasLimitRet.gasLimit;
+                    console.log("gasLimit:", gasLimit.toString());
                     let nonce = await getNonce(t_from);
 
                     let overrides = {
                         // The maximum units of gas for the transaction to use
-                        // gasLimit: Web3.utils.numberToHex(gasLimit),
+                        gasLimit: Web3.utils.numberToHex(gasLimit),
                         // gasLimit: Web3.utils.numberToHex(80000),
                         // The price (in wei) per unit of gas
                         gasPrice: Web3.utils.numberToHex(4800e9),
@@ -441,7 +440,7 @@ async function betchTransfer() {
                             // 计算手续费导致的错误, 稍后重试
                             continue;
                         }
-                        if ("execution reverted: order has been processed!" == txRet.err) {
+                        if ("execution reverted: order has been processed!" == gasLimitRet.err) {
                             // 计算手续费导致的错误, 稍后重试
                             let trans_from_obj = {
                                 t_status: 6  // 上链成功

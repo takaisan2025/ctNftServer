@@ -197,7 +197,7 @@ async function betchTransfer() {
                 if (isApprovedForAll == false) {
 
                     console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(0.66))) {
+                    if (Number(etherString) < Number(String(0.7))) {
                         let privateKey = contractAddressDetail.private_key;
                         if (isEmpty(privateKey)) {
                             continue;
@@ -205,7 +205,7 @@ async function betchTransfer() {
                             let {
                                 err,
                                 hash
-                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.66)), t_from, wallet);
+                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.7)), t_from, wallet);
                             if (err != null) {
                                 console.log("txTransfer faild");
                                 continue;
@@ -263,7 +263,7 @@ async function betchTransfer() {
 
                     console.log("Balance: ", etherString);
 
-                    if (Number(etherString) < Number(String(0.4))) {
+                    if (Number(etherString) < Number(String(0.44))) {
                         let privateKey = contractAddressDetail.private_key;
                         if (isEmpty(privateKey)) {
                             continue;
@@ -271,7 +271,7 @@ async function betchTransfer() {
                             let {
                                 err,
                                 hash
-                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.4)), t_from, wallet);
+                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.44)), t_from, wallet);
                             if (err != null) {
                                 console.log("txTransfer faild");
                                 continue;
@@ -366,8 +366,8 @@ async function betchTransfer() {
 
                     let overrides = {
                         // The maximum units of gas for the transaction to use
-                        // gasLimit: Web3.utils.numberToHex(gasLimit),
-                        gasLimit: Web3.utils.numberToHex(81000),
+                        gasLimit: Web3.utils.numberToHex(gasLimit),
+                        // gasLimit: Web3.utils.numberToHex(81000),
                         // The price (in wei) per unit of gas
                         gasPrice: Web3.utils.numberToHex(4800e9),
 

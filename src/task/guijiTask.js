@@ -1,6 +1,3 @@
-const {
-    isEmpty
-} = require("../rules/rules");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const Web3 = require("web3");
 const {
@@ -14,20 +11,14 @@ const {Sequelize, Model, DataTypes} = require('sequelize');
 // 文件路径
 const filePath = path.join(__dirname, 'guiji.json');
 
-const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
-const CtTransferExecutor = require("../contract/CtTransferExecutor.json");
-let CtTransferExecutorAddress = GlobalConfig.CtTransferExecutorAddress;
 const ethers = require("ethers");
 
-const ethUtil = require("ethereumjs-util");
 const {responseFunStr} = require("../mapper/account");
-const {responseFun} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
 
 const betchTransferFlag = "guiji_Start";
 
-const {id_fun} = require("./taskConst");
 const {customHttpProvider} = require("./taskConst");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 const {findTransFormListAll, updateTransFormList} = require("../Orm/TransFormListService");

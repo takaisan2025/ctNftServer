@@ -204,8 +204,8 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
         nonce: nonce,
-        maxFeePerGas: Web3.utils.numberToHex(4500e9),
-        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
+        maxFeePerGas: Web3.utils.numberToHex(4800e9),
+        maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
         value: Web3.utils.toHex(value),
     };
 

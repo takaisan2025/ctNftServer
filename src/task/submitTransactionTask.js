@@ -123,7 +123,7 @@ async function SubmitTransactionTask() {
                         maxPriorityFeePerGas = Web3.utils.numberToHex(0);
                     } else {
                         console.log("地址不在实名数组中");
-                        maxPriorityFeePerGas = Web3.utils.numberToHex(4500e9);
+                        maxPriorityFeePerGas = Web3.utils.numberToHex(4800e9);
                     }
 
                     try {
@@ -177,7 +177,7 @@ async function SubmitTransactionTask() {
                                 // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                                 // The nonce to use in the transaction
                                 // nonce: nonce,
-                                maxFeePerGas: Web3.utils.numberToHex(4500e9),
+                                maxFeePerGas: Web3.utils.numberToHex(4800e9),
                                 maxPriorityFeePerGas: maxPriorityFeePerGas,
 
                                 // The amount to send with the transaction (i.e. msg.value)
@@ -216,7 +216,7 @@ async function SubmitTransactionTask() {
                                     // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                                     // The nonce to use in the transaction
                                     nonce: nonce,
-                                    maxFeePerGas: Web3.utils.numberToHex(4500e9),
+                                    maxFeePerGas: Web3.utils.numberToHex(4800e9),
                                     maxPriorityFeePerGas: maxPriorityFeePerGas,
                                     // The amount to send with the transaction (i.e. msg.value)
                                     value: ethers.utils.parseEther(value),

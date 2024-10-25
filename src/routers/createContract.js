@@ -130,7 +130,7 @@ function createContractRouters(app) {
                 gaslimit,
                 // gasConfig.create_contract1155.gasLimit,
                 type,
-                false
+                true
             );
             // if (collectAddress == null) {return res.status(RESPONSE_STATUS.SUCCESS).json( responseFun(RESPONSE_STATUS.ERROR,  "创建合约失败", {}));
             // }

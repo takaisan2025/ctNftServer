@@ -110,7 +110,7 @@ async function betchGive() {
             // gasLimit: Web3.utils.numberToHex(gasLimit),
             // The price (in wei) per unit of gas
             maxFeePerGas: Web3.utils.numberToHex(4800e9),
-            maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
+            maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
             // The nonce to use in the transaction
             // nonce: nonce,
             nonce: transactionCount1Mint,

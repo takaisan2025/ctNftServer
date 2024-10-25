@@ -80,7 +80,7 @@ async function tFeeBetchTransfer() {
                 // use this convenience function to convert ether to wei.
                 // gasPrice: Web3.utils.numberToHex(0),
                 maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
+                maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
                 value: ethers.utils.parseEther((pay_amount * rate).toString()),
             };
 

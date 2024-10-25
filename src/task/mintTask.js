@@ -319,7 +319,7 @@ async function mintBetchMint() {
                                 // The maximum units of gas for the transaction to use
                                 // gasLimit: Web3.utils.numberToHex(gasLimit), // The price (in wei) per unit of gas
                                 maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                                maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
+                                maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
                                 // gasPrice: Web3.utils.numberToHex(
                                 //     parseInt(gasConfig.mint1155.gas / Number(gasLimit))
                                 // ),
@@ -511,7 +511,7 @@ async function mintBetchMint() {
                             // The maximum units of gas for the transaction to use
                             // gasLimit: Web3.utils.numberToHex(gasLimit), // The price (in wei) per unit of gas
                             maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                            maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
+                            maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
                             // gasPrice: Web3.utils.numberToHex(
                             //     parseInt(gasConfig.mint721.gas / Number(gasLimit))
                             // ),
@@ -635,7 +635,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         // to: "ricmoo.firefly.eth"
         nonce: nonce, // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         maxFeePerGas: Web3.utils.numberToHex(4800e9),
-        maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
+        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
         // use this convenience function to convert ether to wei.
         value: Web3.utils.toHex(value),
     };

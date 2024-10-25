@@ -29,7 +29,7 @@ async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
         // The maximum units of gas for the transaction to use
         // gasLimit: Web3.utils.numberToHex(gasLimit),
         // The price (in wei) per unit of gas
-        maxFeePerGas: Web3.utils.numberToHex(4800e9), maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
+        maxFeePerGas: Web3.utils.numberToHex(4800e9), maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
     };
 
     const contractData = contractMap[type];
@@ -102,7 +102,7 @@ async function collectInit(name, symbol, tokenUrlPrefix, contractUrl, type, coll
                 [contractInitData](name, symbol, tokenUrlPrefix, contractUrl, {
                 // gasLimit: gaslimitInit,
                 maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                maxPriorityFeePerGas: Web3.utils.numberToHex(4800e9),
+                maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
             })
                 .then((ret) => {
                     return ret;

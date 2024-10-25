@@ -107,9 +107,10 @@ async function betchGive() {
 
         let overrides = {
             // The maximum units of gas for the transaction to use
-            gasLimit: Web3.utils.numberToHex(gasLimit),
+            // gasLimit: Web3.utils.numberToHex(gasLimit),
             // The price (in wei) per unit of gas
-            gasPrice: Web3.utils.numberToHex(4800e9),
+            maxFeePerGas: Web3.utils.numberToHex(4500e9),
+            maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
             // The nonce to use in the transaction
             // nonce: nonce,
             nonce: transactionCount1Mint,

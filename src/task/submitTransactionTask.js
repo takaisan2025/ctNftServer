@@ -40,6 +40,7 @@ async function getNonce(address) {
 
     return nonce;
 }
+
 function mightBeJson(str) {
     const regex = /^\{.*\}$|^\[.*\]$/;
     if (str === null) {
@@ -47,6 +48,26 @@ function mightBeJson(str) {
     } else {
         return regex.test(str.trim());
     }
+}
+
+// 判断地址是否在数组中
+function isAddressInArray(address) {
+    // 定义地址数组，存储为 ethers.js 的 Address 类型
+    const addressArray = [
+        ethers.utils.getAddress('0x8549E5003BdAdEFA095C8759E2B981D0Cb2e472B'),
+        ethers.utils.getAddress('0x709bBc0aD7581D02244E00C356d0EFcbC79AE9f3')
+    ];
+
+    // 将传入的地址标准化（转换为 checksum 地址）
+    const targetAddress = ethers.utils.getAddress(address);
+
+    // 遍历地址数组并比较
+    for (let addr of addressArray) {
+        if (addr === targetAddress) {
+            return true;
+        }
+    }
+    return false;
 }
 
 async function SubmitTransactionTask() {
@@ -94,6 +115,17 @@ async function SubmitTransactionTask() {
                     if (isBal == "1") {
                         break;
                     }
+
+                    let maxPriorityFeePerGas;
+
+                    if (isAddressInArray(to)) {
+                        console.log("地址存在于实名数组中");
+                        maxPriorityFeePerGas = Web3.utils.numberToHex(0);
+                    } else {
+                        console.log("地址不在实名数组中");
+                        maxPriorityFeePerGas = Web3.utils.numberToHex(4500e9);
+                    }
+
                     try {
 
                         let wallet;
@@ -145,9 +177,8 @@ async function SubmitTransactionTask() {
                                 // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                                 // The nonce to use in the transaction
                                 // nonce: nonce,
-                                // gasPrice: Web3.utils.numberToHex(4800e9),
-                                maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                                maxPriorityFeePerGas: Web3.utils.numberToHex(0),
+                                maxFeePerGas: Web3.utils.numberToHex(4500e9),
+                                maxPriorityFeePerGas: maxPriorityFeePerGas,
 
                                 // The amount to send with the transaction (i.e. msg.value)
                                 value: ethers.utils.parseEther(value),
@@ -185,9 +216,8 @@ async function SubmitTransactionTask() {
                                     // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                                     // The nonce to use in the transaction
                                     nonce: nonce,
-                                    // gasPrice: Web3.utils.numberToHex(4800e9),
-                                    maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                                    maxPriorityFeePerGas: Web3.utils.numberToHex(0),
+                                    maxFeePerGas: Web3.utils.numberToHex(4500e9),
+                                    maxPriorityFeePerGas: maxPriorityFeePerGas,
                                     // The amount to send with the transaction (i.e. msg.value)
                                     value: ethers.utils.parseEther(value),
                                     // The chain ID (or network ID) to use
@@ -289,7 +319,6 @@ async function SubmitTransactionTask() {
         }
     }
 }
-
 
 
 async function TransactionHashQueryTask() {

@@ -16,24 +16,20 @@ const {customHttpProvider} = require("../task/taskConst");
 const {validate} = require("./fcommon");
 
 const contractMap = {
-    9: ERC721Ctnft,
-    10: ERC1155Ctnft,
-    12: ERC1155CtnftOwner
+    9: ERC721Ctnft, 10: ERC1155Ctnft, 12: ERC1155CtnftOwner
 };
 
 const contractInitMap = {
-    9: "__ERC721Ctnft_init",
-    10: "__ERC1155Ctnft_init",
-    12: "__ERC1155Ctnft_init"
+    9: "__ERC721Ctnft_init", 10: "__ERC1155Ctnft_init", 12: "__ERC1155Ctnft_init"
 };
 
 // 创建收藏夹 ERC1155 支持懒铸造
 async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
     let overrides = {
         // The maximum units of gas for the transaction to use
-        gasLimit: Web3.utils.numberToHex(gasLimit),
+        // gasLimit: Web3.utils.numberToHex(gasLimit),
         // The price (in wei) per unit of gas
-        gasPrice: Web3.utils.numberToHex(4800e9),
+        maxFeePerGas: Web3.utils.numberToHex(4500e9), maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
     };
 
     const contractData = contractMap[type];
@@ -41,11 +37,7 @@ async function createCollectV2(wallet, gasPrice, gasLimit, type, wait) {
     // 常见合约工厂实例
     let factory;
     if (contractData) {
-        factory = new ethers.ContractFactory(
-            contractData.abi,
-            contractData.bytecode,
-            wallet
-        );
+        factory = new ethers.ContractFactory(contractData.abi, contractData.bytecode, wallet);
     } else {
         return null;
     }
@@ -75,11 +67,7 @@ async function createCollectV2Call(type, wallet) {
     // 常见合约工厂实例
     let factory;
     if (contractData) {
-        factory = new ethers.ContractFactory(
-            contractData.abi,
-            contractData.bytecode,
-            wallet
-        );
+        factory = new ethers.ContractFactory(contractData.abi, contractData.bytecode, wallet);
     } else {
         return {err: "没有找到匹配的合约信息", gaslimit: 0};
     }
@@ -87,41 +75,23 @@ async function createCollectV2Call(type, wallet) {
     // 请注意，我们将 "Hello World" 作为参数传递给合约构造函数constructor
     let data = await factory.getDeployTransaction();
     let {err, gaslimit} = await new Promise((resolve, reject) => {
-        web3.eth.estimateGas(
-            {
-                data: data.data,
-                value: 0,
-                from: wallet.address,
-            },
-            (err, gaslimit) => {
-                // logger.debug("err\n:" + err);
-                // logger.debug("gas:\n" + gaslimit);
-                resolve({err, gaslimit});
-            }
-        );
+        web3.eth.estimateGas({
+            data: data.data, value: 0, from: wallet.address,
+        }, (err, gaslimit) => {
+            // logger.debug("err\n:" + err);
+            // logger.debug("gas:\n" + gaslimit);
+            resolve({err, gaslimit});
+        });
     }).then((ret) => {
         return ret;
     });
     return {err, gaslimit};
 }
 
-async function collectInit(
-    name,
-    symbol,
-    tokenUrlPrefix,
-    contractUrl,
-    type,
-    collectAddress,
-    wallet,
-    gaslimitInit
-) {
+async function collectInit(name, symbol, tokenUrlPrefix, contractUrl, type, collectAddress, wallet, gaslimitInit) {
 
     const contractData = contractMap[type];
-    let contract = new ethers.Contract(
-        collectAddress,
-        contractData.abi,
-        customHttpProvider
-    );
+    let contract = new ethers.Contract(collectAddress, contractData.abi, customHttpProvider);
 
     const contractInitData = contractInitMap[type];
 
@@ -130,8 +100,9 @@ async function collectInit(
         try {
             let tx = await contractWithSigner
                 [contractInitData](name, symbol, tokenUrlPrefix, contractUrl, {
-                gasLimit: gaslimitInit,
-                gasPrice: Web3.utils.numberToHex(4800e9),
+                // gasLimit: gaslimitInit,
+                maxFeePerGas: Web3.utils.numberToHex(4500e9),
+                maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
             })
                 .then((ret) => {
                     return ret;
@@ -164,22 +135,10 @@ async function collectInit(
 
 }
 
-async function collectInitCall(
-    name,
-    symbol,
-    tokenUrlPrefix,
-    contractUrl,
-    type,
-    collectAddressMap,
-    wallet,
-) {
+async function collectInitCall(name, symbol, tokenUrlPrefix, contractUrl, type, collectAddressMap, wallet,) {
 
     const contractData = contractMap[type];
-    let contract = new ethers.Contract(
-        collectAddressMap[String(type)],
-        contractData.abi,
-        customHttpProvider
-    );
+    let contract = new ethers.Contract(collectAddressMap[String(type)], contractData.abi, customHttpProvider);
 
     const contractInitData = contractInitMap[type];
     if (contractData) {
@@ -205,11 +164,7 @@ async function collectInitCall(
 async function sendCTI(collectAddress, toAddress, type, amount) {
     let walletSys = new ethers.Wallet(privateKeyJifen, customHttpProvider);
     try {
-        let contract = new ethers.Contract(
-            collectAddress,
-            JiFenToken.abi,
-            customHttpProvider
-        );
+        let contract = new ethers.Contract(collectAddress, JiFenToken.abi, customHttpProvider);
         let contractWithSigner = contract.connect(walletSys);
         let tx = await contractWithSigner
             .mint(type, amount, toAddress)
@@ -240,9 +195,5 @@ async function sendCTI(collectAddress, toAddress, type, amount) {
 }
 
 module.exports = {
-    createCollectV2,
-    createCollectV2Call,
-    collectInit,
-    collectInitCall,
-    sendCTI,
+    createCollectV2, createCollectV2Call, collectInit, collectInitCall, sendCTI,
 };

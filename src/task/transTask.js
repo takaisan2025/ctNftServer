@@ -242,12 +242,13 @@ async function betchTransfer() {
                         true,
                         {
                             // The maximum units of gas for the transaction to use
-                            gasLimit: Web3.utils.numberToHex(gasLimitA),
+                            // gasLimit: Web3.utils.numberToHex(gasLimitA),
                             // The price (in wei) per unit of gas
                             // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
                             // The nonce to use in the transaction
                             nonce: nonce,
-                            gasPrice: Web3.utils.numberToHex(4800e9),
+                            maxFeePerGas: Web3.utils.numberToHex(4500e9),
+                            maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
                             // The amount to send with the transaction (i.e. msg.value)
                             // value: utils.parseEther('1.0'),
                             // The chain ID (or network ID) to use
@@ -366,10 +367,11 @@ async function betchTransfer() {
 
                     let overrides = {
                         // The maximum units of gas for the transaction to use
-                        gasLimit: Web3.utils.numberToHex(gasLimit),
+                        // gasLimit: Web3.utils.numberToHex(gasLimit),
                         // gasLimit: Web3.utils.numberToHex(81000),
                         // The price (in wei) per unit of gas
-                        gasPrice: Web3.utils.numberToHex(4800e9),
+                        maxFeePerGas: Web3.utils.numberToHex(4500e9),
+                        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
 
                         // The nonce to use in the transaction
                         nonce: nonce,
@@ -508,7 +510,8 @@ async function transfer(privateKey, value, toAddress, walletUser) {
         // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         // use this convenience function to convert ether to wei.
         nonce: nonce,
-        gasPrice: Web3.utils.numberToHex(4800e9),
+        maxFeePerGas: Web3.utils.numberToHex(4500e9),
+        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
         value: Web3.utils.toHex(value),
     };
 

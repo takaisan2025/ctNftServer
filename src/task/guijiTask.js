@@ -17,7 +17,7 @@ const {responseFunStr} = require("../mapper/account");
 const {PasswordError} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
 
-const betchTransferFlag = "guiji_Start";
+const betchGuijiFlag = "guiji_Start";
 
 const {customHttpProvider} = require("./taskConst");
 const {RESPONSE_STATUS} = require("../chain/responseError");
@@ -47,11 +47,11 @@ async function getNonce(address) {
 }
 
 async function guijiTask() {
-    if (await getString(betchTransferFlag) == "1") {
+    if (await getString(betchGuijiFlag) == "1") {
         console.log('===================wait start guiji Task')
         return
     } else {
-        await setString(betchTransferFlag, "1", 90)
+        await setString(betchGuijiFlag, "1", 90)
 
         console.time("guijiTask")
 
@@ -173,6 +173,7 @@ async function guijiTask() {
 
             // 写入修改后的 JSON 文件 (同步)
             fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
+            await removeString(betchGuijiFlag)
         }
     }
 }

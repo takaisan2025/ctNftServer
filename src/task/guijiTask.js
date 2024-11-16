@@ -230,7 +230,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-guijiTask()
+// guijiTask()
 module.exports = {
     guijiTask
 };

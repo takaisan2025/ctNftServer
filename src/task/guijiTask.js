@@ -72,7 +72,8 @@ async function guijiTask() {
         let transList_ret = await findTransFormListAll(_param = {
             attributes: [
                 [Sequelize.fn('DISTINCT', Sequelize.col('t_from')), 't_from'],
-                "id"
+                "id",
+                "collectAddress",
             ],
             where: {
                 t_status: 4,
@@ -111,13 +112,13 @@ async function guijiTask() {
                 update_time
             } = transList[retKey];
             try {
-
+                console.log("collectAddress:", collectAddress)
                 let collectDetail_ret02 = await findCollect({address: collectAddress})
 
                 if (collectDetail_ret02.err != null) {
                     console.trace("ERR:", collectDetail_ret02.result);
                 }
-
+                console.log(collectDetail_ret02)
                 let collectDetail = collectDetail_ret02.result
 
                 console.log(collectDetail)
@@ -228,7 +229,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-// setInterval(guijiTask, 20000)
+// guijiTask()
 module.exports = {
     guijiTask
 };

@@ -114,31 +114,33 @@ async function guijiTask() {
             try {
                 console.log("collectAddress:", collectAddress)
                 let collectDetail_ret02 = await findCollect({address: collectAddress})
+                let isAccount = await findCollect({owner: t_from})
+                console.log("isAccount:", isAccount.result)
+                if (isAccount.result == null) {
+                    if (collectDetail_ret02.err != null) {
+                        console.trace("ERR:", collectDetail_ret02.result);
+                        break;
+                    }
+                    console.log(collectDetail_ret02)
+                    let collectDetail = collectDetail_ret02.result
 
-                if (collectDetail_ret02.err != null) {
-                    console.trace("ERR:", collectDetail_ret02.result);
-                }
-                console.log(collectDetail_ret02)
-                let collectDetail = collectDetail_ret02.result
+                    console.log(collectDetail)
+                    let tt_to = collectDetail.owner
+                    // TODO 待完成
+                    // await lpop("TRANSFER_F")
 
-                console.log(collectDetail)
-                let tt_to = collectDetail.owner
-                // TODO 待完成
-                // await lpop("TRANSFER_F")
+                    let accountDetail_ret01 = await findAccount({address: t_from})
+                    let accountDetail = accountDetail_ret01.result
 
-                let accountDetail_ret01 = await findAccount({address: t_from})
-                let accountDetail = accountDetail_ret01.result
+                    let accountItem = accountDetail;
+                    // try {
+                    let wallet;
 
-                let accountItem = accountDetail;
-                // try {
-                let wallet;
-
-                // 链上余额判断
-                let etherString = await queryBalance(t_from);
-                console.log("To Address:", t_from)
-                console.log("Balance:", etherString)
-                if (Number(etherString) > Number(String(0.101))) {
-                    if (Number(etherString) < Number(String(5000))) {
+                    // 链上余额判断
+                    let etherString = await queryBalance(t_from);
+                    console.log("To Address:", t_from)
+                    console.log("Balance:", etherString)
+                    if (Number(etherString) > Number(String(0.101))) {
                         let decWalletResult = await getPriKey(accountItem, accountItem.psd);
                         if (decWalletResult.err != null) {
                             return PasswordError;
@@ -159,6 +161,7 @@ async function guijiTask() {
                         console.log("tx Hash:", hash);
                     }
                 }
+
                 // 修改 JSON 对象的值
             } catch (e) {
                 console.error(e)
@@ -173,8 +176,6 @@ async function guijiTask() {
             // 写入修改后的 JSON 文件 (同步)
             fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
         }
-
-        await guijiTask()
     }
 }
 

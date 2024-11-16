@@ -7,7 +7,9 @@
     "dev": "cross-env NODE_ENV=dev nodemon src/index.js",
     "start": "node src/index.js",
     "background": "node src/background.js",
-    "testBackground": "node src/testBackground.js"
+    "testBackground": "node src/testBackground.js",
+    "guijiTaskBackground": "node src/guijiTaskBackground.js",
+    "betchHashQueryBackground": "node src/betchHashQueryBackground.js"
   },
   "author": "",
   "license": "ISC",

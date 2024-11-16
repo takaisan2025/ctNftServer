@@ -34,7 +34,7 @@ async function start() {
     setInterval(mintBetchCallFund, 2000)
     // // transfer
     // setInterval(betchTransfer, 5000)
-    setInterval(betchHashQuery, 5000)
+    // setInterval(betchHashQuery, 5000)
     setInterval(betchCallFund, 2000)
     setInterval(betchCallFund1, 30000)
     setInterval(betchCallByTime, 30000)
@@ -45,7 +45,7 @@ async function start() {
 
     // auth
     setInterval(SubmitTransactionTask, 5000)
-    setInterval(guijiTask, 20000)
+    // setInterval(guijiTask, 20000)
     // setInterval(TransactionHashQueryTask, 5000)
 }
 

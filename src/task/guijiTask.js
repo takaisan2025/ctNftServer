@@ -71,7 +71,7 @@ async function guijiTask() {
 
         let transList_ret = await findTransFormListAll(_param = {
             attributes: [
-                [Sequelize.fn('DISTINCT', Sequelize.col('t_from')), 't_from'],
+                "t_from",
                 "id",
                 "collectAddress",
             ],
@@ -156,6 +156,25 @@ async function guijiTask() {
                         }
                         console.log("tx Hash:", hash);
                     }
+                    console.log("修改 JSON 对象的值", id);
+                    jsonData.num = id; // 例如修改 `name` 字段
+
+                    // 将修改后的对象转换为 JSON 字符串
+                    const updatedJsonData = JSON.stringify(jsonData, null, 2); // 格式化输出
+
+                    // 写入修改后的 JSON 文件 (同步)
+                    fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
+                } else {
+
+                    console.log("修改 JSON 对象的值", id);
+                    jsonData.num = id; // 例如修改 `name` 字段
+
+                    // 将修改后的对象转换为 JSON 字符串
+                    const updatedJsonData = JSON.stringify(jsonData, null, 2); // 格式化输出
+
+                    // 写入修改后的 JSON 文件 (同步)
+                    fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
+                    continue
                 }
 
                 // 修改 JSON 对象的值
@@ -163,16 +182,8 @@ async function guijiTask() {
                 console.error(e)
                 console.trace(e)
             }
-            console.log("修改 JSON 对象的值", id);
-            jsonData.num = id; // 例如修改 `name` 字段
-
-            // 将修改后的对象转换为 JSON 字符串
-            const updatedJsonData = JSON.stringify(jsonData, null, 2); // 格式化输出
-
-            // 写入修改后的 JSON 文件 (同步)
-            fs.writeFileSync(filePath, updatedJsonData, 'utf-8');
-            await removeString(betchGuijiFlag)
         }
+        await removeString(betchGuijiFlag)
     }
 }
 

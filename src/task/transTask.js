@@ -78,7 +78,7 @@ async function betchTransfer() {
                 }
             },
             offset: 0,
-            limit: 200,
+            limit: 100,
         })
 
         // console.log("betchTransferThread", sql)

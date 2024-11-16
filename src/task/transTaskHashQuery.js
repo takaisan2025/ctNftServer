@@ -1,5 +1,3 @@
-const Web3 = require("web3");
-let web3 = new Web3("http://ctblock.cn/blockChain");
 
 
 const {
@@ -11,6 +9,7 @@ const {
     lrem,
 } = require("../redis/redis-client");
 const {updateTransFormList, findTransFormListAll} = require("../Orm/TransFormListService");
+const {web3} = require("./taskConst");
 const betchHashQueryFlag = "betchHashQuery_START";
 
 async function betchHashQuery() {

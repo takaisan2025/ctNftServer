@@ -55,7 +55,7 @@ async function betchTransfer() {
         console.log('===================wait start betchTransfer')
         return
     } else {
-        await setString(betchTransferFlag, "1", 60)
+        await setString(betchTransferFlag, "1", 30)
 
         console.time("betchTransfer")
 
@@ -78,7 +78,7 @@ async function betchTransfer() {
                 }
             },
             offset: 0,
-            limit: 100,
+            limit: 50,
         })
 
         // console.log("betchTransferThread", sql)
@@ -469,7 +469,7 @@ async function betchTransfer() {
         }
 
         // await removeString(betchTransferFlag)
-        await setString(betchTransferFlag, "1", 10)
+        await setString(betchTransferFlag, "1", 5)
         console.timeEnd("betchTransfer");
 
     }

@@ -1,7 +1,7 @@
 const {betchTransfer} = require("./task/transTask");
 
 async function start() {
-    setInterval(betchTransfer, 30000)
+    setInterval(betchTransfer, 3000)
 }
 
 start()

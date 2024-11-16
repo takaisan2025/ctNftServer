@@ -115,7 +115,6 @@ async function guijiTask() {
                 console.log("collectAddress:", collectAddress)
                 let collectDetail_ret02 = await findCollect({address: collectAddress})
                 let isAccount = await findCollect({owner: t_from})
-                console.log("isAccount:", isAccount.result)
                 if (isAccount.result == null) {
                     if (collectDetail_ret02.err != null) {
                         console.trace("ERR:", collectDetail_ret02.result);

@@ -120,7 +120,7 @@ async function SubmitTransactionTask() {
 
                     if (isAddressInArray(to)) {
                         console.log("地址存在于实名数组中");
-                        maxPriorityFeePerGas = Web3.utils.numberToHex(0);
+                        maxPriorityFeePerGas = Web3.utils.numberToHex(1);
                     } else {
                         console.log("地址不在实名数组中");
                         maxPriorityFeePerGas = Web3.utils.numberToHex(4500e9);

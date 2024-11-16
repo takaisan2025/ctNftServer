@@ -468,7 +468,8 @@ async function betchTransfer() {
 
         }
 
-        await removeString(betchTransferFlag)
+        // await removeString(betchTransferFlag)
+        await setString(betchTransferFlag, "1", 5)
         console.timeEnd("betchTransfer");
 
     }

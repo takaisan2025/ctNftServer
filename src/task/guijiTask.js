@@ -121,10 +121,8 @@ async function guijiTask() {
                         console.trace("ERR:", collectDetail_ret02.result);
                         break;
                     }
-                    console.log(collectDetail_ret02)
+                    console.log("collectDetail_ret02:", collectDetail_ret02.result)
                     let collectDetail = collectDetail_ret02.result
-
-                    console.log(collectDetail)
                     let tt_to = collectDetail.owner
                     // TODO 待完成
                     // await lpop("TRANSFER_F")
@@ -232,7 +230,7 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 }
 
-// guijiTask()
+guijiTask()
 module.exports = {
     guijiTask
 };

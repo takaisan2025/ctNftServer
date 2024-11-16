@@ -3,7 +3,13 @@ let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 const ethers = require("ethers");
 const ethUtil = require("ethereumjs-util");
 
-const customHttpProvider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
+function generateRandomBinary() {
+    const seed = Date.now(); // 使用当前时间作为种子
+    return (seed % 2 === 0) ? 0 : 1; // 根据种子奇偶性返回 0 或 1
+}
+
+let ran_index = generateRandomBinary()
+const customHttpProvider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[ran_index].url);
 
 function id_fun(str) {
     return `0x${ethUtil
@@ -11,6 +17,7 @@ function id_fun(str) {
         .toString("hex")
         .substring(0, 8)}`;
 }
+
 const TRANSACTION_RECEIPT_STATUS = {
     SUCCESS: 1,
     REVERTED: 0,
@@ -21,6 +28,7 @@ let web3 = new Web3(
         headers: rpc.headers
     })
 );
+
 function formatTime(date) {
     //let date = new Date(value)	// 时间戳为毫秒：13位数
     let year = date.getFullYear();

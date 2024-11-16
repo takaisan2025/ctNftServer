@@ -67,7 +67,6 @@ async function betchTransfer() {
             andfrom.push(stringAddress)
         }
 
-
         let transList_ret = await findTransFormListAll(_param = {
             where: {
                 t_status: 1,

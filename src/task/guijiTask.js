@@ -120,7 +120,7 @@ async function guijiTask() {
 
                 let collectDetail = collectDetail_ret02.result
 
-                // console.log(collectDetail)
+                console.log(collectDetail)
                 let tt_to = collectDetail.owner
                 // TODO 待完成
                 // await lpop("TRANSFER_F")

@@ -138,24 +138,26 @@ async function guijiTask() {
                 console.log("To Address:", t_from)
                 console.log("Balance:", etherString)
                 if (Number(etherString) > Number(String(0.101))) {
-                    let decWalletResult = await getPriKey(accountItem, accountItem.psd);
-                    if (decWalletResult.err != null) {
-                        return PasswordError;
-                    } else {
-                        wallet = decWalletResult.result;
-                    }
-                    wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+                    if (Number(etherString) < Number(String(5000))) {
+                        let decWalletResult = await getPriKey(accountItem, accountItem.psd);
+                        if (decWalletResult.err != null) {
+                            return PasswordError;
+                        } else {
+                            wallet = decWalletResult.result;
+                        }
+                        wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
 
-                    let {
-                        err,
-                        hash
-                    } = await transfer(wallet.privateKey, ethers.utils.parseEther(String(Number(etherString) - 0.101)),
-                        tt_to, wallet);
-                    if (err != null) {
-                        console.log("txTransfer faild");
-                        continue;
+                        let {
+                            err,
+                            hash
+                        } = await transfer(wallet.privateKey, ethers.utils.parseEther(String(Number(etherString) - 0.101)),
+                            tt_to, wallet);
+                        if (err != null) {
+                            console.log("txTransfer faild");
+                            continue;
+                        }
+                        console.log("tx Hash:", hash);
                     }
-                    console.log("tx Hash:", hash);
                 }
                 // 修改 JSON 对象的值
             } catch (e) {

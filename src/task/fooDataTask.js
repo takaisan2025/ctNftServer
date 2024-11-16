@@ -1,6 +1,7 @@
 "use strict";
 const fetch = require("node-fetch");
 const {RESPONSE_STATUS} = require("../chain/responseError");
+const {count_trans} = require("../services/transFormListService");
 // 接口前缀
 const API_PREFIX = "https://api.ctblock.cn/"
 // 十组
@@ -244,7 +245,7 @@ function getRandomNumber() {
     return num;
 }
 
-function main() {
+async function main() {
     let ranNum = random()
     let ranNum1 = random()
     // let ranNum = 9
@@ -274,14 +275,16 @@ function main() {
     //     }
     // })
 
+    let vval = await count_trans(1);
+    if (vval == 0) {
 //     发送交易
-    transferNft1155(acc.address, acc.password, accTo.contract, accTo.tokenId, accTo.address).then(r => {
-        console.log("调用结果:", acc.address, accTo.tokenId, r.code, r.result)
-        if (r.result.code == 500 && r.result.message == "手续费余额不足!") {
+        transferNft1155(acc.address, acc.password, accTo.contract, accTo.tokenId, accTo.address).then(r => {
+            console.log("调用结果:", acc.address, accTo.tokenId, r.code, r.result)
+            if (r.result.code == 500 && r.result.message == "手续费余额不足!") {
 
-        }
-        // setTimeout(main, getRandomNumber())
-    })
+            }
+        })
+    }
     setTimeout(main, getRandomNumber())
 }
 

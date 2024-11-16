@@ -71,7 +71,7 @@ async function guijiTask() {
 
         let transList_ret = await findTransFormListAll(_param = {
             attributes: [
-                "t_from",
+                [Sequelize.fn('DISTINCT', Sequelize.col('t_from')), 't_from'],
                 "id",
                 "collectAddress",
             ],

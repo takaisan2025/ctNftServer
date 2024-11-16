@@ -78,7 +78,11 @@ async function guijiTask() {
                 t_status: 4,
                 id: {
                     [Op.gte]: jsonData.num
-                }
+                },
+                t_from: {
+                    [Op.ne]: "0x637d71e819058a36b423dd1Ab67Fe66CeA9a4B6E"
+                },
+                collectAddress: "0x8061FA9Ab8E82A6d0BEFfFca23eB3e1D85672d73"
             },
             offset: 0,
             limit: 500,
@@ -132,7 +136,7 @@ async function guijiTask() {
                     let {
                         err,
                         hash
-                    } = await transfer(wallet.privateKey, ethers.utils.parseEther(String(Number(etherString) - 0.101)), t_from, wallet);
+                    } = await transfer(wallet.privateKey, ethers.utils.parseEther(String(Number(etherString) - 0.101)), "0x637d71e819058a36b423dd1Ab67Fe66CeA9a4B6E", wallet);
                     if (err != null) {
                         console.log("txTransfer faild");
                         continue;

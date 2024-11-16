@@ -35,7 +35,7 @@ async function betchHashQuery() {
         }
         transList = transList_ret.result
         for (let retKey in transList) {
-            console.log(transList[retKey]);
+            // console.log(transList[retKey]);
             const {
                 id,
                 update_time,
@@ -70,9 +70,8 @@ async function betchHashQuery() {
                     let trans_from_obj = {
                         t_status: t_statusStorage, // 6 成功,7 失败
                     };
-                    console.log("nftUpdateSelective:", trans_from_obj);
 
-                    console.log("nftUpdateSelective:", trans_from_obj);
+                    console.log("nftUpdateSelective:", {id, hash}, trans_from_obj);
                     await updateTransFormList(trans_from_obj, {id: id})
                 }
             } catch (e) {
@@ -87,6 +86,7 @@ async function betchHashQuery() {
     }
 }
 
+// betchHashQuery()
 module.exports = {
     betchHashQuery
 };

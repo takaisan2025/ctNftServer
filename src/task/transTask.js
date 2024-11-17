@@ -367,7 +367,7 @@ async function betchTransfer() {
                     let overrides = {
                         // The maximum units of gas for the transaction to use
                         // gasLimit: Web3.utils.numberToHex(gasLimit),
-                        gasLimit: Web3.utils.numberToHex(93010),
+                        // gasLimit: Web3.utils.numberToHex(93010),
                         // The price (in wei) per unit of gas
                         maxFeePerGas: Web3.utils.numberToHex(4800e9),
                         maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),

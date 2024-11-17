@@ -276,6 +276,7 @@ async function main() {
     // })
 
     let vval = await count_trans_foo(1);
+    console.log("调用结果(count_trans_foo):", vval)
     if (vval == 0) {
 //     发送交易
         transferNft1155(acc.address, acc.password, accTo.contract, accTo.tokenId, accTo.address).then(r => {

@@ -241,7 +241,7 @@ async function transferNft1155(address, password, contract, tokenid, toAddr) {
 // 生成一个5000到12000之间的随机数
 function getRandomNumber() {
     let num = Math.floor(Math.random() * (12000 - 5000 + 1)) + 5000
-    console.log(num)
+    console.log("Timeout getRandomNumber:", num)
     return num;
 }
 
@@ -280,7 +280,7 @@ async function main() {
     if (vval == 0) {
 //     发送交易
         transferNft1155(acc.address, acc.password, accTo.contract, accTo.tokenId, accTo.address).then(r => {
-            console.log("调用结果:", acc.address, accTo.tokenId, r.code, r.result)
+            console.log("调用结果(transferNft1155):", acc.address, accTo.tokenId, r.code, r.result)
             if (r.result.code == 500 && r.result.message == "手续费余额不足!") {
 
             }

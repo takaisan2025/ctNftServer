@@ -1,6 +1,10 @@
-"use strict";const TransFormList = require('./TransFormListModel');
+"use strict";
+const TransFormList = require('./TransFormListModel');
 const {pro_err} = require("./pErr");
 const Nft = require("./NftModel");
+const {query} = require("./MysqlConnection");
+const sequelize = require("./MysqlConnection");
+const {Op} = require('sequelize')
 
 async function findTransFormList(_where) {
     try {
@@ -10,7 +14,7 @@ async function findTransFormList(_where) {
         return {err: null, result: account};
     } catch (error) {
         console.trace(error)
-        return {result: null,err: error};
+        return {result: null, err: error};
     }
 }
 
@@ -20,7 +24,7 @@ async function findTransFormListAll(_param) {
         return {err: null, result: account};
     } catch (error) {
         console.trace(error)
-        return {result: null,err: error};
+        return {result: null, err: error};
     }
 }
 
@@ -30,7 +34,7 @@ async function findTransFormListOne(_param) {
         return {err: null, result: account};
     } catch (error) {
         console.trace(error)
-        return {result: null,err: error};
+        return {result: null, err: error};
     }
 }
 
@@ -42,8 +46,19 @@ async function updateTransFormList(_params, _where) {
         return {err: null, result: res};
     } catch (error) {
         console.trace(error)
-        return {result: null,err: error};
+        return {result: null, err: error};
     }
+}
+
+async function batchUpdateTransactions(updates) {
+    await sequelize.getQueryInterface().bulkUpdate(
+        'trans_form_list', // 表名
+        updates.reduce((acc, { id, t_status }) => {
+            acc[id] = { t_status };
+            return acc;
+        }, {}),
+        { id: { [Op.in]: updates.map(u => u.id) } }
+    );
 }
 
 async function createTransFormList(_lottery) {
@@ -52,9 +67,10 @@ async function createTransFormList(_lottery) {
         return {err: null, result: res};
     } catch (error) {
         console.trace(error)
-        return {result: null,err: pro_err(error)};
+        return {result: null, err: pro_err(error)};
     }
 }
+
 async function countTrans(_where) {
     try {
         const res = await TransFormList.count(_where)
@@ -67,6 +83,7 @@ async function countTrans(_where) {
 
 
 module.exports = {
-    findTransFormList, updateTransFormList, createTransFormList, findTransFormListAll, findTransFormListOne, countTrans
+    findTransFormList, batchUpdateTransactions,
+    updateTransFormList, createTransFormList, findTransFormListAll, findTransFormListOne, countTrans
 };
 

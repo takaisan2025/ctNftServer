@@ -1,6 +1,7 @@
 "use strict"
 const {createNft, findNft, countNft} = require("../Orm/NftService");
 const {Op} = require('sequelize')
+const {getKeys} = require("../redis/redis-client");
 
 async function insert_nft(_lottery) {
     //logic to find accounts
@@ -52,12 +53,24 @@ date.setDate(date.getDate() - 30);
 async function count_nft(_status) {
     //logic to find accounts
     try {
+        let andfrom = [];
 
+        let newVar = await getKeys("BALANCE_*");
+        for (let newVarElement of newVar) {
+            let stringAddress = newVarElement.split('BALANCE_')[1];
+            andfrom.push(stringAddress)
+        }
         let count = await countNft({
             where: {
                 status: _status,
                 create_time: {
                     [Op.gte]: date
+                },
+                t_from: {
+                    [Op.not]: andfrom
+                },
+                collectAddress: {
+                    [Op.not]: andfrom
                 }
             }
         })

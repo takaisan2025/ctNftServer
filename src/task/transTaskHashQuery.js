@@ -7,8 +7,23 @@ const {
     lrem,
 } = require("../redis/redis-client");
 const {updateTransFormList, findTransFormListAll} = require("../Orm/TransFormListService");
-const {web3} = require("./taskConst");
+const {web3, getWeb3} = require("./taskConst");
 const betchHashQueryFlag = "betchHashQuery_START";
+
+async function getReceiptsBatch(hashes) {
+    let _web3 = getWeb3()
+    const batch = new _web3.BatchRequest();
+    const promises = hashes.map(hash =>
+        new Promise((resolve, reject) => {
+            batch.add(_web3.eth.getTransactionReceipt.request(hash, (err, receipt) => {
+                if (err) reject(err);
+                else resolve({hash, receipt});
+            }));
+        })
+    );
+    batch.execute();
+    return Promise.all(promises);
+}
 
 async function betchHashQuery() {
     if (await getString(betchHashQueryFlag) == "1") {
@@ -17,69 +32,93 @@ async function betchHashQuery() {
     } else {
         await setString(betchHashQueryFlag, "1", 60)
         console.time("betchHashQuery")
+        try {
+            let transList_ret = await findTransFormListAll(_param = {
+                where: {
+                    t_status: 5
+                },
+                offset: 0,
+                limit: 15,
+            })
 
-        let transList_ret = await findTransFormListAll(_param = {
-            where: {
-                t_status: 5
-            },
-            offset: 0,
-            limit: 500,
-        })
-
-        let transList = []
-        if (transList_ret.err != null) {
-            console.trace("ERR:", transList_ret.err);
-        }
-        transList = transList_ret.result
-        for (let retKey in transList) {
-            // console.log(transList[retKey]);
-            const {
-                id,
-                update_time,
-                hash
-            } = transList[retKey];
-            if (!hash || hash == "" || hash == null) {
-                continue;
+            if (transList_ret.err) {
+                console.trace("ERR:", transList_ret.err);
+                return;
             }
-            try {
+            let currTime = new Date().getTime();
+            const transList = transList_ret.result.filter(tx => {
+                const timeDiff = currTime - tx.update_time.getTime();
+                return timeDiff >= 10000 && tx.hash && tx.hash != "" && tx.hash != null;
+            });
 
+            const hashes = transList.map(tx => tx.hash);
+            const results = await getReceiptsBatch(hashes);
 
-                let recept = await web3.eth.getTransactionReceipt(hash);
-                let currTime = new Date().getTime();
-                if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
-                    continue;
-                } else {
-                    let t_statusStorage;
-                    if (recept != null && recept.status == true) {
-                        t_statusStorage = 6;
-                    } else {
+            let updates = [];
+            results.forEach(({hash, receipt}, idx) => {
+                if (!receipt) return;
 
-                        // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                        // save db
-                        // if (recept.data.transaction == null || recept.data.transaction.status == null) {
-                        if (currTime - update_time.getTime() < 60000) {
-                            continue;
-                        } else {
-                            t_statusStorage = 1;
-                            console.log("查询hash结果false,", hash);
-                        }
-                    }
-                    let trans_from_obj = {
-                        t_status: t_statusStorage, // 6 成功,7 失败
-                    };
+                let t_statusStorage = receipt.status ? 6 : 1;
 
-                    console.log("nftUpdateSelective:", {id, hash}, trans_from_obj);
-                    await updateTransFormList(trans_from_obj, {id: id})
+                if (t_statusStorage === 1 && currTime - transList[idx].update_time.getTime() >= 60000) {
+                    updates.push({ id: transList[idx].id, t_status: t_statusStorage });
+                } else if (t_statusStorage !== 1) {
+                    updates.push({ id: transList[idx].id, t_status: t_statusStorage });
                 }
-            } catch (e) {
-                console.trace(e)
-                continue;
+
+            });
+            await Promise.all(updates.map(update => updateTransFormList(update, {id: update.id})));
+
+            for (let retKey in transList) {
+                // console.log(transList[retKey]);
+                const {
+                    id,
+                    update_time,
+                    hash
+                } = transList[retKey];
+                if (!hash || hash == "" || hash == null) {
+                    continue;
+                }
+                try {
+
+                    let recept = await web3.eth.getTransactionReceipt(hash);
+                    let currTime = new Date().getTime();
+                    if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
+                        continue;
+                    } else {
+                        let t_statusStorage;
+                        if (recept != null && recept.status == true) {
+                            t_statusStorage = 6;
+                        } else {
+
+                            // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
+                            // save db
+                            // if (recept.data.transaction == null || recept.data.transaction.status == null) {
+                            if (currTime - update_time.getTime() < 60000) {
+                                continue;
+                            } else {
+                                t_statusStorage = 1;
+                                console.log("查询hash结果false,", hash);
+                            }
+                        }
+                        let trans_from_obj = {
+                            t_status: t_statusStorage, // 6 成功,7 失败
+                        };
+
+                        console.log("nftUpdateSelective:", {id, hash}, trans_from_obj);
+                        await updateTransFormList(trans_from_obj, {id: id})
+                    }
+                } catch (e) {
+                    console.trace(e)
+                    continue;
+                }
             }
-
+        } catch (error) {
+            console.trace(error);
+        } finally {
+            await removeString(betchHashQueryFlag);
+            console.timeEnd("betchHashQuery");
         }
-        await removeString(betchHashQueryFlag)
-        console.timeEnd("betchHashQuery");
-
     }
 }
 

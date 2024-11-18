@@ -36,6 +36,17 @@ let web3 = new Web3(
     })
 );
 
+function getWeb3() {
+    let _ran_index = generateRandomBinary()
+
+    let _web3 = new Web3(
+        new Web3.providers.HttpProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[_ran_index].url, {
+            headers: rpc.headers
+        })
+    );
+    return _web3
+}
+
 function formatTime(date) {
     //let date = new Date(value)	// 时间戳为毫秒：13位数
     let year = date.getFullYear();
@@ -56,5 +67,6 @@ module.exports = {
     getCustomHttpProvider,
     TRANSACTION_RECEIPT_STATUS,
     web3,
+    getWeb3,
     formatTime
 };

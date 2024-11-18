@@ -9,7 +9,14 @@ function generateRandomBinary() {
 }
 
 let ran_index = generateRandomBinary()
+console.log("ran_index:", ran_index)
 const customHttpProvider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[ran_index].url);
+
+function getCustomHttpProvider() {
+    let _ran_index = generateRandomBinary()
+    const _customHttpProvider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[_ran_index].url);
+    return _customHttpProvider;
+}
 
 function id_fun(str) {
     return `0x${ethUtil
@@ -46,6 +53,7 @@ function formatTime(date) {
 module.exports = {
     customHttpProvider,
     id_fun,
+    getCustomHttpProvider,
     TRANSACTION_RECEIPT_STATUS,
     web3,
     formatTime

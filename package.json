@@ -9,6 +9,7 @@
     "background": "node src/background.js",
     "testBackground": "node src/testBackground.js",
     "guijiTaskBackground": "node src/guijiTaskBackground.js",
+    "transTaskBackground": "node src/transTaskBackground.js",
     "betchHashQueryBackground": "node src/betchHashQueryBackground.js"
   },
   "author": "",

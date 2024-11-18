@@ -22,8 +22,7 @@ const {getPriKey} = require("../chain/accountProUtils");
 
 const betchTransferFlag = "betchTransfer_START";
 
-const {id_fun} = require("./taskConst");
-const {customHttpProvider} = require("./taskConst");
+const {id_fun, getCustomHttpProvider} = require("./taskConst");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 const {findTransFormListAll, updateTransFormList} = require("../Orm/TransFormListService");
 const {Op} = require('sequelize')
@@ -36,6 +35,7 @@ const {queryBalance} = require("../chain/balanceQuery");
 
 // 获取账户的 nonce
 async function getNonce(address) {
+    let customHttpProvider = getCustomHttpProvider()
     let nonce = await getString(address + '_NONCE');
     if (Number(nonce) > 0) {
         nonce = Number(nonce) + 1;
@@ -51,6 +51,7 @@ async function getNonce(address) {
 }
 
 async function betchTransfer() {
+    let customHttpProvider = getCustomHttpProvider()
     if (await getString(betchTransferFlag) == "1") {
         console.log('===================wait start betchTransfer')
         return
@@ -477,7 +478,7 @@ async function betchTransfer() {
 
 
 async function transfer(privateKey, value, toAddress, walletUser) {
-
+    let customHttpProvider = getCustomHttpProvider()
     // 这里首先判断toAddress的实名情况, 否则转手续费会失败
     // if (GlobalConfig.CAN_AUTH) {
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);

@@ -56,7 +56,7 @@ async function betchHashQuery() {
 
             let updates = [];
             results.forEach(({hash, receipt}, idx) => {
-                if (!receipt) return;
+                // if (!receipt) return;
 
                 if (receipt != null) {
                     let t_statusStorage = receipt.status === true ? 6 : 1;

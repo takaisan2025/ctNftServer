@@ -58,7 +58,7 @@ async function betchHashQuery() {
             results.forEach(({hash, receipt}, idx) => {
                 if (!receipt) return;
 
-                let t_statusStorage = receipt.status ? 6 : 1;
+                let t_statusStorage = receipt.status === true ? 6 : 1;
 
                 if (t_statusStorage === 1 && currTime - transList[idx].update_time.getTime() >= 60000) {
                     updates.push({ id: transList[idx].id, t_status: t_statusStorage });

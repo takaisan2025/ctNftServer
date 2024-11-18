@@ -3,7 +3,7 @@ const {getWeb3} = require("../task/taskConst");
 
 let hashes = [
     "0x9320cb8752f4b1c3710c4bdf0480267792957dba82c80cd3a0b823882b113a69",
-    "0x77db8dbd7f8fb2107058121908f73b0486a10261e9fe5f40c3af924e760a858a",
+    "0x77db8dbd7f8fb2107058121908f73b0486a10261e9fe5f40c3af924e760a858b",
     "0x88a6f4e9b6a5f07ae6ec11ad2ac6cb74bd0d97779cfa19aaefa5bde017934fea",]
 
 async function getReceipts() {
@@ -38,11 +38,12 @@ async function testTransfer() {
     //
     // // await getReceipts()
     const results = await getReceiptsBatch(hashes);
-
-    results.forEach(({ hash, receipt }, idx) => {
+    console.log(results)
+    console.log(results.length)
+    results.forEach(({hash, receipt}, idx) => {
         if (!receipt) return;
-        console.log(receipt.status)
         let t_statusStorage = receipt.status ? 6 : 1;
+        console.log(receipt.status, idx)
         console.log(idx)
     });
 

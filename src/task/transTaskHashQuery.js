@@ -46,6 +46,7 @@ async function betchHashQuery() {
                 return;
             }
             let currTime = new Date().getTime();
+            console.log("transList_ret.result:", transList_ret.result)
             const transList = transList_ret.result.filter(tx => {
                 const timeDiff = currTime - tx.update_time.getTime();
                 return timeDiff >= 10000 && tx.hash && tx.hash != "" && tx.hash != null;

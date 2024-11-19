@@ -46,16 +46,13 @@ async function betchHashQuery() {
                 return;
             }
             let currTime = new Date().getTime();
-            console.log("transList_ret.result:", transList_ret.result)
             const transList = transList_ret.result.filter(tx => {
                 const timeDiff = currTime - tx.update_time.getTime();
                 return timeDiff >= 10000 && tx.hash && tx.hash != "" && tx.hash != null;
             });
 
             const hashes = transList.map(tx => tx.hash);
-            console.log("hashes:", hashes)
             const results = await getReceiptsBatch(hashes);
-            console.log("results:", results.length)
             let updates = [];
             results.forEach(({hash, receipt}, idx) => {
                 // if (!receipt) return;
@@ -66,6 +63,11 @@ async function betchHashQuery() {
                     if (t_statusStorage === 1 && currTime - transList[idx].update_time.getTime() >= 30000) {
                         updates.push({id: transList[idx].id, t_status: t_statusStorage});
                     } else if (t_statusStorage !== 1) {
+                        updates.push({id: transList[idx].id, t_status: t_statusStorage});
+                    }
+                } else {
+                    if (currTime - transList[idx].update_time.getTime() >= 30000) {
+                        let t_statusStorage = 1
                         updates.push({id: transList[idx].id, t_status: t_statusStorage});
                     }
                 }

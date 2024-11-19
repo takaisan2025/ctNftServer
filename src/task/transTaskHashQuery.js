@@ -52,8 +52,9 @@ async function betchHashQuery() {
             });
 
             const hashes = transList.map(tx => tx.hash);
+            console.log("hashes:", hashes)
             const results = await getReceiptsBatch(hashes);
-
+            console.log("results:", results.length)
             let updates = [];
             results.forEach(({hash, receipt}, idx) => {
                 // if (!receipt) return;

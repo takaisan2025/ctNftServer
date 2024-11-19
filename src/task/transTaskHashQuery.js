@@ -60,7 +60,7 @@ async function betchHashQuery() {
 
                 if (receipt != null) {
                     let t_statusStorage = receipt.status === true ? 6 : 1;
-
+                    console.log("currTime - transList[idx].update_time.getTime():", currTime - transList[idx].update_time.getTime())
                     if (t_statusStorage === 1 && currTime - transList[idx].update_time.getTime() >= 30000) {
                         updates.push({id: transList[idx].id, t_status: t_statusStorage});
                     } else if (t_statusStorage !== 1) {

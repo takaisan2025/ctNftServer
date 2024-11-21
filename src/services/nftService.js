@@ -65,12 +65,6 @@ async function count_nft(_status) {
                 status: _status,
                 create_time: {
                     [Op.gte]: date
-                },
-                t_from: {
-                    [Op.not]: andfrom
-                },
-                collectAddress: {
-                    [Op.not]: andfrom
                 }
             }
         })

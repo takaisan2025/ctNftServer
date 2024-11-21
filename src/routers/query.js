@@ -92,10 +92,6 @@ function queryRouters(app) {
                 .keccak256(Buffer.from(orderId))
                 .toString("hex")}`;
 
-            if (orderIdEcc.length % 2 !== 0) {
-                orderIdEcc = "0" + orderIdEcc
-            }
-            orderIdEcc = "0x" + orderIdEcc
             let transData = await apolloClient().query({
                 query: TransferDocument,
                 variables: {id: orderIdEcc}
@@ -112,18 +108,18 @@ function queryRouters(app) {
                 });
 
             if (transData.err == undefined) {
-                if (transData.data && transData.data.transfer != null) {
+                if (transData.data && Array.isArray(transData.data.transfers) == true && transData.data.transfers.length > 0) {
                     //     子图有结果
-                    let tokenDec = BigInt(transData.data.transfer.tokenId).toString(16)
+                    let tokenDec = BigInt(transData.data.transfers[0].tokenId).toString(16)
 
                     return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
-                        from: transData.data.transfer.from,
-                        to: transData.data.transfer.to,
-                        amount: Number(transData.data.transfer.value),
+                        from: transData.data.transfers[0].from,
+                        to: transData.data.transfers[0].to,
+                        amount: Number(transData.data.transfers[0].value),
                         token_id: "0x" + tokenDec,
                         orderId: orderId,
-                        hash: transData.data.transfer.transactionHash,
-                        collectAddress: transData.data.transfer.token,
+                        hash: transData.data.transfers[0].transactionHash,
+                        collectAddress: transData.data.transfers[0].token,
                         status: 4,
                         statusDesc: '回调成功',
                         vmErr: null,

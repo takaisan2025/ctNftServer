@@ -67,7 +67,7 @@ async function delTransfer() {
                 const transData = await getReceiptsBatch(tx.orderId);
                 if (transData.err == undefined) {
                     if (transData.data && Array.isArray(transData.data.transfers) == true && transData.data.transfers.length > 0) {
-                        console.log("子图数据查询：", transData.data.transfer.blockNumber)
+                        console.log("子图数据查询：", transData.data.transfers[0].blockNumber)
                         // TODO 如果子图存在数据 这里删除数据
                         console.log('删除数据ID:', tx.id)
                         let delResult = await delTransById(tx.id)

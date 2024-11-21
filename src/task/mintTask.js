@@ -293,15 +293,15 @@ async function mintBetchMint() {
                         if (gasLimitRet.err == minted1155TokenStr) {
                             await updateNft({status: 7}, {tokenId: tokenId});
                             // 已经被铸造, 但是获取不到hash
-                        } else if ("replacement fee too low" == gasLimitRet.err) {
-                            // await updateNonce(address, transactionCount1Mint + 1);
                         } else if (gasLimitRet.err == 'execution reverted: ERC1155: mint is not owner') {
                             // up chain faild
                             await updateNft({status: 8}, {tokenId: tokenId});
+                        } else if ("replacement fee too low" == gasLimitRet.err) {
+                            continue;
                         } else {
-                            // await delNonce(address);
+                            continue;
                         }
-                        continue;
+
                     } else {
                         console.log("gasLimit:", gasLimit.toString());
                         let neceliby = ethers.utils.formatEther(gasConfig.mint1155.gas.toString());
@@ -312,7 +312,6 @@ async function mintBetchMint() {
                             // 合约持有者余额不足十个,将进行充值 1155铸造者
                             console.log("合约持有者余额不足, 请进行充值!", address);
                             await setString("BALANCE_" + address, "1", 60);
-                            // await delNonce(address);
                             continue;
                         } else {
                             let overrides = {
@@ -392,14 +391,11 @@ async function mintBetchMint() {
                                 }
                                 console.log("update NFT data:", result);
                                 console.info(responseFunStr(RESPONSE_STATUS.SUCCESS, "", {tokenId: tokenId}), tokenId);
-                                // await updateNonce(address, transactionCount1Mint + 1);
                             } else if ("replacement fee too low" == txRet.err) {
                                 //手续费不足
-                                // await updateNonce(address, transactionCount1Mint + 1);
                             } else {
                                 //手续费不足
                                 console.trace("txRet.err", txRet.err);
-                                // await delNonce(address);
                             }
                         }
                     }
@@ -423,11 +419,10 @@ async function mintBetchMint() {
                             await updateNft({status: 7}, {tokenId: tokenId});
                             // 已经被铸造, 但是获取不到hash
                         } else if ("replacement fee too low" == gasLimitRet.err) {
-                            // await updateNonce(address, transactionCount1Mint + 1);
+                            continue;
                         } else {
-                            // await delNonce(address);
+                            continue;
                         }
-                        continue;
                     } else {
                         console.log("gasLimit:", gasLimit.toString());
                         let neceliby = ethers.utils.formatEther(gasConfig.mint721.gas.toString());
@@ -577,15 +572,11 @@ async function mintBetchMint() {
                                 console.trace(responseFun(RESPONSE_STATUS.ERROR, result.result, ""), tokenId);
                             }
                             console.info(responseFunStr(RESPONSE_STATUS.SUCCESS, "", {tokenId: tokenId}), tokenId);
-                            // await updateNonce(address, transactionCount1Mint + 1);
                         } else if ("replacement fee too low" == txRet.err) {
                             //手续费不足
-                            // await updateNonce(address, transactionCount1Mint + 1);
                         } else {
                             //手续费不足
                             console.trace("txRet.err", txRet.err);
-
-                            // await delNonce(address);
                         }
                     }
                 } else if (type == 1) {
@@ -695,7 +686,6 @@ async function mintBetchHashQuery() {
                         if (currTime - update_time.getTime() < 60000) {
                             continue;
                         } else {
-                            // await delNonce(address);
                             t_statusStorage = 6;
                         }
                     }

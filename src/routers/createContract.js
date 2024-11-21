@@ -27,7 +27,6 @@ let collectAddressExample = {
 };
 let gasPrice = "4800000000000";
 const {responseFun} = require("../mapper/account");
-const {get_mysql} = require("../db/genSql");
 const {PasswordEmpty} = require("../chain/responseError");
 const {PasswordError} = require("../chain/responseError");
 const {RESPONSE_STATUS} = require("../chain/responseError");

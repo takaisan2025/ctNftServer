@@ -1,9 +1,3 @@
-const {
-    queryNonce,
-    insertNonce,
-    updateNonce
-} = require("../mapper/NftNonceMapper");
-
 
 const GlobalConfig = require("../config/GlobalConfig.json");
 const {
@@ -22,14 +16,29 @@ const ethers = require("ethers");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");
 const {customHttpProvider} = require("./taskConst");
+const {getString, setString} = require("../redis/redis-client");
 let typeMapper = {
     1: "每天登录",
     2: "拉新用户",
     3: "购买藏品"
 
 }
-let gasPrice = "5000100000000";
-let isGasPrice = false;
+
+// 获取账户的 nonce
+async function getNonce(address) {
+    let nonce = await getString(address + '_NONCE');
+    if (Number(nonce) > 0) {
+        nonce = Number(nonce) + 1;
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+
+    } else {
+        nonce = await customHttpProvider.getTransactionCount(address, "latest");
+        console.log(address + "Nonce:", nonce);
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+    }
+
+    return nonce;
+}
 
 async function betchGive() {
     var params = {status: 0};
@@ -59,10 +68,6 @@ async function betchGive() {
         let wallet = new ethers.Wallet(privateKeySys, customHttpProvider);
 
         // 使用Provider 连接合约，将只有对合约的可读权限
-        if (!isGasPrice) {
-            gasPrice = (await customHttpProvider.getGasPrice()).toString();
-            isGasPrice = true;
-        }
         let contract = new ethers.Contract(
             contract_address,
             ScoreToken.abi,
@@ -86,24 +91,8 @@ async function betchGive() {
                 return "";
             });
         console.log("gasLimit:", gasLimit.toString());
-        console.log("gasPrice*:", gasPrice * gasLimit);
         //这里通过数据库查询来获取nonce
-        var nonceResult = await queryNonce(wallet.address);
-        let transactionCount1Mint;
-        let currTime = new Date().getTime();
-        if (nonceResult.length == 0) {
-            transactionCount1Mint =
-                await customHttpProvider.getTransactionCount(wallet.address, "latest");
-            await insertNonce(wallet.address, transactionCount1Mint);
-        } else if (currTime - nonceResult[0].update_time.getTime() > 60000) {   // 超过1min自动重新获取
-            // 超时,重新获取nonce
-            console.log("超时,重新获取nonce.....................");
-            transactionCount1Mint =
-                await customHttpProvider.getTransactionCount(wallet.address, "latest");
-            await updateNonce(wallet.address, transactionCount1Mint);
-        } else {
-            transactionCount1Mint = nonceResult[0].nonce;
-        }
+        var nonceResult = await getNonce(wallet.address);
 
         let overrides = {
             // The maximum units of gas for the transaction to use
@@ -113,7 +102,7 @@ async function betchGive() {
             maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
             // The nonce to use in the transaction
             // nonce: nonce,
-            nonce: transactionCount1Mint,
+            nonce: nonceResult,
             // The amount to send with the transaction (i.e. msg.value)
             // value: utils.parseEther('1.0'),
             // The chain ID (or network ID) to use
@@ -161,7 +150,6 @@ async function betchGive() {
                 console.error(responseFun(RESPONSE_STATUS.ERROR, err, ""), id);
             });
         console.log("update TransFrom data:", result);
-        await updateNonce(wallet.address, transactionCount1Mint + 1);
     }
     console.log("betchGive All Done!");
     setTimeout(() => {

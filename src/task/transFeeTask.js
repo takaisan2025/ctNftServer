@@ -11,8 +11,6 @@ const TRANSACTION_RECEIPT_STATUS = {
     REVERTED: 0,
 };
 const ethers = require("ethers");
-const ABI_const = require("../contract/ABI_const");
-const {contract_static_call} = require("../contract/ChainCall");
 const {responseFunStr} = require("../mapper/account");
 const {responseFun} = require("../mapper/account");
 const {get_mysql} = require("../db/genSql");

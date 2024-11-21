@@ -1,6 +1,7 @@
 "use strict";
 const ethers = require("ethers");
 const Web3 = require("web3");
+const ethUtil = require("ethereumjs-util");
 
 const {
     queryBalanceAndTokenBalance,
@@ -13,6 +14,8 @@ const {findTransFormListOne} = require("../Orm/TransFormListService");
 const {find_nfts, count_nft} = require("../services/nftService");
 const {count_trans} = require("../services/transFormListService");
 const {setString} = require("../redis/redis-client");
+const {apolloClient} = require("../apollo");
+const {TransferDocument} = require("../generated/graphql");
 
 function queryRouters(app) {
 
@@ -82,7 +85,57 @@ function queryRouters(app) {
                 vmErr: ex_orderId_ret.result.vm_err,
             }));
         } else {
-            return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "订单不存在!", ""));
+            // 数据库查询结果为空
+
+
+            let orderIdEcc = `0x${ethUtil
+                .keccak256(Buffer.from(orderId))
+                .toString("hex")}`;
+
+            if (orderIdEcc.length % 2 !== 0) {
+                orderIdEcc = "0" + orderIdEcc
+            }
+            orderIdEcc = "0x" + orderIdEcc
+            let transData = await apolloClient().query({
+                query: TransferDocument,
+                variables: {id: orderIdEcc}
+            })
+                .then(response => {
+                    return {
+                        'data': response.data
+                    }
+                })
+                .catch(error => {
+                    return {
+                        'err': error
+                    }
+                });
+
+            if (transData.err == undefined) {
+                if (transData.data && transData.data.transfer != null) {
+                    //     子图有结果
+                    let tokenDec = BigInt(transData.data.transfer.tokenId).toString(16)
+
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.SUCCESS, "查询成功", {
+                        from: transData.data.transfer.from,
+                        to: transData.data.transfer.to,
+                        amount: Number(transData.data.transfer.value),
+                        token_id: "0x" + tokenDec,
+                        orderId: orderId,
+                        hash: transData.data.transfer.transactionHash,
+                        collectAddress: transData.data.transfer.token,
+                        status: 4,
+                        statusDesc: '回调成功',
+                        vmErr: null,
+                    }));
+                } else {
+                    //     子图没有结果
+                    return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "订单不存在!", ""));
+                }
+            } else {
+                // 子图查询报错
+                return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "订单查询错误!", ""));
+            }
         }
     })
 

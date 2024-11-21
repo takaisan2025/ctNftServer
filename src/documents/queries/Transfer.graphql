@@ -1,0 +1,5 @@
+query Transfer($id: ID!) {
+    transfer(id: $id) {
+        ...TransferFields
+    }
+}

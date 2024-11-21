@@ -1,0 +1,11 @@
+fragment TransferFields on Transfer {
+    id
+    from
+    to
+    value
+    tokenId
+    transactionHash
+    token
+    blockNumber
+    blockTimestamp
+}

@@ -38,6 +38,21 @@ async function findTransFormListOne(_param) {
     }
 }
 
+async function delTransById(_id) {
+    // 删除 ID 为 x 的用户
+    try {
+        let accountId = await TransFormList.destroy({
+            where: {
+                id: _id
+            }
+        })
+        return {err: null, result: accountId};
+    } catch (error) {
+        console.trace(error)
+        return {result: null, err: error};
+    }
+}
+
 async function updateTransFormList(_params, _where) {
     try {
         const res = await TransFormList.update(_params, {
@@ -53,11 +68,11 @@ async function updateTransFormList(_params, _where) {
 async function batchUpdateTransactions(updates) {
     await sequelize.getQueryInterface().bulkUpdate(
         'trans_form_list', // 表名
-        updates.reduce((acc, { id, t_status }) => {
-            acc[id] = { t_status };
+        updates.reduce((acc, {id, t_status}) => {
+            acc[id] = {t_status};
             return acc;
         }, {}),
-        { id: { [Op.in]: updates.map(u => u.id) } }
+        {id: {[Op.in]: updates.map(u => u.id)}}
     );
 }
 
@@ -84,6 +99,7 @@ async function countTrans(_where) {
 
 module.exports = {
     findTransFormList, batchUpdateTransactions,
+    delTransById,
     updateTransFormList, createTransFormList, findTransFormListAll, findTransFormListOne, countTrans
 };
 

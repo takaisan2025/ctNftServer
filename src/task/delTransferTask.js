@@ -46,7 +46,7 @@ async function delTransfer() {
                 where: {
                     t_status: 4,
                     id: {
-                        [Op.gte]: 4597268
+                        [Op.gte]: 134484
                     }
                 }, offset: 0, limit: 15,
             })

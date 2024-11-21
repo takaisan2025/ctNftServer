@@ -1,7 +1,6 @@
-const { ApolloClient, from, split } = require("@apollo/client");
+const { ApolloClient, from } = require("@apollo/client");
 const cache = require("./cache");
 const httpLink = require("./httpLink");
-
 
 const apolloClient = () =>
   new ApolloClient({

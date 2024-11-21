@@ -1,0 +1,5 @@
+query Transfer($id: BigInt!) {
+    transfers(where:{orderId: $id}) {
+        ...TransferFields
+    }
+}

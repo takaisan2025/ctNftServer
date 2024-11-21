@@ -15,7 +15,8 @@ async function getReceiptsBatch(orderId) {
         .toString("hex")}`;
 
     let transData = await apolloClient().query({
-        query: TransferDocument, variables: {id: orderIdEcc}
+        query: TransferDocument,
+        variables: {id: orderIdEcc}
     })
         .then(response => {
             return {
@@ -46,6 +47,7 @@ async function delTransfer() {
                 where: {
                     t_status: 4,
                     id: {
+                        // [Op.gte]: 4597268
                         [Op.gte]: 134484
                     }
                 }, offset: 0, limit: 15,
@@ -64,7 +66,7 @@ async function delTransfer() {
                 let tx = transList[i]
                 const transData = await getReceiptsBatch(tx.orderId);
                 if (transData.err == undefined) {
-                    if (transData.data && transData.data.transfer != null) {
+                    if (transData.data && Array.isArray(transData.data.transfers) == true && transData.data.transfers.length > 0) {
                         console.log("子图数据查询：", transData.data.transfer.blockNumber)
                         // TODO 如果子图存在数据 这里删除数据
                         console.log('删除数据ID:', tx.id)

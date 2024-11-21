@@ -304,14 +304,14 @@ export enum _SubgraphErrorPolicy_ {
 export type TransferFieldsFragment = { __typename?: 'Transfer', id: any, from: any, to: any, value: any, tokenId: any, transactionHash: any, token: any, blockNumber: any, blockTimestamp: any };
 
 export type TransferQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
+  id: Scalars['BigInt']['input'];
 }>;
 
 
-export type TransferQuery = { __typename?: 'Query', transfer?: (
+export type TransferQuery = { __typename?: 'Query', transfers: Array<(
     { __typename?: 'Transfer' }
     & TransferFieldsFragment
-  ) | null };
+  )> };
 
 export const TransferFieldsFragmentDoc = gql`
     fragment TransferFields on Transfer {
@@ -327,8 +327,8 @@ export const TransferFieldsFragmentDoc = gql`
 }
     `;
 export const TransferDocument = gql`
-    query Transfer($id: ID!) {
-  transfer(id: $id) {
+    query Transfer($id: BigInt!) {
+  transfers(where: {orderId: $id}) {
     ...TransferFields
   }
 }

@@ -54,7 +54,7 @@ var _SubgraphErrorPolicy_;
     _SubgraphErrorPolicy_["Deny"] = "deny";
 })(_SubgraphErrorPolicy_ || (exports._SubgraphErrorPolicy_ = _SubgraphErrorPolicy_ = {}));
 exports.TransferFieldsFragmentDoc = (0, client_1.gql)(templateObject_1 || (templateObject_1 = __makeTemplateObject(["\n    fragment TransferFields on Transfer {\n  id\n  from\n  to\n  value\n  tokenId\n  transactionHash\n  token\n  blockNumber\n  blockTimestamp\n}\n    "], ["\n    fragment TransferFields on Transfer {\n  id\n  from\n  to\n  value\n  tokenId\n  transactionHash\n  token\n  blockNumber\n  blockTimestamp\n}\n    "])));
-exports.TransferDocument = (0, client_1.gql)(templateObject_2 || (templateObject_2 = __makeTemplateObject(["\n    query Transfer($id: ID!) {\n  transfer(id: $id) {\n    ...TransferFields\n  }\n}\n    ", ""], ["\n    query Transfer($id: ID!) {\n  transfer(id: $id) {\n    ...TransferFields\n  }\n}\n    ", ""])), exports.TransferFieldsFragmentDoc);
+exports.TransferDocument = (0, client_1.gql)(templateObject_2 || (templateObject_2 = __makeTemplateObject(["\n    query Transfer($id: BigInt!) {\n  transfers(where: {orderId: $id}) {\n    ...TransferFields\n  }\n}\n    ", ""], ["\n    query Transfer($id: BigInt!) {\n  transfers(where: {orderId: $id}) {\n    ...TransferFields\n  }\n}\n    ", ""])), exports.TransferFieldsFragmentDoc);
 /**
  * __useTransferQuery__
  *

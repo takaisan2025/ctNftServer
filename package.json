@@ -13,7 +13,7 @@
     "betchHashQueryBackground": "node src/betchHashQueryBackground.js",
     "delTransBackground": "node src/delTransBackground.js",
     "codegen": "graphql-codegen --config codegen.ts",
-    "ts2js": "npx tsc  src/generated/graphql.ts"
+    "ts2js": "tsc  src/generated/graphql.ts"
   },
   "author": "",
   "license": "ISC",

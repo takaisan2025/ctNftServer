@@ -12,11 +12,25 @@ async function count_trans(_status) {
     //logic to find accounts
     try {
 
+        let newVar = await getKeys("BALANCE_*");
+
+        let andfrom = [];
+        for (let newVarElement of newVar) {
+            let stringAddress = newVarElement.split('BALANCE_')[1];
+            andfrom.push(stringAddress)
+        }
+
         let count = await countTrans({
             where: {
                 t_status: _status,
                 create_time: {
                     [Op.gte]: date
+                },
+                t_from: {
+                    [Op.not]: andfrom
+                },
+                collectAddress: {
+                    [Op.not]: andfrom
                 }
             }
         })

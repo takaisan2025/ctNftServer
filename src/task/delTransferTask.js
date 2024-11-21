@@ -50,7 +50,7 @@ async function delTransfer() {
                         // [Op.gte]: 4597268
                         [Op.gte]: 134484
                     }
-                }, offset: 0, limit: 15,
+                }, offset: 0, limit: 500,
             })
 
             if (transList_ret.err) {

@@ -64,7 +64,9 @@ async function delTransfer() {
             });
             for (let i = 0; i < transList.length; i++) {
                 let tx = transList[i]
+                console.log("查询子图数据：id:", tx.id)
                 const transData = await getReceiptsBatch(tx.orderId);
+                console.log("查询子图数据结果：", transData)
                 if (transData.err == undefined) {
                     if (transData.data && Array.isArray(transData.data.transfers) == true && transData.data.transfers.length > 0) {
                         console.log("子图数据查询：", transData.data.transfers[0].blockNumber)

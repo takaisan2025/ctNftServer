@@ -37,6 +37,7 @@ const {queryBalance} = require("../chain/balanceQuery");
 async function getNonce(address) {
     let customHttpProvider = getCustomHttpProvider()
     let nonce = await getString(address + '_NONCE');
+    console.log("======================getNonce===",address + "Nonce:", nonce);
     if (Number(nonce) > 0) {
         nonce = Number(nonce) + 1;
         await setString(address + '_NONCE', nonce, 4)  // 5s

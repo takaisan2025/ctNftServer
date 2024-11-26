@@ -37,7 +37,7 @@ const {queryBalance} = require("../chain/balanceQuery");
 async function getNonce(address) {
     let customHttpProvider = getCustomHttpProvider()
     let nonce = await getString(address + '_NONCE');
-    console.log("======================getNonce===",address + "Nonce:", nonce);
+    console.log("======================getNonce===", address + "Nonce:", nonce);
     if (Number(nonce) > 0) {
         nonce = Number(nonce) + 1;
         await setString(address + '_NONCE', nonce, 4)  // 5s
@@ -49,6 +49,16 @@ async function getNonce(address) {
     }
 
     return nonce;
+}
+
+// 获取账户的 nonce
+async function inreNonce(address) {
+    let nonce = await getString(address + '_NONCE');
+    console.log("======================getNonce===", address + "Nonce:", nonce);
+    if (Number(nonce) > 0) {
+        nonce = Number(nonce) - 1;
+        await setString(address + '_NONCE', nonce, 4)  // 5s
+    }
 }
 
 async function betchTransfer() {
@@ -400,8 +410,13 @@ async function betchTransfer() {
                         .then((ret) => {
                             return {err: null, data: ret};
                         })
-                        .catch((err) => {
+                        .catch(async (err) => {
                             console.trace("err:", err);
+                            if (err.toString().indexOf('gas required exceeds allowance') != -1) {
+                                console.log("err.toString().indexOf('gas required exceeds allowance'):", err.toString().indexOf('gas required exceeds allowance'))
+                                await inreNonce(t_from)
+                            }
+
                             return {err: err.reason, data: null};
                         });
                     tx = txRet.data;

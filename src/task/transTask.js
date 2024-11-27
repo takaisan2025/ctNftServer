@@ -201,7 +201,7 @@ async function betchTransfer() {
                         await setString("BALANCE_" + collectAddress, "1", 60)
                         // 跳出, 重新查询数据
                         console.log("草田分余额不足:", contractAddressDetail.address)
-                        continue;
+                        break;
                     }
                 }
 

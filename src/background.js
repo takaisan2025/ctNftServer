@@ -1,8 +1,8 @@
-"use strict";const {betchCallByTime} = require("./task/transTaskReCallByTime");
+"use strict";
+const {betchCallByTime} = require("./task/transTaskReCallByTime");
 const {SubmitTransactionTask, TransactionHashQueryTask} = require("./task/submitTransactionTask");
 const {betchCallFund1} = require("./task/transTaskReCall1");
 const {betchCallFund} = require("./task/transTaskReCall");
-const {betchHashQuery} = require("./task/transTaskHashQuery");
 const {betchTransfer} = require("./task/transTask");
 const {
     tFeeBetchTransfer,
@@ -28,10 +28,10 @@ async function start() {
     console.log('background.ts: Run startup')
     console.log('background.ts: Starting Update Functions')
     // mint
-    setInterval(mintFileUploadIpfs, 2000)
-    setInterval(mintBetchMint, 5000)
-    setInterval(mintBetchHashQuery, 5000)
-    setInterval(mintBetchCallFund, 2000)
+    // setInterval(mintFileUploadIpfs, 2000)
+    // setInterval(mintBetchMint, 5000)
+    // setInterval(mintBetchHashQuery, 2000)
+    // setInterval(mintBetchCallFund, 2000)
     // // transfer
     // setInterval(betchTransfer, 5000)
     // setInterval(betchHashQuery, 5000)
@@ -44,7 +44,7 @@ async function start() {
     setInterval(tFeeBetchHashQuery, 5000)
 
     // auth
-    setInterval(SubmitTransactionTask, 5000)
+    // setInterval(SubmitTransactionTask, 5000)
     // setInterval(guijiTask, 20000)
     // setInterval(TransactionHashQueryTask, 5000)
 }

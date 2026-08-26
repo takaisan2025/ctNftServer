@@ -11,18 +11,20 @@ const redisPrefix = require('./redis-prefix.json').REDIS_GLOBAL_PREFIX
 const setString = (key, value, expire) => {
     key = redisPrefix + key;
     return new Promise((resolve, reject) => {
-        redisClient.set(key, value, function (err, result) {
-            if (err) {
-                reject(err)
-            }
-
-            if (!isNaN(expire) && expire > 0) {
-                redisClient.expire(key, parseInt(expire))
-            }
-            resolve(result)
-        })
-    })
+        if (typeof expire === 'number' && isFinite(expire) && expire > 0) {
+            redisClient.set(key, value, 'EX', expire, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        } else {
+            redisClient.set(key, value, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        }
+    });
 }
+
 
 /**
  * redis getString function
@@ -174,9 +176,33 @@ const pttl = (key) => {
         })
     })
 }
+// 尝试加锁
+async function setLock(key, value, ttl) {
+    // 相当于 SET key value NX PX ttl
+    return await redisClient.set(key, value, 'NX', 'PX', ttl);
+}
+
+// 释放锁（安全版，只有自己设置的value才能释放）
+async function releaseLock(key, value) {
+    const script = `
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+    else
+        return 0
+    end
+    `;
+    return await redisClient.eval(script, 1, key, value);
+}
+// 小sleep
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 
 module.exports = {
+    sleep,
+    setLock,
+    releaseLock,
     getString,
     setString,
     removeString,

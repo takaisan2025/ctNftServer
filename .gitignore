@@ -1,29 +1,78 @@
-### Vue template
-# gitignore template for Vue.js projects
-#
-# Recommended template: Node.gitignore
-
-# TODO: where does this rule come from?
-docs/_book
-
-# TODO: where does this rule come from?
-
+# Dependencies
+node_modules/
 node_modules
-test.js
-gen_test.js
-src/mapper/test.js
-test/
-.gitignore
-public
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+nohup.out
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+.nyc_output
+
+# Dependency directories
+jspm/
+bower_components/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Build
+dist/
+build/
+*.tgz
+*.zip
+*.tar.gz
+
+# Sensitive
+*.pem
+*.key
+.passwd
+password.txt
+备注.txt
+
+# Database
+*.sqlite3
+chroma.db/
+*.db
+
+# Other
+.fleet/
+public/
 db.js
 dbPhp.js
 GlobalConfig.json
 ctServer.zip
-备注.txt
-.idea/
-src/test/*
-src/config
-.vscode
-package-lock.json
-.env
-*.test.js

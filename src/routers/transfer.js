@@ -26,7 +26,7 @@ const ABI_const = require("../contract/ABI_const.js");
 const Web3 = require("web3");
 const {customHttpProvider} = require("../task/taskConst");
 const {
-    queryBalanceAndTokenBalance,
+    queryBalanceAndTokenBalance, queryBalance,
 } = require("../chain/balanceQuery");
 
 const {getPriKey} = require("../chain/accountProUtils");
@@ -243,6 +243,9 @@ function transferRouters(app) {
                 return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, "暂不受支持的合约!", null));
             }
             var sqlQueryByTokenIdAndForm;
+            let mainBalance
+            let tokenBalance
+            let balanceRet
             switch (collectDetail["type"]) {
                 case 10:
                 case 12:
@@ -250,15 +253,16 @@ function transferRouters(app) {
                     // 这里对藏品余额进行判断
                     // 这里对手续费余额进行判断
                     logger.debug("Start Query Balance:%s", new Date().getTime());
-                    var balanceRet = await queryBalanceAndTokenBalance(
+                    balanceRet = await queryBalanceAndTokenBalance(
                         address,
                         collectAddress,
-                        tokenId
+                        tokenId,
+                        1155
                     );
                     logger.debug("Over Query Balance:%s", new Date().getTime());
                     validate(balanceRet.err === null, balanceRet.err)
-                    let mainBalance = balanceRet.data.balance;
-                    let tokenBalance = balanceRet.data.tokenBalance;
+                    mainBalance = balanceRet.data.balance;
+                    tokenBalance = balanceRet.data.tokenBalance;
                     // 这里如果是合约发行方的话, 做手续费判断   1155协议
                     if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
                         if (mainBalance < 50) {
@@ -316,51 +320,25 @@ function transferRouters(app) {
 
                     // 数据库余额判断
                     //    数据库已有数据判断
-                    let transObjFrom_ret01 = await findTransFormListAll({
-                        where: {
-                            token_id: tokenId,
-                            t_from: address,
-                        }, limit: 100
-                    })
-                    if (transObjFrom_ret01.err) {
-                        console.log("ERR:", transObjFrom_ret01.err);
-                    }
-                    transObjFrom = transObjFrom_ret01.result;
-
-                    let transObjTo_ret02 = await exec_sql(
-                        getMysqlSqlByTabNameAndSqlNameAndParam(
-                            "trans_form_list",
-                            "selectByToAndTokenId",
-                            {token_id: tokenId, t_to: address}
-                        ).result
+                    logger.debug("Start Query Balance:%s", new Date().getTime());
+                    balanceRet = await queryBalanceAndTokenBalance(
+                        address,
+                        collectAddress,
+                        tokenId,
+                        721
                     );
-
-                    if (transObjTo_ret02.err != null) {
-                        console.log("ERR:", transObjTo_ret02.err);
-                    }
-                    transObjTo = transObjTo_ret02.result;
-                    juAmount = 0;
-                    if (transObjFrom && transObjFrom["sumAmount"]) {
-                        juAmount -= Number(transObjFrom["sumAmount"]);
-                    }
-
-                    if (transObjTo && transObjTo["sumAmount"]) {
-                        juAmount += Number(transObjTo["sumAmount"]);
-                    }
-
-                    // console.log(":transObjFrom['sumAmount']", transObjFrom['sumAmount'], "transObjTo['sumAmount']",
-                    //     transObjTo['sumAmount'], "type", collectDetail['type'], "juAmount", juAmount, "nftObj[\"address\"].toLowerCase()",
-                    //     nftObj["address"].toLowerCase(), "address.toLowerCase()", address.toLowerCase());
+                    logger.debug("Over Query Balance:%s", new Date().getTime());
+                    validate(balanceRet.err === null, balanceRet.err)
+                    mainBalance = balanceRet.data.balance;
+                    tokenBalance = balanceRet.data.tokenBalance;
                     //这里对余额进行判断
                     //判断是否是发行方,然后根据发行量进行判断
-                    if (nftObj["address"].toLowerCase() == address.toLowerCase()) {
-                        // if (!supply > 0) {   // 这里再判断一次, 按理9是都是为空的
-                        validate(supply - juAmount > 0, "db balance is enough!");
-                        // }
-                    } else {
-                        // 根据数据库的转账数量来判断
-                        // 不是发行方,根据数据库转入转出记录判断
-                        validate(Number(juAmount) > 0, "db balance is enough!");
+                    if (tokenBalance < amount) {
+                        logger.debug("藏品库存不足:address:%s,collectAddress:%s, tokenId:%s,",
+                            address,
+                            collectAddress,
+                            tokenId);
+                        throw "藏品余额不足";
                     }
 
                     // save db

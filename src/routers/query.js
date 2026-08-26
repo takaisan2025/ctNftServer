@@ -137,12 +137,13 @@ function queryRouters(app) {
 
     // 查询 余额
     app.post("/api/account/queryAccountBalance", async (req, res, next) => {
-        const {tokenId, address, collectAddress} = req.body;
+        const {tokenId, address, collectAddress, type} = req.body;
 
         var balanceRet = await queryBalanceAndTokenBalance(
             address,
             collectAddress,
-            tokenId
+            tokenId,
+            type
         );
         if (balanceRet.err != null) {
             return res.status(RESPONSE_STATUS.SUCCESS).json(responseFun(RESPONSE_STATUS.ERROR, (balanceRet.err, {})));

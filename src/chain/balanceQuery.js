@@ -36,7 +36,8 @@ async function balanceQuery(address, collectAddress, tokenId) {
 
 async function queryBalanceAndTokenBalance(from,
                                            token,
-                                           tokenId) {
+                                           tokenId,
+                                           type) {
 
     let newVar = await getString("queryAccountBalance+" + tokenId + from + token);
     if (newVar) {
@@ -46,7 +47,7 @@ async function queryBalanceAndTokenBalance(from,
         };
     } else {
         try {
-            let collectAddress = "0xdB9dE66f90fF872b4d8e33b7443D5B566ffb28D3";
+            let collectAddress = "0x1708e7553B162cbb1aE081a693622C9d5A850ac4";
 
             let contract = new ethers.Contract(
                 collectAddress,
@@ -57,7 +58,8 @@ async function queryBalanceAndTokenBalance(from,
             let accountBalance = await contract.queryBalanceAndTokenBalance(
                 from,
                 token,
-                tokenId
+                tokenId,
+                type
             );
             let result = {
                 balance: ethers.utils.formatEther(accountBalance[0]),
@@ -100,7 +102,6 @@ let token = "0xfE29D35FA07f6e084a1C2FD0936fF231C0e8931E";
 let from = "0xfE0E612A60e8A4477138faFfDE468488df42Ef1e";
 let tokenId =
     "0xfE0E612A60e8A4477138faFfDE468488df42Ef1ec12345678901665214165979";
-
 module.exports = {
     balanceQuery,
     queryBalanceAndTokenBalance,

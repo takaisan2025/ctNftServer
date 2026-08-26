@@ -10,7 +10,7 @@ const {
     getKeys,
 } = require("../redis/redis-client");
 const {Op} = require('sequelize')
-const {customHttpProvider} = require("./taskConst");
+const {customHttpProvider, getWeb3} = require("./taskConst");
 const {responseFun} = require("../mapper/account");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 const {getPriKey} = require("../chain/accountProUtils");
@@ -21,25 +21,9 @@ const {transferOutline} = require("./transferOutline");
 const SubmitTransactionTaskFlag = "SubmitTransactionTask_START"
 const TransactionHashQueryTaskFlag = "TransactionHashQueryTask_START"
 const Web3 = require("web3");
+const {updateNft} = require("../Orm/NftService");
+const {getNonce} = require("./mintTask");
 let web3 = new Web3(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
-
-// 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
-
-// 获取账户的 nonce
-async function getNonce(address) {
-    let nonce = await getString(address + '_NONCE');
-    if (Number(nonce) > 0) {
-        nonce = Number(nonce) + 1;
-        await setString(address + '_NONCE', nonce, 4)  // 5s
-
-    } else {
-        nonce = await customHttpProvider.getTransactionCount(address, "latest");
-        console.log(address + "Nonce:", nonce);
-        await setString(address + '_NONCE', nonce, 4)  // 5s
-    }
-
-    return nonce;
-}
 
 function mightBeJson(str) {
     const regex = /^\{.*\}$|^\[.*\]$/;
@@ -75,10 +59,10 @@ async function SubmitTransactionTask() {
         console.log('===================wait start SubmitTransactionTask')
         return
     } else {
-        await setString(SubmitTransactionTaskFlag, "1", 60)
-        console.time("SubmitTransactionTask")
 
         try {
+            await setString(SubmitTransactionTaskFlag, "1", 60)
+            console.time("SubmitTransactionTask")
 
             let newVar = await getKeys("BALANCE_*");
 
@@ -106,8 +90,8 @@ async function SubmitTransactionTask() {
                     const {
                         id,
                         from, to, data,
-                        value,
-                        origin_value,
+                        value, type,
+                        origin_value, remark,
                         origin_data, method
                     } = transList[retKey];
 
@@ -200,13 +184,21 @@ async function SubmitTransactionTask() {
                                 id: id,
                                 vm_err: gasLimitRet.err
                             };
+                            if (type === 1 && to.toLowerCase() === "0x8549E5003BdAdEFA095C8759E2B981D0Cb2e472B".toLowerCase()) {
+                                if (funData.length === 4) {
+                                    trans_from_obj = {
+                                        ...trans_from_obj,
+                                        remark: funData[3]
+                                    }
+                                }
+                            }
                             console.log("nftUpdateSelective:", trans_from_obj);
                             await updateNftTransaction(trans_from_obj, {where: {id: id}})
                             continue;
 
                         } else {
                             let gasLimitA = gasLimitRet.gasLimit
-                            let nonce = await getNonce(wallet.address)
+                            let nonce = await getNonce(from)
                             let txCallRet = await contractWithSignerToken[methodName](
                                 ...funData,
                                 {
@@ -220,7 +212,7 @@ async function SubmitTransactionTask() {
                                     maxPriorityFeePerGas: maxPriorityFeePerGas,
                                     // The amount to send with the transaction (i.e. msg.value)
                                     value: ethers.utils.parseEther(value),
-                                    // The chain ID (or network ID) to use
+                                    // The chain ID (or network ID) to usem
                                     // chainId: 27
                                 }
                             ).then((ret) => {
@@ -230,7 +222,7 @@ async function SubmitTransactionTask() {
                                     console.trace("err:", err.reason);
 
                                     if (err.reason === 'cannot estimate gas; transaction may fail or may require manual gas limit') {
-                                        await setString("BALANCE_" + from, "1", 60);
+                                        // await setString("BALANCE_" + from, "1", 60);
                                         logger.debug("手续费余额不足:address:%s", from);
                                     }
 
@@ -247,6 +239,15 @@ async function SubmitTransactionTask() {
                                     status: 1, // 上链成功
                                     id: id
                                 };
+                                if (type === 1 && to.toLowerCase() === "0x8549E5003BdAdEFA095C8759E2B981D0Cb2e472B".toLowerCase()) {
+                                    if (funData.length === 4) {
+                                        trans_from_obj = {
+                                            ...trans_from_obj,
+                                            remark: funData[3]
+                                        }
+                                    }
+                                }
+
                                 console.log("nftUpdateSelective:", trans_from_obj);
 
                                 let result02 = await updateNftTransaction(trans_from_obj, {where: {id: id}},)
@@ -271,6 +272,14 @@ async function SubmitTransactionTask() {
                                             id: id,
                                             vm_err: gasLimitRet.err
                                         };
+                                        if (type === 1 && to.toLowerCase() === "0x8549E5003BdAdEFA095C8759E2B981D0Cb2e472B".toLowerCase()) {
+                                            if (funData.length === 4) {
+                                                trans_from_obj = {
+                                                    ...trans_from_obj,
+                                                    remark: funData[3]
+                                                }
+                                            }
+                                        }
                                         console.log("nftUpdateSelective:", trans_from_obj);
                                         await updateNftTransaction(trans_from_obj, {where: {id: id}},)
                                         continue;
@@ -280,10 +289,17 @@ async function SubmitTransactionTask() {
                                     case "execution reverted: order has been processed!":
                                         // 计算手续费导致的错误, 稍后重试
                                         trans_from_obj = {
-                                            t_status: 6, // 上链成功
+                                            status: 6, // 上链成功
                                             id: id
                                         };
-
+                                        if (type === 1 && to.toLowerCase() === "0x8549E5003BdAdEFA095C8759E2B981D0Cb2e472B".toLowerCase()) {
+                                            if (funData.length === 4) {
+                                                trans_from_obj = {
+                                                    ...trans_from_obj,
+                                                    remark: funData[3]
+                                                }
+                                            }
+                                        }
                                         await updateNftTransaction(trans_from_obj, {where: {id: id}},)
 
                                         if (funData[0].authLevel && funData[0].authLevel == 8) {
@@ -309,104 +325,99 @@ async function SubmitTransactionTask() {
 
                 }
             }
-            await removeString(SubmitTransactionTaskFlag)
-            console.timeEnd("SubmitTransactionTask");
+
         } catch (error) {
-            await removeString(SubmitTransactionTaskFlag)
             console.log("操作失败！\n" + error);
             console.trace("ERR:", error);
             return error;
+        } finally {
+            await removeString(SubmitTransactionTaskFlag)
+            console.timeEnd("SubmitTransactionTask");
         }
     }
 }
 
+async function getReceiptsBatch(hashes) {
+    let _web3 = getWeb3()
+    const batch = new _web3.BatchRequest();
+    const promises = hashes.map(hash =>
+        new Promise((resolve, reject) => {
+            batch.add(_web3.eth.getTransactionReceipt.request(hash, (err, receipt) => {
+                if (err) reject(err);
+                else resolve({hash, receipt});
+            }));
+        })
+    );
+    batch.execute();
+    return Promise.all(promises);
+}
 
 async function TransactionHashQueryTask() {
-    if (await getString(TransactionHashQueryTaskFlag) == "1") {
+    if (await getString(TransactionHashQueryTaskFlag) === "1") {
         console.log('===================wait start TransactionHashQueryTask')
-        return
     } else {
-        await setString(TransactionHashQueryTaskFlag, "1", 60)
-        console.time("TransactionHashQueryTask")
 
         try {
+            await setString(TransactionHashQueryTaskFlag, "1", 60)
+            console.time("TransactionHashQueryTask")
 
             // 示例使用：
-            const date = new Date('2024-09-01');
-            const nftTransactions = await findNftTransaction({
+            const date = new Date('2025-04-20');
+            const transList_ret = await findNftTransaction({
                 where: {
                     status: 1,
                     create_time: {
                         [Op.gte]: date
                     }
                 },
+                order: [['id', 'ASC']],
                 offset: 0,
-                limit: 500
+                limit: 15
             });
 
-            if (nftTransactions.err === null) {
-                let transList = nftTransactions.result;
+            if (transList_ret.err) {
+                console.trace("ERR:", transList_ret.err);
+                return;
+            }
 
-                for (let retKey in transList) {
-                    const {
-                        id, hash, update_time
-                    } = transList[retKey];
+            let currTime = new Date().getTime();
+            const transList = transList_ret.result.filter(tx => {
+                const timeDiff = currTime - tx.update_time.getTime();
+                return timeDiff >= 10000 && tx.hash && tx.hash !== "" && tx.hash != null;
+            });
 
-                    if (!hash || hash === "" || hash == null) {
-                        continue;
+            const hashes = transList.map(tx => tx.hash);
+            const results = await getReceiptsBatch(hashes);
+            let updates = [];
+            results.forEach(({hash, receipt}, idx) => {
+                // if (!receipt) return;
+
+                if (receipt != null) {
+                    let t_statusStorage = receipt.status === true ? 3 : 0;
+                    console.log("currTime - transList[idx].update_time.getTime():", currTime - transList[idx].update_time.getTime())
+                    if (t_statusStorage === 0 && currTime - transList[idx].update_time.getTime() >= 30000) {
+                        updates.push({id: transList[idx].id, status: t_statusStorage});
+                    } else if (t_statusStorage !== 0) {
+                        updates.push({id: transList[idx].id, status: t_statusStorage});
                     }
-
-                    try {
-
-                        let recept = await web3.eth.getTransactionReceipt(hash);
-                        let currTime = new Date().getTime();
-                        if (currTime - update_time.getTime() < 10000) {   // hash产生不到10s自动跳过
-                            continue;
-                        } else {
-                            let t_statusStorage;
-                            if (recept != null && recept.status == true) {
-                                t_statusStorage = 3;
-                            } else {
-
-                                // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                                // save db
-                                // if (recept.data.transaction == null || recept.data.transaction.status == null) {
-                                if (currTime - update_time.getTime() < 60000) {
-                                    continue;
-                                } else {
-                                    t_statusStorage = 0;
-                                    console.log("查询hash结果false,", hash);
-                                }
-                            }
-
-                            let trans_from_obj = {
-                                status: t_statusStorage, // 6 成功,7 失败
-                                id: id
-                            };
-                            console.log("nftUpdateSelective:", trans_from_obj);
-
-                            let paramsUp = trans_from_obj;
-
-                            console.log("nftUpdateSelective:", trans_from_obj);
-                            if (t_statusStorage == 3) {
-                                await updateNftTransaction(trans_from_obj, {where: {id: id}})
-                            }
-                            continue;
-                        }
-                    } catch (e) {
-                        console.error(e)
-                        console.trace(e)
-                        continue;
+                } else {
+                    if (currTime - transList[idx].update_time.getTime() >= 30000) {
+                        let t_statusStorage = 0
+                        updates.push({id: transList[idx].id, status: t_statusStorage});
                     }
                 }
-            }
-            await removeString(TransactionHashQueryTaskFlag)
-            console.timeEnd("TransactionHashQueryTask");
+            });
+            console.log("updates:", updates)
+            // await Promise.all(updates.map(update => updateTransFormList(update, {id: update.id})));
+            await Promise.all(updates.map(update => updateNftTransaction(update, {where: {id: update.id}})));
+
         } catch (error) {
-            await removeString(TransactionHashQueryTaskFlag)
             console.log("操作失败！\n" + error);
             console.trace("ERR:", error);
             return error;
+        } finally {
+            await removeString(TransactionHashQueryTaskFlag)
+            console.timeEnd("TransactionHashQueryTask");
         }
     }
 }

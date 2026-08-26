@@ -22,7 +22,7 @@ async function getPriKey(account, password) {
                 logger.debug("Decode privateKey, no found key!:%s", account.address);
                 let wallet = await web3.eth.accounts.decrypt(JSON.parse(JSON.stringify(account.keystore).toLowerCase()), password);
                 // 这里进行redis缓存, 如果没有出错
-                await setString("PRIVATE_KEY" + account.address + "_" + password, wallet.privateKey, 300)
+                await setString("PRIVATE_KEY" + account.address + "_" + password, wallet.privateKey, 60)
                 return {err: null, result: wallet}
             } else {
                 logger.debug("Decode privateKey, found key!:%s", account.address);

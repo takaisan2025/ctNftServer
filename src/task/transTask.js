@@ -61,7 +61,7 @@ async function inreNonce(address) {
     }
 }
 
-async function betchTransfer() {
+async function  betchTransfer() {
     let customHttpProvider = getCustomHttpProvider()
     if (await getString(betchTransferFlag) == "1") {
         console.log('===================wait start betchTransfer')
@@ -345,7 +345,8 @@ async function betchTransfer() {
                     console.trace(gasLimitRet.err);
                     if ("execution reverted: ERC1155: insufficient balance for transfer" == gasLimitRet.err ||
                         "execution reverted: ERC1155: burn amount exceeds balance" == gasLimitRet.err ||
-                        "execution reverted: ERC1155: transfer to non ERC1155Receiver implementer" == gasLimitRet.err
+                        "execution reverted: ERC1155: transfer to non ERC1155Receiver implementer" == gasLimitRet.err ||
+                        "execution reverted: ERC721: transfer caller is not owner nor approved" == gasLimitRet.err
                     ) {
                         let trans_from_obj = {
                             t_status: 3,  // 上链失败

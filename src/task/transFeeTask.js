@@ -3,7 +3,7 @@ const {
     exec_sql_all,
 } = require("../controller/ctnft");
 const GlobalConfig = require("../config/GlobalConfig.json");
-let privateKeySys = GlobalConfig.MINT_ACCOUNT.private_key; // mint pri
+let privateKeySys = GlobalConfig.FEE_ACCOUNT.private_key; // mint pri
 const Web3 = require("web3");
 
 const TRANSACTION_RECEIPT_STATUS = {
@@ -26,6 +26,9 @@ const {customHttpProvider} = require("./taskConst");
 const {auths_single} = require("../services/accountService");
 const {RESPONSE_STATUS} = require("../chain/responseError");
 const tFeeBetchTransferFlag = "tFeeBetchTransfer_START"
+const erc20ABI = [
+    "function transfer(address to, uint256 amount) public returns (bool)"
+];
 
 async function tFeeBetchTransfer() {
     if (await getString(tFeeBetchTransferFlag) == "1") {
@@ -35,6 +38,7 @@ async function tFeeBetchTransfer() {
         await setString(tFeeBetchTransferFlag, "1", 60)
         console.time("tFeeBetchTransfer");
         var params = {t_status: 1, is_pay: 1};
+
         var sql = get_mysql(
             "NftChargeListMapper",
             "selectByStatusAndPay",
@@ -53,7 +57,8 @@ async function tFeeBetchTransfer() {
                 id,
                 t_to,
                 pay_amount,
-                rate
+                rate,
+                type
             } = transList[retKey];
 
             // 使用Provider 连接合约，将只有对合约的可读权限
@@ -69,20 +74,45 @@ async function tFeeBetchTransfer() {
 
             let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
 
-            let txs = {
-                to: t_to,
-                // ... or supports ENS names
-                // to: "ricmoo.firefly.eth"
-                // nonce: transactionCount1Mint,
-                // We must pass in the amount as wei (1 ether = 1e18 wei), so we
-                // use this convenience function to convert ether to wei.
-                // gasPrice: Web3.utils.numberToHex(0),
-                maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
-                value: ethers.utils.parseEther((pay_amount * rate).toString()),
-            };
+            let txs;
+            let tx;
 
-            let tx = await walletSys.sendTransaction(txs);
+            switch (type) {
+                case "WCT":
+                    let DatatToken = '0xe849E0f956f2c67C1dCd46D606F03F1C65f18449'
+                    // 2. 设置 ERC-20 代币合约地址 & 目标地址
+                    const tokenAddress = DatatToken; // ERC-20 代币合约地址
+                    const recipient = t_to; // 目标接收地址
+                    const amount = ethers.utils.parseEther((pay_amount * rate).toString()); // 发送 10 个代币（假设 18 位小数）
+
+                    // 3. 创建合约实例
+                    const erc20 = new ethers.Contract(tokenAddress, erc20ABI, walletSys);
+
+                    // 4. 发送交易
+                    tx = await erc20.transfer(recipient, amount, {
+                        maxFeePerGas: Web3.utils.numberToHex(4800e9),
+                        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
+                    });
+                    console.log("WCT 交易发送中:", tx.hash);
+                    break
+                default:
+                    txs = {
+                        to: t_to,
+                        // ... or supports ENS names
+                        // to: "ricmoo.firefly.eth"
+                        // nonce: transactionCount1Mint,
+                        // We must pass in the amount as wei (1 ether = 1e18 wei), so we
+                        // use this convenience function to convert ether to wei.
+                        // gasPrice: Web3.utils.numberToHex(0),
+                        maxFeePerGas: Web3.utils.numberToHex(4800e9),
+                        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
+                        value: ethers.utils.parseEther((pay_amount * rate).toString()),
+                    };
+                    tx = await walletSys.sendTransaction(txs);
+                    console.log("Default 交易发送中:", tx.hash);
+                    break
+            }
+
             console.log("txTransfer: :", tx.hash);
 
             console.log("hash:", tx.hash);

@@ -13,6 +13,7 @@
         <result column="pay_time" jdbcType="TIMESTAMP" property="pay_time"/>
         <result column="is_pay" jdbcType="INTEGER" property="is_pay"/>
         <result column="hash" jdbcType="VARCHAR" property="hash"/>
+        <result column="type" jdbcType="VARCHAR" property="type"/>
         <result column="t_status" jdbcType="VARCHAR" property="t_status"/>
         <result column="create_time" jdbcType="TIMESTAMP" property="create_time"/>
         <result column="update_time" jdbcType="TIMESTAMP" property="update_time"/>
@@ -22,7 +23,7 @@
     <sql id="Base_Column_List">
         
         id, order_id, wx_order_id, t_to, pay_amount, pay_time, is_pay, hash, t_status, create_time,
-        update_time, remark, rate
+        update_time, remark, rate, type
     </sql>
     <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
         

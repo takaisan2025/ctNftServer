@@ -1,4 +1,8 @@
 "use strict";
+
+const {getWeb3} = require("./taskConst.js");
+const {updateTransFormList} = require("../Orm/TransFormListService");
+const {findNftAll} = require("../Orm/NftService");
 const {queryBalance} = require("../chain/balanceQuery");
 
 const {validate} = require("../routers/fcommon");
@@ -11,9 +15,14 @@ const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
 let web3 = new Web3(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 const {
-    getString, setString, removeString, rpush, lrange, lrem, getKeys,
+    getString, setString, removeString, rpush, lrange, lrem, getKeys, releaseLock, setLock, sleep,
 } = require("../redis/redis-client");
 const fetch = require("node-fetch");
+const crypto = require('crypto');
+
+function md5(str) {
+    return crypto.createHash('md5').update(str).digest('hex');
+}
 
 let reCallUrlChanel1 = "http://nft.richonn.com/home/nft/casting";
 
@@ -36,19 +45,35 @@ const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 
 // 获取账户的 nonce
 async function getNonce(address) {
-    let nonce = await getString(address + '_NONCE');
-    if (Number(nonce) > 0) {
-        nonce = Number(nonce) + 1;
-        await setString(address + '_NONCE', nonce, 4)  // 5s
+    const lockKey = address + '_NONCE_LOCK';
+    const nonceKey = address + '_NONCE';
+    const lockValue = Date.now() + Math.random();  // 防止误删锁，可以用唯一值
+    const lockExpire = 3000;  // 3秒超时锁
 
-    } else {
-        nonce = await customHttpProvider.getTransactionCount(address, "latest");
-        console.log(address + "Nonce:", nonce);
-        await setString(address + '_NONCE', nonce, 4)  // 5s
+    const gotLock = await setLock(lockKey, lockValue, lockExpire);
+    if (!gotLock) {
+        // 没拿到锁，等待一点点时间再重试
+        await sleep(50);  // 50毫秒
+        return getNonce(address);  // 递归重试
     }
 
-    return nonce;
+    try {
+        let nonce = await getString(nonceKey);
+        if (Number(nonce) > 0) {
+            nonce = Number(nonce) + 1;
+        } else {
+            nonce = await customHttpProvider.getTransactionCount(address, "latest");
+            console.log(address + " Nonce from chain:", nonce);
+        }
+
+        await setString(nonceKey, nonce, 4);  // 缓存10秒
+        return nonce;
+    } finally {
+        // 无论成功失败，最后都释放锁
+        await releaseLock(lockKey, lockValue);
+    }
 }
+
 
 function Part(account, value) {
     return {
@@ -95,8 +120,17 @@ async function mintFileUploadIpfs() {
             }
         })
 
+        const date = new Date();
+
+// 将日期向前调整 30 天
+        date.setDate(date.getDate() - 7);
+
         // 资源未上链ipfs的条目
-        let nfts_ret = await findNft({status: 0})
+        let nfts_ret = await findNft({
+            status: 0, create_time: {
+                [Op.gte]: date
+            }
+        })
         let nftArr = [];
         if (nfts_ret.err != null) {
             console.trace(responseFunStr(RESPONSE_STATUS.ERROR, nfts_ret.result, {}));
@@ -137,37 +171,68 @@ async function mintFileUploadIpfs() {
             reqdata.description = reqdataRet.desc;
             reqdata.flydate = "Summer 2022";
             reqdata.data = reqdataRet;
-            let response = await client
-                .add(Buffer.from(JSON.stringify(reqdata), "utf-8"))
-                .then((response) => {
-                    return response;
-                })
-                .catch((err) => {
+
+            //
+            const hashMd5 = md5(JSON.stringify(reqdata))
+            console.log(hashMd5)
+
+            let newVar = await getString(hashMd5);
+            if (newVar) {
+                try {
+                    // 设置一个新值，返回交易
+                    // save db
+                    let nft = {
+                        isFinish: 0,
+                        imgPath: reqdata.image,
+                        metaData: newVar,
+                        metaDataSource: JSON.stringify(reqdata),
+                        hash: "",
+                        status: 6, // 资源已上传ipfs,未上链
+                    };
+                    let result = await updateNft(nft, {tokenId: tokenId});
+                    if (result.err != null) {
+                        console.trace(responseFunStr(RESPONSE_STATUS.ERROR, result.result, ""), id);
+                    }
+                    console.info(responseFunStr(RESPONSE_STATUS.SUCCESS, ""), id);
+                } catch (e) {
                     console.trace(e)
-                    console.trace(responseFunStr(RESPONSE_STATUS.ERROR, err, {}), id);
-                });
-            logger.info("metaData:%s", JSON.stringify(response));
-            try {
-                let tokenURI = response.cid.toString();
-                // 设置一个新值，返回交易
-                // save db
-                let nft = {
-                    isFinish: 0,
-                    imgPath: reqdata.image,
-                    metaData: response.cid.toString(),
-                    metaDataSource: JSON.stringify(reqdata),
-                    hash: "",
-                    status: 6, // 资源已上传ipfs,未上链
-                };
-                let result = await updateNft(nft, {tokenId: tokenId});
-                if (result.err != null) {
-                    console.trace(responseFunStr(RESPONSE_STATUS.ERROR, result.result, ""), id);
+                    console.trace(responseFunStr(RESPONSE_STATUS.ERROR, e, ""), id);
                 }
-                console.info(responseFunStr(RESPONSE_STATUS.SUCCESS, ""), id);
-            } catch (e) {
-                console.trace(e)
-                console.trace(responseFunStr(RESPONSE_STATUS.ERROR, e, ""), id);
+            } else {
+                let response = await client
+                    .add(Buffer.from(JSON.stringify(reqdata), "utf-8"))
+                    .then((response) => {
+                        return response;
+                    })
+                    .catch((err) => {
+                        console.trace(err)
+                        console.trace(responseFunStr(RESPONSE_STATUS.ERROR, err, {}), id);
+                    });
+                logger.info("metaData:%s", JSON.stringify(response));
+                try {
+                    // 设置一个新值，返回交易
+                    // save db
+                    let nft = {
+                        isFinish: 0,
+                        imgPath: reqdata.image,
+                        metaData: response.cid.toString(),
+                        metaDataSource: JSON.stringify(reqdata),
+                        hash: "",
+                        status: 6, // 资源已上传ipfs,未上链
+                    };
+                    let result = await updateNft(nft, {tokenId: tokenId});
+                    if (result.err != null) {
+                        console.trace(responseFunStr(RESPONSE_STATUS.ERROR, result.result, ""), id);
+                    }
+                    await setString(hashMd5, response.cid.toString(), 60)
+                    console.info(responseFunStr(RESPONSE_STATUS.SUCCESS, ""), id);
+                } catch (e) {
+                    console.trace(e)
+                    console.trace(responseFunStr(RESPONSE_STATUS.ERROR, e, ""), id);
+                }
             }
+
+
         }
         await removeString(mintFileUploadIpfsFlag)
         console.timeEnd('mintFileUploadIpfs')
@@ -193,10 +258,25 @@ async function mintBetchMint() {
             andfrom.push(stringAddress)
         }
 
-        let nfts_ret = await findNft({
-            status: 6, address: {
-                [Op.not]: andfrom
-            }
+        const date = new Date();
+
+// 将日期向前调整 30 天
+        date.setDate(date.getDate() - 7);
+
+        let nfts_ret = await findNftAll({
+            where: {
+                status: 6,
+                collectAddress: {
+                    [Op.not]: andfrom
+                },
+                address: {
+                    [Op.not]: andfrom
+                },
+                create_time: {
+                    [Op.gte]: date
+                }
+            }, limit: 500,
+            order: [['id', 'ASC']]
         })
         let nftArr = [];
         if (nfts_ret.err != null) {
@@ -218,9 +298,9 @@ async function mintBetchMint() {
 
                 let collectDetail = collectDetail_ret.result;
                 let type = collectDetail.type;
-                let isBal = await getString("BALANCE_" + collectDetail.owner)
+                let isBal = await getString("BALANCE_" + collectAddress)
                 if (isBal == "1") {
-                    await setString("BALANCE_" + collectDetail.owner, "1", 60);  // 2 min
+                    // await setString("BALANCE_" + collectDetail.owner, "1", 60);  // 2 min
                     console.log("合约草田分余额不足:", collectDetail.owner)
                     break;
                 }
@@ -230,10 +310,10 @@ async function mintBetchMint() {
                 // try {
                 let wallet;
 
-                if (type == 10) {
+                if (type === 10) {
                     let contractAddressDetailAsync;
 
-                    if (collectDetail.owner.toLowerCase() == address.toLowerCase()) {
+                    if (collectDetail.owner.toLowerCase() === address.toLowerCase()) {
                         contractAddressDetailAsync = accountItem;
                     } else {
                         let contractAddressDetailAsync_ret = await findAccount({address: collectDetail.owner})
@@ -244,16 +324,30 @@ async function mintBetchMint() {
                     validate(decWalletResultq.err === null, PasswordError)
                     wallet = decWalletResultq.result;
 
-                    let privateKeyA = wallet.privateKey
-                    let {
-                        err,
-                        hash
-                    } = await transfer(privateKeyA, ethers.utils.parseEther(String(1.2)), address, wallet);
-                    if (err != null) {
-                        console.log("txTransfer faild");
-                        continue
+
+                    let etherString = await queryBalance(address);
+                    console.log("Balance: ", etherString);
+
+                    if (Number(etherString) < Number(String(1.5))) {
+
+                        let contractAddressDetailAsync_ret = await findAccount({address: collectDetail.owner})
+                        contractAddressDetailAsync = contractAddressDetailAsync_ret.result
+                        let contractAddressDetail = contractAddressDetailAsync;
+                        let decWalletResultq = await getPriKey(contractAddressDetail, contractAddressDetail.psd);
+                        wallet = decWalletResultq.result;
+
+                        let privateKeyA = wallet.privateKey
+                        let {
+                            err,
+                            hash
+                        } = await transfer(privateKeyA, ethers.utils.parseEther(String(1.5)), address, wallet);
+                        if (err != null) {
+                            console.log("txTransfer faild");
+                            continue
+                        }
+                        console.log("tx Hash:", hash);
+                        continue;
                     }
-                    console.log("tx Hash:", hash);
                 }
 
                 let decWalletResult = await getPriKey(accountItem, accountItem.psd);
@@ -311,8 +405,9 @@ async function mintBetchMint() {
                         if (Number(etherString) < Number(String(10))) {
                             // 合约持有者余额不足十个,将进行充值 1155铸造者
                             console.log("合约持有者余额不足, 请进行充值!", address);
+                            await setString("BALANCE_" + collectAddress, "1", 60);
                             await setString("BALANCE_" + address, "1", 60);
-                            continue;
+                            break;
                         } else {
                             let overrides = {
                                 // The maximum units of gas for the transaction to use
@@ -469,17 +564,19 @@ async function mintBetchMint() {
                             if (  // 判断是否是项目方
                                 contractAddressDetail.address.toLowerCase() == address.toLowerCase() && Number(etherString) < Number(String(10))) {
 
+                                await setString("BALANCE_" + collectAddress, "1", 60)
                                 await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                                 // 跳出, 重新查询数据
                                 console.log("草田分余额不足:", contractAddressDetail.address)
-                                continue;
+                                break;
                             } else {
                                 let etherStringC = await queryBalance(contractAddressDetail.address.toLowerCase());
                                 if (Number(etherStringC) < Number(String(10))) {
+                                    await setString("BALANCE_" + collectAddress, "1", 60)
                                     await setString("BALANCE_" + contractAddressDetail.address, "1", 60)
                                     // 跳出, 重新查询数据
                                     console.log("草田分余额不足:", contractAddressDetail.address)
-                                    continue;
+                                    break;
                                 }
                             }
 
@@ -487,18 +584,29 @@ async function mintBetchMint() {
                             if (isEmpty(privateKeyA)) {
                                 continue;
                             } else {
+                                let etherString = await queryBalance(address);
+                                console.log("Balance: ", etherString);
 
-                                let {
-                                    err,
-                                    hash
-                                } = await transfer(privateKeyA, ethers.utils.parseEther(String(1.5)), address, wallet);
-                                if (err != null) {
-                                    console.log("txTransfer faild");
+                                if (Number(etherString) < Number(String(1.5))) {
+
+                                    let contractAddressDetailAsync_ret = await findAccount({address: collectDetail.owner})
+                                    contractAddressDetailAsync = contractAddressDetailAsync_ret.result
+                                    let contractAddressDetail = contractAddressDetailAsync;
+                                    let decWalletResultq = await getPriKey(contractAddressDetail, contractAddressDetail.psd);
+                                    wallet = decWalletResultq.result;
+
+                                    let privateKeyA = wallet.privateKey
+                                    let {
+                                        err,
+                                        hash
+                                    } = await transfer(privateKeyA, ethers.utils.parseEther(String(1.5)), address, wallet);
+                                    if (err != null) {
+                                        console.log("txTransfer faild");
+                                        continue
+                                    }
+                                    console.log("tx Hash:", hash);
                                     continue;
                                 }
-                                console.log("tx Hash:", hash);
-                                continue;
-
                             }
                         }
                         let nonce = await getNonce(wallet.address);
@@ -604,18 +712,21 @@ const {findNft, updateNft} = require("../Orm/NftService");
 async function transfer(privateKey, value, toAddress, walletUser) {
 
     // 这里首先判断toAddress的实名情况, 否则转手续费会失败
-    // if (GlobalConfig.CAN_AUTH) {
-    let isAuth = await auths_single(walletUser.address);
-    if (isAuth.data != true) {
-        // 这里进行预先实名
-        let idHash = await auths_idHash(walletUser.address)
-        if (idHash.data === '0x00000000000000000000000000000000') {
-            console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
-            return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
-        } else {
-            let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
-            let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
-            await auth_user_v2(walletUser, idHash, walletSys.address)
+    if (GlobalConfig.CAN_AUTH) {
+        let isAuth = await auths_single(walletUser.address);
+        if (isAuth.data != true) {
+            // 这里进行预先实名
+            let idHash = await auths_idHash(walletUser.address)
+            if (idHash.data === '0x00000000000000000000000000000000') {
+                console.log(responseFunStr(RESPONSE_STATUS.ERROR, "用户信息未认证或过期,请稍后重试!", {}))
+                // await setString("BALANCE_" + toAddress, "1", 60)
+                throw new Error('用户信息未认证或过期,请稍后重试!')
+                // return {err: "用户信息未认证或过期,请稍后重试!", hash: null};
+            } else {
+                let privateKeySys = GlobalConfig.AUTH_CONTROLLER_PK // TODO 这里需要系统地址
+                let walletSys = new ethers.Wallet(privateKeySys, customHttpProvider);
+                await auth_user_v2(walletUser, idHash, walletSys.address)
+            }
         }
     }
 
@@ -654,50 +765,92 @@ async function transfer(privateKey, value, toAddress, walletUser) {
 
 const mintBetchHashQueryFlag = "mintBetchHashQuery_START"
 
+async function getReceiptsBatch(hashes) {
+    let _web3 = getWeb3()
+    const batch = new _web3.BatchRequest();
+    const promises = hashes.map(hash =>
+        new Promise((resolve, reject) => {
+            batch.add(_web3.eth.getTransactionReceipt.request(hash, (err, receipt) => {
+                if (err) reject(err);
+                else resolve({hash, receipt});
+            }));
+        })
+    );
+    batch.execute();
+    return Promise.all(promises);
+}
+
 async function mintBetchHashQuery() {
     if (await getString(mintBetchHashQueryFlag) == "1") {
         console.log('===================wait start mintBetchHashQuery')
         return
     } else {
-        await setString(mintBetchHashQueryFlag, "1", 60)
+        await setString(mintBetchHashQueryFlag, "1", 30)
 
         console.time('mintBetchHashQuery')
+        try {
 
-        let transList = await findNft({status: 10})
-        // 上链成功  没有回调的
-        for (let retKey in transList.result) {
-            try {
-                let {tokenId, update_time, hash, rebackUrl, address, id} = transList.result[retKey];
-                if (!hash || hash == "" || hash == null) {
-                    continue;
-                }
-                // let recept = await customHttpProvider.getTransactionReceipt(hash);
-                let recept = await web3.eth.getTransactionReceipt(hash);
-                let currTime = new Date().getTime();
+            const date = new Date();
 
-                if (currTime - update_time.getTime() < 10000) {
-                    // hash产生不到10s自动跳过
-                    continue;
-                } else {
-                    let t_statusStorage;
-                    if (recept != null && recept.status == true) {
-                        t_statusStorage = 7;
-                    } else {
-                        if (currTime - update_time.getTime() < 60000) {
-                            continue;
-                        } else {
-                            t_statusStorage = 6;
-                        }
+// 将日期向前调整 30 天
+            date.setDate(date.getDate() - 7);
+
+            // let transList = await findNftAll({status: 10})
+            let transList_ret = await findNftAll({
+                where: {
+                    status: 10,
+                    create_time: {
+                        [Op.gte]: date
                     }
-                    await updateNft({status: t_statusStorage}, {tokenId: tokenId});
-                }
-            } catch (e) {
-                console.trace(e);
-                continue;
+                },
+                order: [['id', 'ASC']],
+                offset: 0,
+                limit: 15,
+            })
+            // 上链成功  没有回调的
+
+            if (transList_ret.err) {
+                console.trace("ERR:", transList_ret.err);
+                return;
             }
+
+            let currTime = new Date().getTime();
+            const transList = transList_ret.result.filter(tx => {
+                const timeDiff = currTime - tx.update_time.getTime();
+                return timeDiff >= 10000 && tx.hash && tx.hash != "" && tx.hash != null;
+            });
+
+            const hashes = transList.map(tx => tx.hash);
+            const results = await getReceiptsBatch(hashes);
+            let updates = [];
+            results.forEach(({hash, receipt}, idx) => {
+                // if (!receipt) return;
+
+                if (receipt != null) {
+                    let t_statusStorage = receipt.status === true ? 7 : 6;
+                    console.log("currTime - transList[idx].update_time.getTime():", currTime - transList[idx].update_time.getTime())
+                    if (t_statusStorage === 6 && currTime - transList[idx].update_time.getTime() >= 30000) {
+                        updates.push({id: transList[idx].id, status: t_statusStorage});
+                    } else if (t_statusStorage !== 6) {
+                        updates.push({id: transList[idx].id, status: t_statusStorage});
+                    }
+                } else {
+                    if (currTime - transList[idx].update_time.getTime() >= 30000) {
+                        let t_statusStorage = 6
+                        updates.push({id: transList[idx].id, status: t_statusStorage});
+                    }
+                }
+            });
+            // await Promise.all(updates.map(update => updateTransFormList(update, {id: update.id})));
+            await Promise.all(updates.map(update => updateNft(update, {id: update.id})));
+
+        } catch (e) {
+            console.trace(e);
+        } finally {
+            await removeString(mintBetchHashQueryFlag)
+            console.timeEnd('mintBetchHashQuery')
         }
-        await removeString(mintBetchHashQueryFlag)
-        console.timeEnd('mintBetchHashQuery')
+
     }
 }
 
@@ -710,12 +863,21 @@ async function mintBetchCallFund() {
     } else {
         await setString(mintBetchCallFundFlag, "1", 60)
 
+        const date = new Date();
+
+// 将日期向前调整 30 天
+        date.setDate(date.getDate() - 7);
+
         console.time('mintBetchCallFund')
-        let nftArr = await findNft({status: 7})
+        let nftArr = await findNft({
+            status: 7, create_time: {
+                [Op.gte]: date
+            }
+        })
         // 上链成功  没有回调的
 
-        for (let retKey in nftArr.result) {
-            try {
+        try {
+            for (let retKey in nftArr.result) {
                 let {tokenId, update_time, hash, rebackUrl} = nftArr.result[retKey];
                 var formdata = new FormData();
                 formdata.append("key", "qianyidata");
@@ -784,16 +946,21 @@ async function mintBetchCallFund() {
                         await updateNft({status: 9}, {tokenId: tokenId});
                     }
                 }
-            } catch (e) {
-                console.trace(e);
             }
+        } catch (e) {
+            console.trace(e);
+        } finally {
+            await removeString(mintBetchCallFundFlag)
+            console.timeEnd('mintBetchCallFund')
         }
-        await removeString(mintBetchCallFundFlag)
-        console.timeEnd('mintBetchCallFund')
     }
 }
 
 // mintFileUploadIpfs();
+// setInterval(() => {
+//     mintBetchHashQuery()
+// }, 2000)
+// mintBetchMint()
 module.exports = {
-    mintFileUploadIpfs, mintBetchMint, mintBetchHashQuery, mintBetchCallFund
+    mintFileUploadIpfs, mintBetchMint, mintBetchHashQuery, mintBetchCallFund, getNonce
 };

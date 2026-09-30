@@ -1,6 +1,10 @@
 // redis.js
 const redis = require('redis')
-const client = redis.createClient(6379, '127.0.0.1', {auth_pass: "1995"}) //端口号、主机
+const path = require('node:path')
+require('dotenv').config({path: path.resolve(__dirname, '../../.env')})
+const redisPassword = process.env.REDIS_PASSWORD
+if (!redisPassword) throw new Error('REDIS_PASSWORD is required')
+const client = redis.createClient(6379, '127.0.0.1', {auth_pass: redisPassword})
 
 // 配置redis的监听事件
 // 准备连接redis-server事件

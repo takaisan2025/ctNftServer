@@ -1,12 +1,8 @@
-const {
-    isEmpty
-} = require("../rules/rules");
 const GlobalConfig = require("../config/GlobalConfig.json");
 const Web3 = require("web3");
 const {
     getString,
-    setString,
-    removeString, getKeys, lpop,
+    setString, getKeys, setLock, renewLock, releaseLock,
 } = require("../redis/redis-client");
 
 const ERC1155Ctnft = require("../contract/ERC1155Ctnft.json");
@@ -30,47 +26,22 @@ const {findAccount} = require("../Orm/AccountService");
 const {findCollect} = require("../Orm/CollectService");
 const {auth_user_v1, auth_user_v2, auths_single, auths_idHash} = require("../services/accountService");
 const {queryBalance} = require("../chain/balanceQuery");
+const {withLease} = require("../redis/withLease");
+const {submitSignedOrder, sendAtPendingNonce} = require("../chain/signedOrderSender");
+const {chooseNonce} = require("../chain/nonceManager");
+const {hasReservedTransferNonce} = require("../chain/transferNonceReservation");
+const {TRANSFER_MAX_FEE_PER_GAS, transferFundingDeficit} = require("../chain/gasFunding");
+const {fillNonceGap} = require("../chain/gapFiller");
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
 
-// 获取账户的 nonce
-async function getNonce(address) {
-    let customHttpProvider = getCustomHttpProvider()
-    let nonce = await getString(address + '_NONCE');
-    console.log("======================getNonce===", address + "Nonce:", nonce);
-    if (Number(nonce) > 0) {
-        nonce = Number(nonce) + 1;
-        await setString(address + '_NONCE', nonce, 4)  // 5s
-
-    } else {
-        nonce = await customHttpProvider.getTransactionCount(address, "latest");
-        console.log(address + "Nonce:", nonce);
-        await setString(address + '_NONCE', nonce, 4)  // 5s
-    }
-
-    return nonce;
-}
-
-// 获取账户的 nonce
-async function inreNonce(address) {
-    let nonce = await getString(address + '_NONCE');
-    console.log("======================getNonce===", address + "Nonce:", nonce);
-    if (Number(nonce) > 0) {
-        nonce = Number(nonce) - 1;
-        await setString(address + '_NONCE', nonce, 4)  // 5s
-    }
-}
+const nonceLocks = {setLock, renewLock, releaseLock};
 
 async function  betchTransfer() {
-    let customHttpProvider = getCustomHttpProvider()
-    if (await getString(betchTransferFlag) == "1") {
-        console.log('===================wait start betchTransfer')
-        return
-    } else {
-        await setString(betchTransferFlag, "1", 30)
-
+    const lease = await withLease(nonceLocks, betchTransferFlag, async assertHeld => {
+        let customHttpProvider = getCustomHttpProvider()
         console.time("betchTransfer")
-
+        try {
         let newVar = await getKeys("BALANCE_*");
 
         let andfrom = [];
@@ -100,6 +71,7 @@ async function  betchTransfer() {
         }
         transList = transList_ret.result;
         for (let retKey in transList) {
+            await assertHeld();
             const {
                 id,
                 t_from,
@@ -112,11 +84,34 @@ async function  betchTransfer() {
                 collectAddress,
                 t_status,
                 create_time,
-                update_time
+                update_time,
+                hash: previousHash,
+                nonce: previousNonce
             } = transList[retKey];
             // TODO 待完成
             // await lpop("TRANSFER_F")
+            let submittedHash;
+            let gapNonce;
             try {
+                if (await getString("BALANCE_" + t_from) === "1") continue;
+                if (previousHash && previousNonce != null) {
+                    const previous = await chooseNonce(customHttpProvider, t_from,
+                        {hash: previousHash, nonce: previousNonce});
+                    if (previous.action === "in-flight") {
+                        await updateTransFormList({t_status: 5}, {id, t_status: 1});
+                        continue;
+                    }
+                    if (previous.action === "mined-success") {
+                        await updateTransFormList({t_status: 6}, {id, t_status: 1});
+                        continue;
+                    }
+                    if (previous.action === "earlier-gap") {
+                        gapNonce = previous.nonce;
+                    } else if (previous.action !== "send") {
+                        console.log("Transfer deferred:", id, previous.action);
+                        continue;
+                    }
+                }
                 let accountDetail_ret01 = await findAccount({address: t_from})
                 let accountDetail = accountDetail_ret01.result
 
@@ -140,7 +135,7 @@ async function  betchTransfer() {
                 let contractAddressDetail = contractAddressDetailAsync;
 
                 let isBal = await getString("BALANCE_" + contractAddressDetail.address)
-                if (isBal == "1") {
+                if (isBal == "1" && gapNonce == null) {
                     console.log("合约草田分余额不足:", contractAddressDetail.address)
                     continue;
                 }
@@ -153,6 +148,10 @@ async function  betchTransfer() {
                     wallet1 = decWalletResult1.result;
                 }
                 contractAddressDetail.private_key = wallet1.privateKey;
+                if (new ethers.Wallet(wallet1.privateKey).address.toLowerCase() !==
+                    contractAddressDetail.address.toLowerCase()) {
+                    throw new Error(`Transfer sponsor key mismatch: ${id}`);
+                }
                 let accountItem = accountDetail;
                 // try {
                 let wallet;
@@ -164,6 +163,38 @@ async function  betchTransfer() {
                     wallet = decWalletResult.result;
                 }
                 wallet = new ethers.Wallet(wallet.privateKey, customHttpProvider);
+                if (wallet.address.toLowerCase() !== t_from.toLowerCase()) {
+                    throw new Error(`Transfer account key mismatch: ${id}`);
+                }
+
+                if (gapNonce != null) {
+                    if (await hasReservedTransferNonce(t_from, gapNonce, id, true)) continue;
+                    const balance = await customHttpProvider.getBalance(t_from, "pending");
+                    const deficit = transferFundingDeficit(21000, balance);
+                    if (!deficit.isZero()) {
+                        if (contractAddressDetail.address.toLowerCase() === t_from.toLowerCase()) {
+                            await setString("BALANCE_" + t_from, "1", 60);
+                        } else {
+                            const funding = await transfer(contractAddressDetail.private_key, deficit, t_from, wallet);
+                            if (funding.err) console.log("Gap fill funding failed:", id, funding.err);
+                            else {
+                                await setString("BALANCE_" + t_from, "1", 60);
+                                console.log("Gap fill funded:", id, funding.hash);
+                            }
+                        }
+                        continue;
+                    }
+                    const filler = await fillNonceGap({
+                        locks: nonceLocks, provider: customHttpProvider, wallet,
+                        nonce: gapNonce,
+                        hasReservation: nonce => hasReservedTransferNonce(t_from, nonce, id, true),
+                        persist: record => setString(
+                            `GAP_FILL:${t_from.toLowerCase()}`, JSON.stringify(record))
+                    });
+                    console.log("Nonce gap fill:", id, gapNonce, filler.action,
+                        filler.tx && filler.tx.hash);
+                    continue;
+                }
 
 
                 // 使用Provider 连接合约，将只有对合约的可读权限
@@ -206,28 +237,6 @@ async function  betchTransfer() {
                 }
 
                 if (isApprovedForAll == false) {
-
-                    console.log("Balance: ", etherString);
-                    if (Number(etherString) < Number(String(0.7))) {
-                        let privateKey = contractAddressDetail.private_key;
-                        if (isEmpty(privateKey)) {
-                            continue;
-                        } else {
-                            let {
-                                err,
-                                hash
-                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.7)), t_from, wallet);
-                            if (err != null) {
-                                console.log("txTransfer faild");
-                                continue;
-                            }
-                            console.log("tx Hash:", hash);
-                            continue;
-                        }
-
-                    }
-
-
                     // 进行授权
                     let gasLimitRet = await contractWithSignerToken.estimateGas
                         .setApprovalForAll(
@@ -244,54 +253,43 @@ async function  betchTransfer() {
                     if (gasLimitRet.err != null) {
                         continue;
                     }
-
-                    let nonce = await getNonce(t_from);
-
-                    let gasLimitA = gasLimitRet.gasLimit
-                    let txApproveRet = await contractWithSignerToken.setApprovalForAll(
-                        CtTransferExecutorAddress,
-                        true,
-                        {
-                            // The maximum units of gas for the transaction to use
-                            // gasLimit: Web3.utils.numberToHex(gasLimitA),
-                            // The price (in wei) per unit of gas
-                            // gasPrice: Web3.utils.numberToHex(parseInt(gasConfig.approvalAll.gas / Number(gasLimitA))),
-                            // The nonce to use in the transaction
-                            nonce: nonce,
-                            maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                            maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
-                            // The amount to send with the transaction (i.e. msg.value)
-                            // value: utils.parseEther('1.0'),
-                            // The chain ID (or network ID) to use
-                            // chainId: 27
+                    const approvalBalance = await customHttpProvider.getBalance(t_from, "pending");
+                    const approvalDeficit = transferFundingDeficit(gasLimitRet.gasLimit, approvalBalance);
+                    if (!approvalDeficit.isZero()) {
+                        if (contractAddressDetail.address.toLowerCase() === t_from.toLowerCase()) {
+                            await setString("BALANCE_" + t_from, "1", 60);
+                            continue;
                         }
-                    );
+                        const funding = await transfer(contractAddressDetail.private_key, approvalDeficit, t_from, wallet);
+                        if (funding.err) {
+                            console.log("Approval gas funding failed:", id, funding.err);
+                        } else {
+                            await setString("BALANCE_" + t_from, "1", 60);
+                            console.log("Approval gas funded:", id, funding.hash);
+                        }
+                        continue;
+                    }
+
+                    const approval = await sendAtPendingNonce({
+                        locks: nonceLocks,
+                        provider: customHttpProvider,
+                        address: t_from,
+                        hasReservation: nonce => hasReservedTransferNonce(t_from, nonce),
+                        send: nonce => contractWithSignerToken.setApprovalForAll(
+                            CtTransferExecutorAddress,
+                            true,
+                            {
+                                nonce,
+                                maxFeePerGas: TRANSFER_MAX_FEE_PER_GAS.toHexString(),
+                                maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9)
+                            }
+                        )
+                    });
+                    if (approval.action !== "sent") continue;
                     continue;
                     // let recept1 = await customHttpProvider.waitForTransaction(txApproveRet.hash);
                     //
                     // console.log("txApprove:", recept1);
-
-                } else {
-
-                    console.log("Balance: ", etherString);
-
-                    if (Number(etherString) < Number(String(0.44))) {
-                        let privateKey = contractAddressDetail.private_key;
-                        if (isEmpty(privateKey)) {
-                            continue;
-                        } else {
-                            let {
-                                err,
-                                hash
-                            } = await transfer(privateKey, ethers.utils.parseEther(String(0.44)), t_from, wallet);
-                            if (err != null) {
-                                console.log("txTransfer faild");
-                                continue;
-                            }
-                            console.log("tx Hash:", hash);
-                            continue;
-                        }
-                    }
 
                 }
 
@@ -369,116 +367,80 @@ async function  betchTransfer() {
                     }
                     continue;
                 } else {
-
-                    let tx;
-                    let txRet;
-
-                    let gasLimit = gasLimitRet.gasLimit;
-                    console.log("gasLimit:", gasLimit.toString());
-                    let nonce = await getNonce(t_from);
-
-                    let overrides = {
-                        // The maximum units of gas for the transaction to use
-                        // gasLimit: Web3.utils.numberToHex(gasLimit),
-                        // gasLimit: Web3.utils.numberToHex(93010),
-                        // The price (in wei) per unit of gas
-                        maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
-
-                        // The nonce to use in the transaction
-                        nonce: nonce,
-                        // The amount to send with the transaction (i.e. msg.value)
-                        // value: utils.parseEther('1.0'),
-                        // The chain ID (or network ID) to use
-                        // chainId: 27
-                    };
-                    // 设置一个新值，返回交易
-
-                    txRet = await contractWithSigner
-                        .transfer(
-                            assetClass,
-                            collectAddress,
-                            t_from,
-                            transferTo,
-                            token_id,
-                            orderIdEcc,
-                            amount,
-                            transferDirection,
-                            transferType,
-                            data,
-                            overrides
-                        )
-                        .then((ret) => {
-                            return {err: null, data: ret};
-                        })
-                        .catch(async (err) => {
-                            console.trace("err:", err);
-                            if (err.toString().indexOf('gas required exceeds allowance') != -1) {
-                                console.log("err.toString().indexOf('gas required exceeds allowance'):", err.toString().indexOf('gas required exceeds allowance'))
-                                await inreNonce(t_from)
-                            }
-
-                            return {err: err.reason, data: null};
-                        });
-                    tx = txRet.data;
-                    // console.log("txRet:", txRet);
-                    // console.log("txTransForm:", tx);
-                    if (txRet.err == null) {
-                        // 操作还没完成，需要等待挖矿   这里默认都会成功,跳过挖矿
-                        // save db
-                        let trans_from_obj = {
-                            hash: tx.hash,
-                            nonce: nonce,
-
-                            t_status: 5  // 上链成功
-                        };
-                        console.log("nftUpdateSelective:", trans_from_obj);
-
-                        let result002 = await updateTransFormList(trans_from_obj, {id: id})
-
-                        if (result002.err != null) {
-                            console.trace(responseFun(RESPONSE_STATUS.ERROR, result002.result, ""), id);
+                    const balance = await customHttpProvider.getBalance(t_from, "pending");
+                    const deficit = transferFundingDeficit(gasLimitRet.gasLimit, balance);
+                    if (!deficit.isZero()) {
+                        if (contractAddressDetail.address.toLowerCase() === t_from.toLowerCase()) {
+                            await setString("BALANCE_" + t_from, "1", 60);
+                            continue;
                         }
-                        console.log("update TransFrom data:", result002.result);
+                        const funding = await transfer(contractAddressDetail.private_key, deficit, t_from, wallet);
+                        if (funding.err) {
+                            console.log("Transfer gas funding failed:", id, funding.err);
+                        } else {
+                            await setString("BALANCE_" + t_from, "1", 60);
+                            console.log("Transfer gas funded:", id, funding.hash);
+                        }
                         continue;
-                    } else {
-                        if ("execution reverted: ERC1155: insufficient balance for transfer" == txRet.err) {
-                            let trans_from_obj = {
-                                t_status: 3, // 上链失败
-                                vm_err: gasLimitRet.err
-                            };
-                            console.log("nftUpdateSelective:", trans_from_obj);
-                            await updateTransFormList(trans_from_obj, {id: id})
-                            continue;
-                        }
-                        if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
-                            // 计算手续费导致的错误, 稍后重试
-                            continue;
-                        }
-                        if ("ErrFunds must less than 0.105 ETH" == txRet.err) {
-                            // 计算手续费导致的错误, 稍后重试
-                            continue;
-                        }
-                        if ("execution reverted: order has been processed!" == gasLimitRet.err) {
-                            // 计算手续费导致的错误, 稍后重试
-                            let trans_from_obj = {
-                                t_status: 6  // 上链成功
-                            };
-
-                            await updateTransFormList(trans_from_obj, {id: id})
-                            continue;
-                        }
-                        if ("replacement fee too low" == txRet.err) {
-                            //手续费不足
-                            continue;
-                        }
-                        //手续费不足
-                        console.trace("txRet.err", txRet.err);
-                        continue;
-
                     }
+                    const result = await submitSignedOrder({
+                        locks: nonceLocks,
+                        provider: customHttpProvider,
+                        address: t_from,
+                        previous: {hash: previousHash, nonce: previousNonce},
+                        hasReservation: nonce => hasReservedTransferNonce(t_from, nonce, id),
+                        prepare: async nonce => {
+                            const network = await customHttpProvider.getNetwork();
+                            if (network.chainId !== 27) throw new Error("Unexpected chainId for transfer");
+                            const unsigned = await contractWithSigner.populateTransaction.transfer(
+                                assetClass, collectAddress, t_from, transferTo, token_id,
+                                orderIdEcc, amount, transferDirection, transferType, data,
+                                {
+                                    nonce,
+                                    gasLimit: gasLimitRet.gasLimit,
+                                    maxFeePerGas: TRANSFER_MAX_FEE_PER_GAS.toHexString(),
+                                    maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9)
+                                }
+                            );
+                            delete unsigned.from;
+                            unsigned.chainId = 27;
+                            unsigned.type = 2;
+                            return unsigned;
+                        },
+                        sign: unsigned => wallet.signTransaction(unsigned),
+                        hashSigned: raw => ethers.utils.keccak256(raw),
+                        persist: async ({hash, nonce}) => {
+                            const saved = await updateTransFormList(
+                                {hash, nonce, t_status: 5}, {id, t_status: 1});
+                            if (saved.err || !saved.result || Number(saved.result[0]) !== 1) {
+                                throw saved.err || new Error("Transfer order was not reserved in DB");
+                            }
+                            submittedHash = hash;
+                        },
+                        broadcast: async raw => {
+                            const sent = await customHttpProvider.sendTransaction(raw);
+                            if (sent.hash.toLowerCase() !== ethers.utils.keccak256(raw).toLowerCase()) {
+                                throw new Error("Broadcast hash differs from signed transaction");
+                            }
+                        }
+                    });
+                    if (result.action === "mined-success") {
+                        await updateTransFormList({t_status: 6}, {id, t_status: 1});
+                    } else if (result.action === "in-flight") {
+                        await updateTransFormList({t_status: 5}, {id, t_status: 1});
+                    } else if (result.action !== "sent") {
+                        console.log("Transfer deferred:", id, result.action);
+                    }
+                    continue;
                 }
             } catch (e) {
+                if (submittedHash && e.code === "INSUFFICIENT_FUNDS") {
+                    const restored = await updateTransFormList(
+                        {t_status: 1, hash: previousHash || null, nonce: previousNonce == null ? null : previousNonce},
+                        {id, t_status: 5, hash: submittedHash}
+                    );
+                    if (restored.err) console.error("Transfer requeue failed:", id, restored.err);
+                }
                 console.error(e)
                 console.trace(e)
                 continue;
@@ -486,11 +448,11 @@ async function  betchTransfer() {
 
         }
 
-        // await removeString(betchTransferFlag)
-        await setString(betchTransferFlag, "1", 5)
+        } finally {
         console.timeEnd("betchTransfer");
-
-    }
+        }
+    }, {ttlMs: 120000});
+    if (!lease.acquired) console.log('===================wait start betchTransfer');
 }
 
 
@@ -520,30 +482,24 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     // }
 
 
-    let nonce = await getNonce(walletSys.address)
-    let tx = {
-        to: toAddress,
-        // ... or supports ENS names
-        // to: "ricmoo.firefly.eth"
-        // We must pass in the amount as wei (1 ether = 1e18 wei), so we
-        // use this convenience function to convert ether to wei.
-        nonce: nonce,
-        maxFeePerGas: Web3.utils.numberToHex(4800e9),
-        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
-        value: Web3.utils.toHex(value),
-    };
-
-    let txTransfer = await walletSys.sendTransaction(tx);
-    console.log("txTransfer: :", txTransfer.hash);
     try {
-        // let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
-        // console.log("recept1:", recept1);
-        // if (recept1.status === TRANSACTION_RECEIPT_STATUS.REVERTED) {
-        //     throw "Transaction Reverted";
-        // }
-        return {err: null, hash: txTransfer.hash};
+        const result = await sendAtPendingNonce({
+            locks: nonceLocks,
+            provider: customHttpProvider,
+            address: walletSys.address,
+            hasReservation: nonce => hasReservedTransferNonce(walletSys.address, nonce),
+            send: nonce => walletSys.sendTransaction({
+                to: toAddress,
+                nonce,
+                maxFeePerGas: Web3.utils.numberToHex(4800e9),
+                maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
+                value: Web3.utils.toHex(value)
+            })
+        });
+        if (result.action !== "sent") return {err: result.action, hash: null};
+        return {err: null, hash: result.tx.hash};
     } catch (err) {
-        console.trace("txTransfererr:", err); // 这里会因为系统账户的nonce问题导致失败, 直接忽略
+        console.trace("txTransfererr:", err);
         return {err, hash: null};
     }
 }

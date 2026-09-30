@@ -3,19 +3,12 @@ let rpc = GlobalConfig.BLOCK_CHAIN.RPC_URL[0];
 const ethers = require("ethers");
 const ethUtil = require("ethereumjs-util");
 
-function generateRandomBinary() {
-    const seed = Date.now(); // 使用当前时间作为种子
-    return (seed % 2 === 0) ? 0 : 1; // 根据种子奇偶性返回 0 或 1
-}
-
-let ran_index = generateRandomBinary()
-console.log("ran_index:", ran_index)
-const customHttpProvider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[ran_index].url);
+// Pending transactions are local to an RPC node. Keep background jobs on one
+// endpoint so a later batch sees the nonce used by an earlier batch.
+const customHttpProvider = new ethers.providers.JsonRpcProvider(rpc.url);
 
 function getCustomHttpProvider() {
-    let _ran_index = generateRandomBinary()
-    const _customHttpProvider = new ethers.providers.JsonRpcProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[_ran_index].url);
-    return _customHttpProvider;
+    return customHttpProvider;
 }
 
 function id_fun(str) {
@@ -37,10 +30,8 @@ let web3 = new Web3(
 );
 
 function getWeb3() {
-    let _ran_index = generateRandomBinary()
-
     let _web3 = new Web3(
-        new Web3.providers.HttpProvider(GlobalConfig.BLOCK_CHAIN.RPC_URL[_ran_index].url, {
+        new Web3.providers.HttpProvider(rpc.url, {
             headers: rpc.headers
         })
     );

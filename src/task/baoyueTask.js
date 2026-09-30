@@ -5,6 +5,10 @@ const Web3 = require("web3");
 const ethers = require("ethers");
 
 const {customHttpProvider} = require("./taskConst");
+const {setLock, renewLock, releaseLock} = require("../redis/redis-client");
+const {sendAtPendingNonce} = require("../chain/signedOrderSender");
+const {hasReservedTransferNonce} = require("../chain/transferNonceReservation");
+const nonceLocks = {setLock, renewLock, releaseLock};
 
 async function baoyueTransfer() {
     try {
@@ -32,7 +36,14 @@ async function baoyueTransfer() {
                 maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
                 value: ethers.utils.parseEther((20000).toString()),
             };
-            let tx = await walletSys.sendTransaction(txs);
+            let sent = await sendAtPendingNonce({
+                locks: nonceLocks, provider: customHttpProvider,
+                address: walletSys.address,
+                hasReservation: nonce => hasReservedTransferNonce(walletSys.address, nonce),
+                send: nonce => walletSys.sendTransaction({...txs, nonce})
+            });
+            if (sent.action !== "sent") return;
+            let tx = sent.tx;
             console.log("Default 交易发送中:", tx.hash);
             console.log("txTransfer: :", tx.hash);
             console.log("hash:", tx.hash);

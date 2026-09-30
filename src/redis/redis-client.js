@@ -176,14 +176,18 @@ const pttl = (key) => {
         })
     })
 }
-// 尝试加锁
-async function setLock(key, value, ttl) {
-    // 相当于 SET key value NX PX ttl
-    return await redisClient.set(key, value, 'NX', 'PX', ttl);
+// Redis v3 command methods return whether the command was queued. The lock
+// decision must use the server reply delivered to the callback.
+function setLock(key, value, ttl) {
+    return new Promise((resolve, reject) => {
+        redisClient.set(key, value, 'NX', 'PX', ttl, (err, result) => {
+            if (err) return reject(err);
+            resolve(result === 'OK');
+        });
+    });
 }
 
-// 释放锁（安全版，只有自己设置的value才能释放）
-async function releaseLock(key, value) {
+function releaseLock(key, value) {
     const script = `
     if redis.call("get", KEYS[1]) == ARGV[1] then
         return redis.call("del", KEYS[1])
@@ -191,7 +195,28 @@ async function releaseLock(key, value) {
         return 0
     end
     `;
-    return await redisClient.eval(script, 1, key, value);
+    return new Promise((resolve, reject) => {
+        redisClient.eval(script, 1, key, value, (err, result) => {
+            if (err) return reject(err);
+            resolve(result === 1);
+        });
+    });
+}
+
+function renewLock(key, value, ttl) {
+    const script = `
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("pexpire", KEYS[1], ARGV[2])
+    else
+        return 0
+    end
+    `;
+    return new Promise((resolve, reject) => {
+        redisClient.eval(script, 1, key, value, ttl, (err, result) => {
+            if (err) return reject(err);
+            resolve(result === 1);
+        });
+    });
 }
 // 小sleep
 function sleep(ms) {
@@ -203,6 +228,7 @@ module.exports = {
     sleep,
     setLock,
     releaseLock,
+    renewLock,
     getString,
     setString,
     removeString,
@@ -217,4 +243,3 @@ module.exports = {
     srange,
     getKeys
 }
-

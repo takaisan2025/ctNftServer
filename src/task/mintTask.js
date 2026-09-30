@@ -15,8 +15,11 @@ const gasConfig = require("../config/gasConfig.json");
 const Web3 = require("web3");
 let web3 = new Web3(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 const {
-    getString, setString, removeString, rpush, lrange, lrem, getKeys, releaseLock, setLock, sleep,
+    getString, setString, removeString, rpush, lrange, lrem, getKeys, releaseLock, setLock, renewLock,
 } = require("../redis/redis-client");
+const {sendAtPendingNonce} = require("../chain/signedOrderSender");
+const {hasReservedTransferNonce} = require("../chain/transferNonceReservation");
+const nonceLocks = {setLock, renewLock, releaseLock};
 const fetch = require("node-fetch");
 const crypto = require('crypto');
 
@@ -42,38 +45,6 @@ const logger = pino({level: process.env.LOG_LEVEL || "debug"});
 
 
 // 创建一个Provider（你可以连接到一个特定的以太坊节点，或使用默认的Infura/Alchemy等）
-
-// 获取账户的 nonce
-async function getNonce(address) {
-    const lockKey = address + '_NONCE_LOCK';
-    const nonceKey = address + '_NONCE';
-    const lockValue = Date.now() + Math.random();  // 防止误删锁，可以用唯一值
-    const lockExpire = 3000;  // 3秒超时锁
-
-    const gotLock = await setLock(lockKey, lockValue, lockExpire);
-    if (!gotLock) {
-        // 没拿到锁，等待一点点时间再重试
-        await sleep(50);  // 50毫秒
-        return getNonce(address);  // 递归重试
-    }
-
-    try {
-        let nonce = await getString(nonceKey);
-        if (Number(nonce) > 0) {
-            nonce = Number(nonce) + 1;
-        } else {
-            nonce = await customHttpProvider.getTransactionCount(address, "latest");
-            console.log(address + " Nonce from chain:", nonce);
-        }
-
-        await setString(nonceKey, nonce, 4);  // 缓存10秒
-        return nonce;
-    } finally {
-        // 无论成功失败，最后都释放锁
-        await releaseLock(lockKey, lockValue);
-    }
-}
-
 
 function Part(account, value) {
     return {
@@ -427,15 +398,18 @@ async function mintBetchMint() {
                             };
 
                             // 设置一个新值，返回交易
-                            let txRet = await contractWithSigner
-                                .mintAndTransfer(Mint1155Data(tokenId, tokenURI, supply, [creators], [], [signatures]), transferTo, supply, overrides)
-                                .then((ret) => {
-                                    // return ret;
-                                    return {err: null, data: ret};
-                                })
-                                .catch((err) => {
-                                    return {err: err.reason, data: null};
-                                });
+                            let txRet = await sendAtPendingNonce({
+                                locks: nonceLocks,
+                                provider: customHttpProvider,
+                                address: wallet.address,
+                                hasReservation: nonce => hasReservedTransferNonce(wallet.address, nonce),
+                                send: nonce => contractWithSigner.mintAndTransfer(
+                                    Mint1155Data(tokenId, tokenURI, supply, [creators], [], [signatures]),
+                                    transferTo, supply, {...overrides, nonce})
+                            }).then(ret => ret.action === "sent"
+                                ? {err: null, data: ret.tx}
+                                : {err: ret.action, data: null}
+                            ).catch(err => ({err: err.reason || err.message, data: null}));
                             // console.log("tx:", tx.toString().startsWith('0x'))
                             // console.log("tx:", tx);
                             let tx = txRet.data;
@@ -609,7 +583,6 @@ async function mintBetchMint() {
                                 }
                             }
                         }
-                        let nonce = await getNonce(wallet.address);
                         let overrides = {
                             // The maximum units of gas for the transaction to use
                             // gasLimit: Web3.utils.numberToHex(gasLimit), // The price (in wei) per unit of gas
@@ -619,22 +592,24 @@ async function mintBetchMint() {
                             //     parseInt(gasConfig.mint721.gas / Number(gasLimit))
                             // ),
                             // The nonce to use in the transaction
-                            nonce: nonce, // nonce: transactionCount1Mint,
                             // The amount to send with the transaction (i.e. msg.value)
                             // value: utils.parseEther('1.0'),
                             // The chain ID (or network ID) to use
                             // chainId: 27
                         };
                         // 设置一个新值，返回交易
-                        let txRet = await contractWithSigner
-                            .mintAndTransfer(Mint721Data(tokenId, tokenURI, [creators], [], [signatures]), transferTo, overrides)
-                            .then((ret) => {
-                                // return ret;
-                                return {err: null, data: ret};
-                            })
-                            .catch((err) => {
-                                return {err: err.reason, data: null};
-                            });
+                        let txRet = await sendAtPendingNonce({
+                            locks: nonceLocks,
+                            provider: customHttpProvider,
+                            address: wallet.address,
+                            hasReservation: nonce => hasReservedTransferNonce(wallet.address, nonce),
+                            send: nonce => contractWithSigner.mintAndTransfer(
+                                Mint721Data(tokenId, tokenURI, [creators], [], [signatures]),
+                                transferTo, {...overrides, nonce})
+                        }).then(ret => ret.action === "sent"
+                            ? {err: null, data: ret.tx}
+                            : {err: ret.action, data: null}
+                        ).catch(err => ({err: err.reason || err.message, data: null}));
                         // console.log("tx:", tx.toString().startsWith('0x'))
                         // console.log("tx:", tx);
                         let tx = txRet.data;
@@ -731,18 +706,24 @@ async function transfer(privateKey, value, toAddress, walletUser) {
     }
 
     let walletSys = new ethers.Wallet(privateKey, customHttpProvider);
-    let nonce = await getNonce(walletSys.address);
     let tx = {
         to: toAddress, // ... or supports ENS names
         // to: "ricmoo.firefly.eth"
-        nonce: nonce, // We must pass in the amount as wei (1 ether = 1e18 wei), so we
         maxFeePerGas: Web3.utils.numberToHex(4800e9),
         maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
         // use this convenience function to convert ether to wei.
         value: Web3.utils.toHex(value),
     };
 
-    let txTransfer = await walletSys.sendTransaction(tx);
+    let sent = await sendAtPendingNonce({
+        locks: nonceLocks,
+        provider: customHttpProvider,
+        address: walletSys.address,
+        hasReservation: nonce => hasReservedTransferNonce(walletSys.address, nonce),
+        send: nonce => walletSys.sendTransaction({...tx, nonce})
+    });
+    if (sent.action !== "sent") return {err: sent.action, hash: null};
+    let txTransfer = sent.tx;
     console.log("txTransfer: :", txTransfer.hash);
     try {
         // let recept1 = await customHttpProvider.waitForTransaction(txTransfer.hash);
@@ -962,5 +943,5 @@ async function mintBetchCallFund() {
 // }, 2000)
 // mintBetchMint()
 module.exports = {
-    mintFileUploadIpfs, mintBetchMint, mintBetchHashQuery, mintBetchCallFund, getNonce
+    mintFileUploadIpfs, mintBetchMint, mintBetchHashQuery, mintBetchCallFund
 };

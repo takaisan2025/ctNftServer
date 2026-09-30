@@ -21,7 +21,11 @@ const {
     rpush,
     lrange,
     lrem,
+    setLock, renewLock, releaseLock,
 } = require("../redis/redis-client");
+const {sendAtPendingNonce} = require("../chain/signedOrderSender");
+const {hasReservedTransferNonce} = require("../chain/transferNonceReservation");
+const nonceLocks = {setLock, renewLock, releaseLock};
 const {customHttpProvider} = require("./taskConst");
 const {auths_single} = require("../services/accountService");
 const {RESPONSE_STATUS} = require("../chain/responseError");
@@ -89,10 +93,18 @@ async function tFeeBetchTransfer() {
                     const erc20 = new ethers.Contract(tokenAddress, erc20ABI, walletSys);
 
                     // 4. 发送交易
-                    tx = await erc20.transfer(recipient, amount, {
-                        maxFeePerGas: Web3.utils.numberToHex(4800e9),
-                        maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
+                    tx = await sendAtPendingNonce({
+                        locks: nonceLocks, provider: customHttpProvider,
+                        address: walletSys.address,
+                        hasReservation: nonce => hasReservedTransferNonce(walletSys.address, nonce),
+                        send: nonce => erc20.transfer(recipient, amount, {
+                            nonce,
+                            maxFeePerGas: Web3.utils.numberToHex(4800e9),
+                            maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
+                        })
                     });
+                    if (tx.action !== "sent") continue;
+                    tx = tx.tx;
                     console.log("WCT 交易发送中:", tx.hash);
                     break
                 default:
@@ -108,7 +120,14 @@ async function tFeeBetchTransfer() {
                         maxPriorityFeePerGas: Web3.utils.numberToHex(4500e9),
                         value: ethers.utils.parseEther((pay_amount * rate).toString()),
                     };
-                    tx = await walletSys.sendTransaction(txs);
+                    tx = await sendAtPendingNonce({
+                        locks: nonceLocks, provider: customHttpProvider,
+                        address: walletSys.address,
+                        hasReservation: nonce => hasReservedTransferNonce(walletSys.address, nonce),
+                        send: nonce => walletSys.sendTransaction({...txs, nonce})
+                    });
+                    if (tx.action !== "sent") continue;
+                    tx = tx.tx;
                     console.log("Default 交易发送中:", tx.hash);
                     break
             }

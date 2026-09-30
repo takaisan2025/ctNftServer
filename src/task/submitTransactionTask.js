@@ -22,7 +22,10 @@ const SubmitTransactionTaskFlag = "SubmitTransactionTask_START"
 const TransactionHashQueryTaskFlag = "TransactionHashQueryTask_START"
 const Web3 = require("web3");
 const {updateNft} = require("../Orm/NftService");
-const {getNonce} = require("./mintTask");
+const {sendAtPendingNonce} = require("../chain/signedOrderSender");
+const {hasReservedTransferNonce} = require("../chain/transferNonceReservation");
+const {setLock, renewLock, releaseLock} = require("../redis/redis-client");
+const nonceLocks = {setLock, renewLock, releaseLock};
 let web3 = new Web3(GlobalConfig.BLOCK_CHAIN.RPC_URL[1].url);
 
 function mightBeJson(str) {
@@ -198,10 +201,14 @@ async function SubmitTransactionTask() {
 
                         } else {
                             let gasLimitA = gasLimitRet.gasLimit
-                            let nonce = await getNonce(from)
-                            let txCallRet = await contractWithSignerToken[methodName](
-                                ...funData,
-                                {
+                            let txCallRet = await sendAtPendingNonce({
+                                locks: nonceLocks,
+                                provider: customHttpProvider,
+                                address: from,
+                                hasReservation: nonce => hasReservedTransferNonce(from, nonce),
+                                send: nonce => contractWithSignerToken[methodName](
+                                    ...funData,
+                                    {
                                     // The maximum units of gas for the transaction to use
                                     // gasLimit: Web3.utils.numberToHex(gasLimitA),
                                     // The price (in wei) per unit of gas
@@ -214,9 +221,12 @@ async function SubmitTransactionTask() {
                                     value: ethers.utils.parseEther(value),
                                     // The chain ID (or network ID) to usem
                                     // chainId: 27
-                                }
-                            ).then((ret) => {
-                                return {err: null, data: ret};
+                                    }
+                                )
+                            }).then((ret) => {
+                                return ret.action === "sent"
+                                    ? {err: null, data: ret.tx}
+                                    : {err: ret.action, data: null};
                             })
                                 .catch(async (err) => {
                                     console.trace("err:", err.reason);

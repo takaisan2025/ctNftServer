@@ -10,14 +10,16 @@ var exec = function (sql) {
             } else {
                 conn.query(sql, function (err1, result, fields) {
                     //事件驱动回调
-                    if (err1) {
-                        reject(err1);
-                        return;
+                    try {
+                        if (err1) {
+                            reject(err1);
+                        } else {
+                            resolve(result);
+                        }
+                    } finally {
+                        conn.release();
                     }
-                    resolve(result);
                 });
-                //释放连接，需要注意的是连接释放需要在此处释放，而不是在查询回调里面释放
-                conn.release();
             }
         });
     });
@@ -31,11 +33,12 @@ var query = function (sql, options, callback) {
             callback(err, null, null);
         } else {
             conn.query(sql, options, function (err, results, fields) {
-                //事件驱动回调
-                callback(err, results, fields);
+                try {
+                    callback(err, results, fields);
+                } finally {
+                    conn.release();
+                }
             });
-            //释放连接，需要注意的是连接释放需要在此处释放，而不是在查询回调里面释放
-            conn.release();
         }
     });
 };

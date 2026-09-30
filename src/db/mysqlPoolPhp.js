@@ -10,14 +10,16 @@ var exec = function (sql) {
             } else {
                 conn.query(sql, function (err, result, fields) {
                     //事件驱动回调
-                    if (err) {
-                        reject(err);
-                        return;
+                    try {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result);
+                        }
+                    } finally {
+                        conn.release();
                     }
-                    resolve(result);
                 });
-                //释放连接，需要注意的是连接释放需要在此处释放，而不是在查询回调里面释放
-                conn.release();
             }
         });
     });

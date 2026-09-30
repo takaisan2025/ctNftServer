@@ -60,13 +60,15 @@ const getKeys = (key) => {
 const removeString = (key) => {
     key = redisPrefix + key;
     return new Promise((resolve, reject) => {
-        redisClient.get(key, function (err, result) {
-            if (err) {
-                reject(err)
-            }
-            redisClient.expire(key, parseInt(-1))
-            resolve(result)
-        })
+        const script = `
+            local value = redis.call("get", KEYS[1])
+            if value then redis.call("del", KEYS[1]) end
+            return value
+        `;
+        redisClient.eval(script, 1, key, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+        });
     })
 }
 

@@ -74,7 +74,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
         }
         try {
 
-            Promise.all(urls.map(async url => {
+            const results = await Promise.allSettled(urls.map(async url => {
 
                     if (url.url.indexOf("chaonft.cn/") !== -1) {
                         console.log("The string contains 'chaonft.cn/'.");
@@ -87,7 +87,7 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                         await updateTransFormList(trans_from_obj, {id: responseRet.ori_data.id})
                     } else {
                         console.log("The string does not contain 'chaonft.cn/'.");
-                        fetch(url.url, url.requestOptions)
+                        await fetch(url.url, url.requestOptions)
                             .then(responseData => {
                                 console.log("回调返回原始内容status:", responseData.status);
                                 console.log("回调返回原始内容statusText:", responseData.statusText);
@@ -142,9 +142,10 @@ async function betchCallFundUtils(name, endStatus, queryName, queryParams) {
                             })
                     }
                 }
-            )).then(async responseRet => {
-                // console.log(responseRet)
-            });
+            ));
+            for (const result of results) {
+                if (result.status === "rejected") console.trace(result.reason);
+            }
         } catch (e) {
             console.trace(e)
         }

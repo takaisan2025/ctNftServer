@@ -3,11 +3,16 @@
 // 每个任务用 wrap 包裹做故障隔离，单个任务抛错不影响其它任务与进程。
 
 function wrap(name, fn) {
+    let running = false;
     return async (...args) => {
+        if (running) return;
+        running = true;
         try {
             await fn(...args);
         } catch (e) {
             console.error(`[backgroundAll] task ${name} error:`, e && e.message ? e.message : e);
+        } finally {
+            running = false;
         }
     };
 }

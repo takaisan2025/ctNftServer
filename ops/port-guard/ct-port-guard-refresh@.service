@@ -1,0 +1,9 @@
+[Unit]
+Description=Reapply CT production port guard (%i)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ct-port-guard apply %i
+TimeoutStartSec=20

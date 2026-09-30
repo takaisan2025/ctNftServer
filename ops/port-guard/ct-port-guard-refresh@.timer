@@ -1,0 +1,11 @@
+[Unit]
+Description=Keep CT production port guard in place (%i)
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Unit=ct-port-guard-refresh@%i.service
+
+[Install]
+WantedBy=timers.target

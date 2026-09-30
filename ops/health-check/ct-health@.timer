@@ -1,0 +1,11 @@
+[Unit]
+Description=Run CT production health check every five minutes (%i)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Unit=ct-health@%i.service
+
+[Install]
+WantedBy=timers.target

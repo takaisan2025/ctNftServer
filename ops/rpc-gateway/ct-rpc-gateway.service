@@ -1,0 +1,26 @@
+[Unit]
+Description=Public CT chain JSON-RPC method gateway
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=30
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=www
+Group=www
+Environment=PORT=18741
+Environment=UPSTREAM_URL=http://172.17.219.139:7401/
+ExecStart=/usr/bin/node /data/ctnexploder/rpc-gateway/server.js
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+MemoryMax=256M
+TasksMax=64
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

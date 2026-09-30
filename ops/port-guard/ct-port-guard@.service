@@ -1,0 +1,12 @@
+[Unit]
+Description=CT production Docker port guard (%i)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ct-port-guard apply %i
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

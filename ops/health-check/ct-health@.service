@@ -1,0 +1,13 @@
+[Unit]
+Description=CT read-only production health check (%i)
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/ct-health/ct_health.py %i
+TimeoutStartSec=30
+User=root
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
